@@ -34,7 +34,7 @@ local_resource(
     ignore=['*/*/zz_generated.deepcopy.go'])
 
 docker_build_with_restart(
-    'controller:dev', '.',
+    'controller:latest', '.',
     dockerfile_contents=DOCKERFILE,
     entrypoint=['/manager'],
     only=['./bin/manager'],

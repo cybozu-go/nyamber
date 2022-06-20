@@ -22,3 +22,31 @@ jobs:
       with:
         go-version: ${{ env.go-version }}
     - run: make test
+  e2e:
+    name: End-to-End Tests
+    strategy:
+      matrix:
+        k8s-version: ["1.22.4", "1.23.1"]
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-go@v3
+      with:
+        go-version: ${{ env.go-version }}
+    - uses: aquaproj/aqua-installer@a34cc75221784a96e3caf4bbf716ff67a160a3f1 #v1.0.0
+      with:
+        aqua_version: v1.11.0
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - run: make start KUBERNETES_VERSION=${{ matrix.k8s-version }}
+      working-directory: e2e
+    - run: make test
+      working-directory: e2e
+    - run: make logs
+      working-directory: e2e
+      if: always()
+    - uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: logs-${{ matrix.k8s-version }}.tar.gz
+        path: e2e/logs.tar.gz
