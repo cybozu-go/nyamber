@@ -18,7 +18,6 @@ endif
 # Test tools
 CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
 ENVTEST ?= $(LOCALBIN)/setup-envtest
-MDBOOK := $(LOCALBIN)/mdbook
 KUSTOMIZE ?= $(LOCALBIN)/kustomize
 STATICCHECK = $(LOCALBIN)/staticcheck
 
@@ -27,7 +26,6 @@ CONTROLLER_TOOLS_VERSION ?= v0.9.0
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.23
 KUSTOMIZE_VERSION ?= v4.5.5
-MDBOOK_VERSION = 0.4.15
 
 # Setting SHELL to bash allows bash commands to be executed by recipes.
 # This is a requirement for 'setup-envtest.sh' in the test target.
@@ -77,11 +75,6 @@ vet: ## Run go vet against code.
 test: manifests generate fmt vet envtest test-tools ## Run tests.
 	$(STATICCHECK) ./...
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) -p path)" go test ./... -coverprofile cover.out
-
-.PHONY: book
-book: $(MDBOOK)
-	rm -rf docs/book
-	cd docs; $(MDBOOK) build
 
 ##@ Build
 
@@ -139,10 +132,6 @@ $(CONTROLLER_GEN): $(LOCALBIN)
 envtest: $(ENVTEST) ## Download envtest-setup locally if necessary.
 $(ENVTEST): $(LOCALBIN)
 	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
-
-$(MDBOOK):
-	mkdir -p bin
-	curl -fsL https://github.com/rust-lang/mdBook/releases/download/v$(MDBOOK_VERSION)/mdbook-v$(MDBOOK_VERSION)-x86_64-unknown-linux-gnu.tar.gz | tar -C bin -xzf -
 
 .PHONY: test-tools
 test-tools: $(STATICCHECK)
