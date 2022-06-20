@@ -34,7 +34,7 @@ local_resource(
     ignore=['*/*/zz_generated.deepcopy.go'])
 
 docker_build_with_restart(
-    'controller:latest', '.',
+    'nyamber-controller:dev', '.',
     dockerfile_contents=DOCKERFILE,
     entrypoint=['/manager'],
     only=['./bin/manager'],
@@ -42,3 +42,7 @@ docker_build_with_restart(
         sync('./bin/manager', '/manager'),
     ]
 )
+
+local_resource(
+    'Sample', 'kubectl apply -f ./config/samples/nyamber_v1beta1_virtualdc.yaml',
+    deps=["./config/samples/nyamber_v1beta1_virtualdc.yaml"])

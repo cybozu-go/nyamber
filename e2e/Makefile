@@ -15,8 +15,8 @@ help:
 .PHONY: start
 start:
 	kind create cluster --name=nyamber --config=$(KIND_CONFIG) --image=kindest/node:v$(KUBERNETES_VERSION) --wait 1m
-	$(MAKE) -C ../ docker-build IMG=nyamber:dev
-	kind load docker-image nyamber:dev --name=nyamber
+	$(MAKE) -C ../ docker-build
+	kind load docker-image nyamber-controller:dev --name=nyamber
 	kubectl apply -k ../config/default
 	kubectl -n nyamber wait --for=condition=available --timeout=180s --all deployments
 
