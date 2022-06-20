@@ -1,0 +1,24 @@
+# permissions for end users to edit virtualdcs.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: virtualdc-editor-role
+rules:
+- apiGroups:
+  - nyamber.nyamber.cybozu.io
+  resources:
+  - virtualdcs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - nyamber.nyamber.cybozu.io
+  resources:
+  - virtualdcs/status
+  verbs:
+  - get

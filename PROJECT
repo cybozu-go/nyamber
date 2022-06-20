@@ -3,4 +3,14 @@ layout:
 - go.kubebuilder.io/v3
 projectName: tmp
 repo: github.com/cybozu-go/nyamber
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: nyamber.cybozu.io
+  group: nyamber
+  kind: VirtualDC
+  path: github.com/cybozu-go/nyamber/api/v1beta1
+  version: v1beta1
 version: "3"
