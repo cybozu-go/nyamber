@@ -1,0 +1,6 @@
+domain: nyamber.cybozu.io
+layout:
+- go.kubebuilder.io/v3
+projectName: tmp
+repo: github.com/cybozu-go/nyamber
+version: "3"
