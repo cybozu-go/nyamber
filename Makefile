@@ -100,6 +100,16 @@ ifndef ignore-not-found
   ignore-not-found = false
 endif
 
+.PHONY: start
+start:
+	ctlptl apply -f ./cluster.yaml
+	kubectl apply -f https://github.com/jetstack/cert-manager/releases/latest/download/cert-manager.yaml
+	kubectl -n cert-manager wait --for=condition=available --timeout=180s --all deployments
+
+.PHONY: stop
+stop:
+	ctlptl delete -f ./cluster.yaml
+
 .PHONY: install
 install: manifests kustomize ## Install CRDs into the K8s cluster specified in ~/.kube/config.
 	$(KUSTOMIZE) build config/crd | kubectl apply -f -
