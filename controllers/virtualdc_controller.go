@@ -19,17 +19,21 @@ package controllers
 import (
 	"context"
 
+	nyamberv1beta1 "github.com/cybozu-go/nyamber/api/v1beta1"
+	"github.com/cybozu-go/nyamber/pkg/constants"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	nyamberv1beta1 "github.com/cybozu-go/nyamber/api/v1beta1"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
 // VirtualDCReconciler reconciles a VirtualDC object
@@ -43,9 +47,10 @@ const (
 )
 
 //+kubebuilder:rbac:groups=nyamber.cybozu.io,resources=virtualdcs,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=nyamber.cybozu.io,resources=virtualdcs/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=nyamber.cybozu.io,resources=virtualdcs/finalizers,verbs=update
+
+//+kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -56,14 +61,25 @@ const (
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.11.2/pkg/reconcile
-func (r *VirtualDCReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
+func (r *VirtualDCReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
+	logger := log.FromContext(ctx)
 
 	vdc := &nyamberv1beta1.VirtualDC{}
 	if err := r.Get(ctx, req.NamespacedName, vdc); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
-	if !meta.IsStatusConditionTrue(vdc.Status.Conditions, nyamberv1beta1.PodCreated) {
+
+	defer func(before nyamberv1beta1.VirtualDCStatus) {
+		logger.Info("update status", "status", vdc.Status, "before", before)
+		if !equality.Semantic.DeepEqual(vdc.Status, before) {
+			if err2 := r.Status().Update(ctx, vdc); err2 != nil {
+				logger.Error(err2, "failed to update status")
+				err = err2
+			}
+		}
+	}(*vdc.Status.DeepCopy())
+
+	if !meta.IsStatusConditionTrue(vdc.Status.Conditions, nyamberv1beta1.TypePodCreated) {
 		if err := r.createPod(ctx, vdc); err != nil {
 			return ctrl.Result{}, err
 		}
@@ -73,16 +89,18 @@ func (r *VirtualDCReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, err
 	}
 
+	logger.Info("reconcile succeeded")
 	return ctrl.Result{}, nil
 }
 
 func (r *VirtualDCReconciler) createPod(ctx context.Context, vdc *nyamberv1beta1.VirtualDC) error {
-	// create a pod
-	// check status of a pod
+	logger := log.FromContext(ctx)
+
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      vdc.Name,
 			Namespace: namespace,
+			Labels:    map[string]string{constants.OwnerNamespace: vdc.GetNamespace()},
 		},
 		Spec: corev1.PodSpec{
 			Containers: []corev1.Container{
@@ -97,24 +115,26 @@ func (r *VirtualDCReconciler) createPod(ctx context.Context, vdc *nyamberv1beta1
 	if err := r.Create(ctx, pod); err != nil {
 		if apierrors.IsAlreadyExists(err) {
 			meta.SetStatusCondition(&vdc.Status.Conditions, metav1.Condition{
-				Type:    nyamberv1beta1.PodCreated,
+				Type:    nyamberv1beta1.TypePodCreated,
 				Status:  metav1.ConditionFalse,
-				Reason:  nyamberv1beta1.PodCreatedAlreadyExists,
+				Reason:  nyamberv1beta1.ReasonPodCreatedAlreadyExists,
 				Message: err.Error(),
 			})
 		} else {
 			meta.SetStatusCondition(&vdc.Status.Conditions, metav1.Condition{
-				Type:    nyamberv1beta1.PodCreated,
+				Type:    nyamberv1beta1.TypePodCreated,
 				Status:  metav1.ConditionFalse,
-				Reason:  nyamberv1beta1.PodCreatedFailed,
+				Reason:  nyamberv1beta1.ReasonPodCreatedFailed,
 				Message: err.Error(),
 			})
 		}
 		return err
 	}
+	logger.Info("pod created", "status: ", vdc.Status.Conditions)
 	meta.SetStatusCondition(&vdc.Status.Conditions, metav1.Condition{
-		Type:   nyamberv1beta1.PodCreated,
+		Type:   nyamberv1beta1.TypePodCreated,
 		Status: metav1.ConditionTrue,
+		Reason: nyamberv1beta1.ReasonOK,
 	})
 	return nil
 }
@@ -124,9 +144,9 @@ func (r *VirtualDCReconciler) updateStatus(ctx context.Context, vdc *nyamberv1be
 	if err := r.Get(ctx, client.ObjectKey{Namespace: namespace, Name: vdc.Name}, pod); err != nil {
 		if apierrors.IsNotFound(err) {
 			meta.SetStatusCondition(&vdc.Status.Conditions, metav1.Condition{
-				Type:    nyamberv1beta1.PodAvailable,
+				Type:    nyamberv1beta1.TypePodAvailable,
 				Status:  metav1.ConditionFalse,
-				Reason:  nyamberv1beta1.PodAvailableNotExists,
+				Reason:  nyamberv1beta1.ReasonPodAvailableNotExists,
 				Message: err.Error(),
 			})
 			return nil
@@ -135,14 +155,16 @@ func (r *VirtualDCReconciler) updateStatus(ctx context.Context, vdc *nyamberv1be
 	}
 	if isStatusConditionTrue(pod, corev1.PodReady) {
 		meta.SetStatusCondition(&vdc.Status.Conditions, metav1.Condition{
-			Type:   nyamberv1beta1.PodAvailable,
+			Type:   nyamberv1beta1.TypePodAvailable,
 			Status: metav1.ConditionTrue,
+			Reason: nyamberv1beta1.ReasonOK,
 		})
 	}
 	if isStatusConditionTrue(pod, corev1.PodScheduled) {
 		meta.SetStatusCondition(&vdc.Status.Conditions, metav1.Condition{
-			Type:   nyamberv1beta1.PodAvailable,
+			Type:   nyamberv1beta1.TypePodAvailable,
 			Status: metav1.ConditionTrue,
+			Reason: nyamberv1beta1.ReasonOK,
 		})
 	}
 	return nil
@@ -150,8 +172,17 @@ func (r *VirtualDCReconciler) updateStatus(ctx context.Context, vdc *nyamberv1be
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *VirtualDCReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	vdcPodHandler := func(o client.Object) []reconcile.Request {
+		owner := o.GetLabels()[constants.OwnerNamespace]
+		if owner == "" {
+			return nil
+		}
+		return []reconcile.Request{{NamespacedName: types.NamespacedName{Namespace: owner, Name: o.GetName()}}}
+	}
+
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&nyamberv1beta1.VirtualDC{}).
+		Watches(&source.Kind{Type: &corev1.Pod{}}, handler.EnqueueRequestsFromMapFunc(vdcPodHandler)).
 		Complete(r)
 }
 

@@ -57,16 +57,18 @@ type VirtualDCStatus struct {
 }
 
 const (
-	PodCreated   string = "PodCreated"
-	PodAvailable string = "PodAvailable"
+	TypePodCreated   string = "PodCreated"
+	TypePodAvailable string = "PodAvailable"
 )
 
+const ReasonOK string = "OK"
+
 const (
-	PodCreatedAlreadyExists  string = "AlreadyExists"
-	PodCreatedFailed         string = "Failed"
-	PodAvailableNotScheduled string = "NotScheduled"
-	PodAvailableNotAvailable string = "NotAvailable"
-	PodAvailableNotExists    string = "NotExists"
+	ReasonPodCreatedAlreadyExists  string = "AlreadyExists"
+	ReasonPodCreatedFailed         string = "Failed"
+	ReasonPodAvailableNotScheduled string = "NotScheduled"
+	ReasonPodAvailableNotAvailable string = "NotAvailable"
+	ReasonPodAvailableNotExists    string = "NotExists"
 )
 
 //+kubebuilder:object:root=true
