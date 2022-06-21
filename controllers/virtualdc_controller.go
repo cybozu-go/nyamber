@@ -18,16 +18,12 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -41,7 +37,7 @@ type VirtualDCReconciler struct {
 }
 
 //+kubebuilder:rbac:groups=nyamber.cybozu.io,resources=virtualdcs,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=nyamber.cybozu.io,resources=virtualdcs/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=nyamber.cybozu.io,resources=virtualdcs/finalizers,verbs=update
 
@@ -56,44 +52,46 @@ type VirtualDCReconciler struct {
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.11.2/pkg/reconcile
 func (r *VirtualDCReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = log.FromContext(ctx)
-	err := r.ReconcilePod(ctx, req)
+
+	virtualdc := &nyamberv1beta1.VirtualDC{}
+	if err := r.Get(ctx, req.NamespacedName, virtualdc); err != nil {
+		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+	if virtualdc.Status.Status == "success" {
+		// get pod and check status
+		return ctrl.Result{}, nil
+	}
+	if err := r.ReconcilePod(ctx, virtualdc); err != nil {
+		return ctrl.Result{}, err
+	}
 
 	// TODO(user): your logic here
-
-	return ctrl.Result{}, err
+	return ctrl.Result{}, nil
 }
 
-func (r *VirtualDCReconciler) ReconcilePod(ctx context.Context, req ctrl.Request) error {
-	dep := &appsv1.Deployment{}
-	dep.SetNamespace("default")
-	dep.SetName("sample")
-
-	op, err := ctrl.CreateOrUpdate(ctx, r.Client, dep, func() error {
-		dep.Spec.Replicas = pointer.Int32Ptr(2)
-		dep.Spec.Selector = &metav1.LabelSelector{
-			MatchLabels: map[string]string{"app": "nginx"},
-		}
-		dep.Spec.Template = corev1.PodTemplateSpec{
-			ObjectMeta: metav1.ObjectMeta{
-				Labels: map[string]string{"app": "nginx"},
-			},
-			Spec: corev1.PodSpec{
-				Containers: []corev1.Container{
-					{
-						Name:  "nginx",
-						Image: "nginx:latest",
-					},
+func (r *VirtualDCReconciler) ReconcilePod(ctx context.Context, vdc *nyamberv1beta1.VirtualDC) error {
+	// create a pod
+	// check status of a pod
+	pod := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      vdc.Name,
+			Namespace: "default",
+		},
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{
+				{
+					Name:  "virtualdc-pod",
+					Image: "quay.io/cybozu/testhttpd:0",
 				},
 			},
-		}
-		return nil
-	})
-	if err != nil {
+		},
+	}
+
+	if err := r.Create(ctx, pod); err != nil {
+		vdc.Status.Status = "fail"
 		return err
 	}
-	if op != controllerutil.OperationResultNone {
-		fmt.Printf("Deployment %s\n", op)
-	}
+	vdc.Status.Status = "success"
 	return nil
 }
 
