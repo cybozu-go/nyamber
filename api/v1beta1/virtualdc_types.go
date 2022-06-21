@@ -64,7 +64,7 @@ const (
 const ReasonOK string = "OK"
 
 const (
-	ReasonPodCreatedAlreadyExists  string = "AlreadyExists"
+	ReasonPodCreatedConflict       string = "Conflict"
 	ReasonPodCreatedFailed         string = "Failed"
 	ReasonPodAvailableNotScheduled string = "NotScheduled"
 	ReasonPodAvailableNotAvailable string = "NotAvailable"

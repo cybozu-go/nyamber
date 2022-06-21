@@ -70,8 +70,8 @@ func (r *VirtualDCReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 
 	defer func(before nyamberv1beta1.VirtualDCStatus) {
-		logger.Info("update status", "status", vdc.Status, "before", before)
 		if !equality.Semantic.DeepEqual(vdc.Status, before) {
+			logger.Info("update status", "status", vdc.Status, "before", before)
 			if err2 := r.Status().Update(ctx, vdc); err2 != nil {
 				logger.Error(err2, "failed to update status")
 				err = err2
@@ -113,24 +113,37 @@ func (r *VirtualDCReconciler) createPod(ctx context.Context, vdc *nyamberv1beta1
 	}
 
 	if err := r.Create(ctx, pod); err != nil {
-		if apierrors.IsAlreadyExists(err) {
-			meta.SetStatusCondition(&vdc.Status.Conditions, metav1.Condition{
-				Type:    nyamberv1beta1.TypePodCreated,
-				Status:  metav1.ConditionFalse,
-				Reason:  nyamberv1beta1.ReasonPodCreatedAlreadyExists,
-				Message: err.Error(),
-			})
-		} else {
+		if !apierrors.IsAlreadyExists(err) {
 			meta.SetStatusCondition(&vdc.Status.Conditions, metav1.Condition{
 				Type:    nyamberv1beta1.TypePodCreated,
 				Status:  metav1.ConditionFalse,
 				Reason:  nyamberv1beta1.ReasonPodCreatedFailed,
 				Message: err.Error(),
 			})
+			return err
 		}
-		return err
+		if err := r.Get(ctx, client.ObjectKey{Namespace: namespace, Name: vdc.Name}, pod); err != nil {
+			return err
+		}
+		owner := pod.Labels[constants.OwnerNamespace]
+		if owner != vdc.Namespace {
+			meta.SetStatusCondition(&vdc.Status.Conditions, metav1.Condition{
+				Type:    nyamberv1beta1.TypePodCreated,
+				Status:  metav1.ConditionFalse,
+				Reason:  nyamberv1beta1.ReasonPodCreatedConflict,
+				Message: "Resource with same name already exists in another namespace",
+			})
+			return err
+		}
+		logger.Info("Pod already exists")
+		meta.SetStatusCondition(&vdc.Status.Conditions, metav1.Condition{
+			Type:   nyamberv1beta1.TypePodCreated,
+			Status: metav1.ConditionTrue,
+			Reason: nyamberv1beta1.ReasonOK,
+		})
+		return nil
 	}
-	logger.Info("pod created", "status: ", vdc.Status.Conditions)
+	logger.Info("Pod created")
 	meta.SetStatusCondition(&vdc.Status.Conditions, metav1.Condition{
 		Type:   nyamberv1beta1.TypePodCreated,
 		Status: metav1.ConditionTrue,
