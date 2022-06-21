@@ -51,11 +51,23 @@ type VirtualDCSpec struct {
 
 // VirtualDCStatus defines the observed state of VirtualDC
 type VirtualDCStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	Status string `json:"status,omitempty"`
+	// Conditions is an array of conditions.
+	// +optional
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
+
+const (
+	PodCreated   string = "PodCreated"
+	PodAvailable string = "PodAvailable"
+)
+
+const (
+	PodCreatedAlreadyExists  string = "AlreadyExists"
+	PodCreatedFailed         string = "Failed"
+	PodAvailableNotScheduled string = "NotScheduled"
+	PodAvailableNotAvailable string = "NotAvailable"
+	PodAvailableNotExists    string = "NotExists"
+)
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
