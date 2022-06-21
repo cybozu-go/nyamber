@@ -5,7 +5,7 @@ metadata:
   name: virtualdc-viewer-role
 rules:
 - apiGroups:
-  - nyamber.nyamber.cybozu.io
+  - nyamber.cybozu.io
   resources:
   - virtualdcs
   verbs:
@@ -13,7 +13,7 @@ rules:
   - list
   - watch
 - apiGroups:
-  - nyamber.nyamber.cybozu.io
+  - nyamber.cybozu.io
   resources:
   - virtualdcs/status
   verbs:

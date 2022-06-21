@@ -40,10 +40,10 @@ type VirtualDCReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-//+kubebuilder:rbac:groups=nyamber.nyamber.cybozu.io,resources=virtualdcs,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=nyamber.cybozu.io,resources=virtualdcs,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
-//+kubebuilder:rbac:groups=nyamber.nyamber.cybozu.io,resources=virtualdcs/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=nyamber.nyamber.cybozu.io,resources=virtualdcs/finalizers,verbs=update
+//+kubebuilder:rbac:groups=nyamber.cybozu.io,resources=virtualdcs/status,verbs=get;update;patch
+//+kubebuilder:rbac:groups=nyamber.cybozu.io,resources=virtualdcs/finalizers,verbs=update
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.

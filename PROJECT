@@ -1,4 +1,4 @@
-domain: nyamber.cybozu.io
+domain: cybozu.io
 layout:
 - go.kubebuilder.io/v3
 projectName: tmp
@@ -8,7 +8,7 @@ resources:
     crdVersion: v1
     namespaced: true
   controller: true
-  domain: nyamber.cybozu.io
+  domain: cybozu.io
   group: nyamber
   kind: VirtualDC
   path: github.com/cybozu-go/nyamber/api/v1beta1

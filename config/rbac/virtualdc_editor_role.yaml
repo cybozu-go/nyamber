@@ -5,7 +5,7 @@ metadata:
   name: virtualdc-editor-role
 rules:
 - apiGroups:
-  - nyamber.nyamber.cybozu.io
+  - nyamber.cybozu.io
   resources:
   - virtualdcs
   verbs:
@@ -17,7 +17,7 @@ rules:
   - update
   - watch
 - apiGroups:
-  - nyamber.nyamber.cybozu.io
+  - nyamber.cybozu.io
   resources:
   - virtualdcs/status
   verbs:

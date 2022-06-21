@@ -5,9 +5,9 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.9.0
   creationTimestamp: null
-  name: virtualdcs.nyamber.nyamber.cybozu.io
+  name: virtualdcs.nyamber.cybozu.io
 spec:
-  group: nyamber.nyamber.cybozu.io
+  group: nyamber.cybozu.io
   names:
     kind: VirtualDC
     listKind: VirtualDCList

@@ -1,4 +1,4 @@
-apiVersion: nyamber.nyamber.cybozu.io/v1beta1
+apiVersion: nyamber.cybozu.io/v1beta1
 kind: VirtualDC
 metadata:
   name: virtualdc-sample
