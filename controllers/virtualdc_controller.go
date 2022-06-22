@@ -40,12 +40,9 @@ import (
 // VirtualDCReconciler reconciles a VirtualDC object
 type VirtualDCReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	Scheme       *runtime.Scheme
+	PodNameSpace string
 }
-
-const (
-	namespace string = "default"
-)
 
 //+kubebuilder:rbac:groups=nyamber.cybozu.io,resources=virtualdcs,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=nyamber.cybozu.io,resources=virtualdcs/status,verbs=get;update;patch
@@ -117,7 +114,7 @@ func (r *VirtualDCReconciler) createPod(ctx context.Context, vdc *nyamberv1beta1
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      vdc.Name,
-			Namespace: namespace,
+			Namespace: r.PodNameSpace,
 			Labels:    map[string]string{constants.OwnerNamespace: vdc.GetNamespace()},
 		},
 		Spec: corev1.PodSpec{
@@ -140,7 +137,7 @@ func (r *VirtualDCReconciler) createPod(ctx context.Context, vdc *nyamberv1beta1
 			})
 			return err
 		}
-		if err := r.Get(ctx, client.ObjectKey{Namespace: namespace, Name: vdc.Name}, pod); err != nil {
+		if err := r.Get(ctx, client.ObjectKey{Namespace: r.PodNameSpace, Name: vdc.Name}, pod); err != nil {
 			return err
 		}
 		owner := pod.Labels[constants.OwnerNamespace]
@@ -172,7 +169,7 @@ func (r *VirtualDCReconciler) createPod(ctx context.Context, vdc *nyamberv1beta1
 
 func (r *VirtualDCReconciler) updateStatus(ctx context.Context, vdc *nyamberv1beta1.VirtualDC) error {
 	pod := &corev1.Pod{}
-	if err := r.Get(ctx, client.ObjectKey{Namespace: namespace, Name: vdc.Name}, pod); err != nil {
+	if err := r.Get(ctx, client.ObjectKey{Namespace: r.PodNameSpace, Name: vdc.Name}, pod); err != nil {
 		if apierrors.IsNotFound(err) {
 			meta.SetStatusCondition(&vdc.Status.Conditions, metav1.Condition{
 				Type:    nyamberv1beta1.TypePodAvailable,
@@ -217,7 +214,7 @@ func (r *VirtualDCReconciler) finalize(ctx context.Context, vdc *nyamberv1beta1.
 
 func (r *VirtualDCReconciler) deletePod(ctx context.Context, vdc *nyamberv1beta1.VirtualDC) error {
 	pod := &corev1.Pod{}
-	if err := r.Get(ctx, client.ObjectKey{Namespace: namespace, Name: vdc.Name}, pod); err != nil {
+	if err := r.Get(ctx, client.ObjectKey{Namespace: r.PodNameSpace, Name: vdc.Name}, pod); err != nil {
 		return err
 	}
 	ownerNs := pod.Labels[constants.OwnerNamespace]
