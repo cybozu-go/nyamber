@@ -73,6 +73,7 @@ const (
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
+//+kubebuilder:printcolumn:name="PODAVAILABLE",type="string",JSONPath=".status.conditions[?(@.type=='PodAvailable')].status"
 
 // VirtualDC is the Schema for the virtualdcs API
 type VirtualDC struct {

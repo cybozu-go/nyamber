@@ -15,7 +15,11 @@ spec:
     singular: virtualdc
   scope: Namespaced
   versions:
-  - name: v1beta1
+  - additionalPrinterColumns:
+    - jsonPath: .status.conditions[?(@.type=='PodAvailable')].status
+      name: PODAVAILABLE
+      type: string
+    name: v1beta1
     schema:
       openAPIV3Schema:
         description: VirtualDC is the Schema for the virtualdcs API
