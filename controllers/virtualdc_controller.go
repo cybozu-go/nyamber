@@ -110,6 +110,7 @@ func (r *VirtualDCReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 
 func (r *VirtualDCReconciler) createPod(ctx context.Context, vdc *nyamberv1beta1.VirtualDC) error {
 	logger := log.FromContext(ctx)
+	// get pod templates from configMap
 
 	pod := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -215,6 +216,9 @@ func (r *VirtualDCReconciler) finalize(ctx context.Context, vdc *nyamberv1beta1.
 func (r *VirtualDCReconciler) deletePod(ctx context.Context, vdc *nyamberv1beta1.VirtualDC) error {
 	pod := &corev1.Pod{}
 	if err := r.Get(ctx, client.ObjectKey{Namespace: r.PodNameSpace, Name: vdc.Name}, pod); err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
 		return err
 	}
 	ownerNs := pod.Labels[constants.OwnerNamespace]
