@@ -12,6 +12,8 @@ spec:
     kind: VirtualDC
     listKind: VirtualDCList
     plural: virtualdcs
+    shortNames:
+    - vdc
     singular: virtualdc
   scope: Namespaced
   versions:

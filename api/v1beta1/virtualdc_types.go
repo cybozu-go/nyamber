@@ -72,6 +72,7 @@ const (
 )
 
 //+kubebuilder:object:root=true
+//+kubebuilder:resource:shortName=vdc
 //+kubebuilder:subresource:status
 //+kubebuilder:printcolumn:name="PODAVAILABLE",type="string",JSONPath=".status.conditions[?(@.type=='PodAvailable')].status"
 
