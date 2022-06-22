@@ -18,9 +18,11 @@ package controllers
 
 import (
 	"context"
+	"errors"
 
 	nyamberv1beta1 "github.com/cybozu-go/nyamber/api/v1beta1"
 	"github.com/cybozu-go/nyamber/pkg/constants"
+	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -49,6 +51,8 @@ type VirtualDCReconciler struct {
 //+kubebuilder:rbac:groups=nyamber.cybozu.io,resources=virtualdcs/finalizers,verbs=update
 
 //+kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch;create;update;patch;delete
+
+//+kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -108,25 +112,49 @@ func (r *VirtualDCReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	return ctrl.Result{}, nil
 }
 
+func (r *VirtualDCReconciler) getPodTemplate(ctx context.Context) (*corev1.Pod, error) {
+	cm := &corev1.ConfigMap{}
+	if err := r.Get(ctx, client.ObjectKey{Namespace: constants.Namespace, Name: constants.PodTemplateName}, cm); err != nil {
+		return nil, err
+	}
+
+	pod := &corev1.Pod{}
+	err := yaml.Unmarshal([]byte(cm.Data["pod-template"]), &pod)
+	if err != nil {
+		return nil, err
+	}
+
+	return pod, nil
+}
+
 func (r *VirtualDCReconciler) createPod(ctx context.Context, vdc *nyamberv1beta1.VirtualDC) error {
 	logger := log.FromContext(ctx)
-	// get pod templates from configMap
 
-	pod := &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      vdc.Name,
-			Namespace: r.PodNameSpace,
-			Labels:    map[string]string{constants.OwnerNamespace: vdc.GetNamespace()},
-		},
-		Spec: corev1.PodSpec{
-			Containers: []corev1.Container{
-				{
-					Name:  "virtualdc-pod",
-					Image: "quay.io/cybozu/testhttpd:0",
-				},
-			},
-		},
+	pod, err := r.getPodTemplate(ctx)
+	if err != nil {
+		return err
 	}
+
+	pod.ObjectMeta = metav1.ObjectMeta{
+		Name:      vdc.Name,
+		Namespace: r.PodNameSpace,
+		Labels:    map[string]string{constants.OwnerNamespace: vdc.GetNamespace()},
+	}
+
+	if len(pod.Spec.Containers) == 0 {
+		return errors.New("pod.Spec.Containers are empty")
+	}
+
+	pod.Spec.Containers[0].Env = append(pod.Spec.Containers[0].Env, []corev1.EnvVar{
+		{
+			Name:  "NECO_BRANCH",
+			Value: vdc.Spec.NecoBranch,
+		},
+		{
+			Name:  "NECO_APPS_BRANCH",
+			Value: vdc.Spec.NecoAppsBranch,
+		},
+	}...)
 
 	if err := r.Create(ctx, pod); err != nil {
 		if !apierrors.IsAlreadyExists(err) {
