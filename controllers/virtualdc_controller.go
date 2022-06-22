@@ -30,6 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -67,6 +68,23 @@ func (r *VirtualDCReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	vdc := &nyamberv1beta1.VirtualDC{}
 	if err := r.Get(ctx, req.NamespacedName, vdc); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+
+	if vdc.ObjectMeta.DeletionTimestamp.IsZero() {
+		if !controllerutil.ContainsFinalizer(vdc, constants.FinalizerName) {
+			controllerutil.AddFinalizer(vdc, constants.FinalizerName)
+			err = r.Update(ctx, vdc)
+			if err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+	} else {
+		if err := r.finalize(ctx, vdc); err != nil {
+			logger.Error(err, "Finalize error")
+			return ctrl.Result{}, err
+		}
+		logger.Info("Finalize succeeded")
+		return ctrl.Result{}, nil
 	}
 
 	defer func(before nyamberv1beta1.VirtualDCStatus) {
@@ -181,6 +199,38 @@ func (r *VirtualDCReconciler) updateStatus(ctx context.Context, vdc *nyamberv1be
 		})
 	}
 	return nil
+}
+
+func (r *VirtualDCReconciler) finalize(ctx context.Context, vdc *nyamberv1beta1.VirtualDC) error {
+	if controllerutil.ContainsFinalizer(vdc, constants.FinalizerName) {
+		if err := r.deletePod(ctx, vdc); err != nil {
+			return err
+		}
+		controllerutil.RemoveFinalizer(vdc, constants.FinalizerName)
+		err := r.Update(ctx, vdc)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *VirtualDCReconciler) deletePod(ctx context.Context, vdc *nyamberv1beta1.VirtualDC) error {
+	pod := &corev1.Pod{}
+	if err := r.Get(ctx, client.ObjectKey{Namespace: namespace, Name: vdc.Name}, pod); err != nil {
+		return err
+	}
+	ownerNs := pod.Labels[constants.OwnerNamespace]
+	if ownerNs != vdc.Namespace {
+		return nil
+	}
+	uid := pod.GetUID()
+	cond := metav1.Preconditions{
+		UID: &uid,
+	}
+	return r.Delete(ctx, pod, &client.DeleteOptions{
+		Preconditions: &cond,
+	})
 }
 
 // SetupWithManager sets up the controller with the Manager.

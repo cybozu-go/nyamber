@@ -4,3 +4,5 @@ package constants
 const MetaPrefix = "nyamber.cybozu.io/"
 
 const OwnerNamespace = MetaPrefix + "owner-namespace"
+
+const FinalizerName = MetaPrefix + "finalizer"
