@@ -13,7 +13,7 @@ def generate():
     return './bin/controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./...";'
 
 def binary():
-    return 'CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/manager main.go'
+    return 'CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/manager cmd/nyamber-controller/main.go'
 
 # Generate manifests and go files
 local_resource('make manifests', manifests(), deps=["api", "controllers"], ignore=['*/*/zz_generated.deepcopy.go'])
@@ -28,7 +28,7 @@ local_resource(
 k8s_yaml(kustomize('./config/dev'))
 
 local_resource(
-    'Watch & Compile', generate() + binary(), deps=['controllers', 'api', 'pkg', 'main.go'],
+    'Watch & Compile', generate() + binary(), deps=['controllers', 'api', 'pkg', 'cmd'],
     ignore=['*/*/zz_generated.deepcopy.go'])
 
 docker_build_with_restart(
