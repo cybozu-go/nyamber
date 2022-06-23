@@ -1,7 +1,11 @@
 package entrypoint
 
 import (
+	"context"
+	"fmt"
 	"net/http"
+	"os/exec"
+	"time"
 
 	"github.com/cybozu-go/nyamber/pkg/constants"
 	"github.com/cybozu-go/well"
@@ -22,6 +26,7 @@ type JobStatus struct {
 type Job struct {
 	Name    string
 	Command string
+	Args    []string
 }
 
 type Runner struct {
@@ -30,10 +35,21 @@ type Runner struct {
 	Jobs       []Job
 }
 
-func (r *Runner) Run() error {
+func (r *Runner) Run(ctx context.Context) error {
+	env := well.NewEnvironment(ctx)
+	// env.Go(r.runJobs)
+	// env.Stop()
+	// defer env.Cancel(errors.New("Job canceled"))
+	cctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	go func() {
+		r.runJobs(cctx)
+	}()
+
 	mux := http.NewServeMux()
 	mux.Handle("/"+constants.StatusEndPoint, http.HandlerFunc(r.statusHandler))
 	serv := &well.HTTPServer{
+		Env: env,
 		Server: &http.Server{
 			Addr:    r.ListenAddr,
 			Handler: mux,
@@ -44,8 +60,23 @@ func (r *Runner) Run() error {
 		return err
 	}
 
-	well.Stop()
-	return well.Wait()
+	env.Stop()
+	return env.Wait()
+}
+
+func (r *Runner) runJobs(ctx context.Context) {
+	for _, job := range r.Jobs {
+		r.Logger.Info("execute job", "job_name", job.Name)
+		e := exec.Command(job.Command, job.Args...)
+		startTime := time.Now()
+		err := e.Run()
+		endTime := time.Now()
+		fmt.Printf("start=%s end=%s\n", startTime, endTime)
+		if err != nil {
+			r.Logger.Error(err, "job execution error")
+			return
+		}
+	}
 }
 
 func (r *Runner) statusHandler(w http.ResponseWriter, req *http.Request) {

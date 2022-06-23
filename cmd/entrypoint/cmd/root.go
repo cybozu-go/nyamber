@@ -8,6 +8,7 @@ import (
 
 	"github.com/cybozu-go/nyamber/pkg/constants"
 	"github.com/cybozu-go/nyamber/pkg/entrypoint"
+	"github.com/cybozu-go/well"
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
 	"github.com/spf13/cobra"
@@ -19,7 +20,7 @@ var log logr.Logger
 var reJobName = regexp.MustCompile("^[a-zA-Z][-_a-zA-Z0-9]*$")
 
 var rootCmd = &cobra.Command{
-	Use:          "entrypoint <JOB_NAME:COMMAND_PATH>...",
+	Use:          "entrypoint <JOB_NAME:COMMAND>...",
 	Short:        "DC test pod entrypoint",
 	Long:         "DC test pod entrypoint",
 	Args:         cobra.MinimumNArgs(1),
@@ -36,22 +37,27 @@ var rootCmd = &cobra.Command{
 				return errors.New("unexpected characters in JOB_NAME")
 			}
 
-			commandPath := split[1]
-			if len(commandPath) < 1 {
-				return errors.New("COMMAND_PATH is empty")
+			command := split[1]
+			if len(command) < 1 {
+				return errors.New("COMMAND is empty")
 			}
+			splittedCmd := strings.Split(command, " ")
 
 			jobs = append(jobs, entrypoint.Job{
 				Name:    jobName,
-				Command: commandPath,
+				Command: splittedCmd[0],
+				Args:    splittedCmd[1:],
 			})
 		}
 
 		runner := entrypoint.Runner{
 			ListenAddr: listenAddr,
 			Logger:     log,
+			Jobs:       jobs,
 		}
-		return runner.Run()
+		well.Go(runner.Run)
+		well.Stop()
+		return well.Wait()
 	},
 }
 
