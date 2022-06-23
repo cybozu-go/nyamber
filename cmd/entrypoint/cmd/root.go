@@ -50,11 +50,7 @@ var rootCmd = &cobra.Command{
 			})
 		}
 
-		runner := entrypoint.Runner{
-			ListenAddr: listenAddr,
-			Logger:     log,
-			Jobs:       jobs,
-		}
+		runner := entrypoint.NewRunner(listenAddr, log, jobs)
 		well.Go(runner.Run)
 		well.Stop()
 		return well.Wait()
