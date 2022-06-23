@@ -1,5 +1,5 @@
 # Image URL to use all building/pushing image targets
-IMG ?= controller:latest
+IMG ?= nyamber-controller:dev
 
 ##@ Build Dependencies
 LOCALBIN ?= $(shell pwd)/bin
