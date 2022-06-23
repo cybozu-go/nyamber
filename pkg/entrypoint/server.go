@@ -73,7 +73,7 @@ func (r *Runner) Run(ctx context.Context) error {
 			Handler: mux,
 		},
 	}
-	r.logger.Info("Entrypoint server start")
+	r.logger.Info("entrypoint server start")
 	if err := serv.ListenAndServe(); err != nil {
 		return err
 	}
@@ -85,14 +85,13 @@ func (r *Runner) Run(ctx context.Context) error {
 func (r *Runner) runJobs(ctx context.Context) {
 	for i, job := range r.jobs {
 		r.logger.Info("execute job", "job_name", job.Name)
-		e := exec.CommandContext(ctx, job.Command, job.Args...)
 		startTime := time.Now().UTC().Format(time.RFC3339)
 		r.mutex.Lock()
 		r.jobStates[i].StartTime = startTime
 		r.jobStates[i].Status = JobStatusRunning
 		r.mutex.Unlock()
 
-		err := e.Run()
+		err := exec.CommandContext(ctx, job.Command, job.Args...).Run()
 		endTime := time.Now().UTC().Format(time.RFC3339)
 		if err != nil {
 			r.logger.Error(err, "job execution error", "job_name", job.Name)
@@ -116,6 +115,7 @@ func (r *Runner) statusHandler(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
+
 	type StatusResponse struct {
 		Jobs []JobState `json:"jobs"`
 	}
@@ -124,7 +124,7 @@ func (r *Runner) statusHandler(w http.ResponseWriter, req *http.Request) {
 	data, err := json.Marshal(resp)
 	r.mutex.Unlock()
 	if err != nil {
-		r.logger.Error(err, "Status handler")
+		r.logger.Error(err, "status handler")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
