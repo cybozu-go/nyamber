@@ -71,21 +71,21 @@ func (r *VirtualDCReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	if vdc.ObjectMeta.DeletionTimestamp.IsZero() {
-		if !controllerutil.ContainsFinalizer(vdc, constants.FinalizerName) {
-			controllerutil.AddFinalizer(vdc, constants.FinalizerName)
-			err = r.Update(ctx, vdc)
-			if err != nil {
-				return ctrl.Result{}, err
-			}
-		}
-	} else {
+	if !vdc.ObjectMeta.DeletionTimestamp.IsZero() {
 		if err := r.finalize(ctx, vdc); err != nil {
 			logger.Error(err, "Finalize error")
 			return ctrl.Result{}, err
 		}
 		logger.Info("Finalize succeeded")
 		return ctrl.Result{}, nil
+	}
+
+	if !controllerutil.ContainsFinalizer(vdc, constants.FinalizerName) {
+		controllerutil.AddFinalizer(vdc, constants.FinalizerName)
+		err = r.Update(ctx, vdc)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
 	}
 
 	defer func(before nyamberv1beta1.VirtualDCStatus) {
@@ -124,6 +124,10 @@ func (r *VirtualDCReconciler) getPodTemplate(ctx context.Context) (*corev1.Pod, 
 		return nil, err
 	}
 
+	if len(pod.Spec.Containers) == 0 {
+		return nil, errors.New("pod.Spec.Containers are empty")
+	}
+
 	return pod, nil
 }
 
@@ -132,6 +136,12 @@ func (r *VirtualDCReconciler) createPod(ctx context.Context, vdc *nyamberv1beta1
 
 	pod, err := r.getPodTemplate(ctx)
 	if err != nil {
+		meta.SetStatusCondition(&vdc.Status.Conditions, metav1.Condition{
+			Type:    nyamberv1beta1.TypePodCreated,
+			Status:  metav1.ConditionFalse,
+			Reason:  nyamberv1beta1.ReasonPodCreatedTemplateError,
+			Message: err.Error(),
+		})
 		return err
 	}
 
@@ -139,10 +149,6 @@ func (r *VirtualDCReconciler) createPod(ctx context.Context, vdc *nyamberv1beta1
 		Name:      vdc.Name,
 		Namespace: r.PodNameSpace,
 		Labels:    map[string]string{constants.OwnerNamespace: vdc.GetNamespace()},
-	}
-
-	if len(pod.Spec.Containers) == 0 {
-		return errors.New("pod.Spec.Containers are empty")
 	}
 
 	pod.Spec.Containers[0].Env = append(pod.Spec.Containers[0].Env, []corev1.EnvVar{

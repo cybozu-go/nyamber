@@ -21,14 +21,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
 // VirtualDCSpec defines the desired state of VirtualDC
 type VirtualDCSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
 	// Neco branch is a target branch name for dctest
 	//+kubebuiler:validation:Optional
 	//+kubebuilder:default=main
@@ -66,9 +60,10 @@ const ReasonOK string = "OK"
 const (
 	ReasonPodCreatedConflict       string = "Conflict"
 	ReasonPodCreatedFailed         string = "Failed"
-	ReasonPodAvailableNotScheduled string = "NotScheduled"
+	ReasonPodCreatedTemplateError  string = "TemplateError"
 	ReasonPodAvailableNotAvailable string = "NotAvailable"
 	ReasonPodAvailableNotExists    string = "NotExists"
+	ReasonPodAvailableNotScheduled string = "NotScheduled"
 )
 
 //+kubebuilder:object:root=true
