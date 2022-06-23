@@ -2,6 +2,7 @@ package entrypoint
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"os/exec"
 	"sync"
@@ -12,15 +13,11 @@ import (
 	"github.com/go-logr/logr"
 )
 
-type StatusResponse struct {
-	Job []JobState `json:"jobs"`
-}
-
 type JobState struct {
 	Name      string `json:"name"`
 	Status    string `json:"status"`
-	StartTime string `json:"startTime"`
-	EndTime   string `json:"endTime"`
+	StartTime string `json:"startTime,omitempty"`
+	EndTime   string `json:"endTime,omitempty"`
 }
 
 const (
@@ -119,5 +116,17 @@ func (r *Runner) statusHandler(w http.ResponseWriter, req *http.Request) {
 		w.WriteHeader(http.StatusMethodNotAllowed)
 		return
 	}
-	w.WriteHeader(http.StatusOK)
+	type StatusResponse struct {
+		Jobs []JobState `json:"jobs"`
+	}
+	r.mutex.Lock()
+	resp := &StatusResponse{Jobs: r.jobStates}
+	data, err := json.Marshal(resp)
+	r.mutex.Unlock()
+	if err != nil {
+		r.logger.Error(err, "Status handler")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.Write(data)
 }
