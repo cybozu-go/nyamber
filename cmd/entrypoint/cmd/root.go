@@ -1,11 +1,13 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
-	"net/http"
+	"regexp"
+	"strings"
 
 	"github.com/cybozu-go/nyamber/pkg/constants"
-	"github.com/cybozu-go/well"
+	"github.com/cybozu-go/nyamber/pkg/entrypoint"
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
 	"github.com/spf13/cobra"
@@ -14,17 +16,7 @@ import (
 
 var listenAddr string
 var log logr.Logger
-
-type StatusResponse struct {
-	Job []JobStatus `json:"jobs"`
-}
-
-type JobStatus struct {
-	Name      string `json:"name"`
-	Status    string `json:"status"`
-	StartTime string `json:"startTime"`
-	EndTime   string `json:"endTime"`
-}
+var reJobName = regexp.MustCompile("^[a-zA-Z][-_a-zA-Z0-9]*$")
 
 var rootCmd = &cobra.Command{
 	Use:          "entrypoint <JOB_NAME:COMMAND_PATH>...",
@@ -33,33 +25,34 @@ var rootCmd = &cobra.Command{
 	Args:         cobra.MinimumNArgs(1),
 	SilenceUsage: true,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// run neco bootstrap
-		// run neco-apps bootstrap
-		// serve execution status of bootstrap process (status endpoint)
-		mux := http.NewServeMux()
-		mux.Handle("/"+constants.StatusEndPoint, http.HandlerFunc(statusHandler))
-		serv := &well.HTTPServer{
-			Server: &http.Server{
-				Addr:    listenAddr,
-				Handler: mux,
-			},
-		}
-		log.Info("Entrypoint server start")
-		if err := serv.ListenAndServe(); err != nil {
-			return err
+		jobs := make([]entrypoint.Job, 0, len(args))
+		for _, job := range args {
+			split := strings.Split(job, ":")
+			if len(split) != 2 {
+				return errors.New("wrong job format")
+			}
+			jobName := split[0]
+			if !reJobName.MatchString(jobName) {
+				return errors.New("unexpected characters in JOB_NAME")
+			}
+
+			commandPath := split[1]
+			if len(commandPath) < 1 {
+				return errors.New("COMMAND_PATH is empty")
+			}
+
+			jobs = append(jobs, entrypoint.Job{
+				Name:    jobName,
+				Command: commandPath,
+			})
 		}
 
-		well.Stop()
-		return well.Wait()
+		runner := entrypoint.Runner{
+			ListenAddr: listenAddr,
+			Logger:     log,
+		}
+		return runner.Run()
 	},
-}
-
-func statusHandler(w http.ResponseWriter, req *http.Request) {
-	if req.Method != http.MethodGet {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		return
-	}
-	w.WriteHeader(http.StatusOK)
 }
 
 func Execute() error {
