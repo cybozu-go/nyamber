@@ -58,11 +58,7 @@ func NewRunner(listenAddr string, logger logr.Logger, jobs []Job) *Runner {
 
 func (r *Runner) Run(ctx context.Context) error {
 	env := well.NewEnvironment(ctx)
-	cctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-	go func() {
-		r.runJobs(cctx)
-	}()
+	env.Go(r.runJobs)
 
 	mux := http.NewServeMux()
 	mux.Handle("/"+constants.StatusEndPoint, http.HandlerFunc(r.statusHandler))
@@ -82,7 +78,7 @@ func (r *Runner) Run(ctx context.Context) error {
 	return env.Wait()
 }
 
-func (r *Runner) runJobs(ctx context.Context) {
+func (r *Runner) runJobs(ctx context.Context) error {
 	for i, job := range r.jobs {
 		r.logger.Info("execute job", "job_name", job.Name)
 		startTime := time.Now().UTC().Format(time.RFC3339)
@@ -99,7 +95,7 @@ func (r *Runner) runJobs(ctx context.Context) {
 			r.jobStates[i].EndTime = endTime
 			r.jobStates[i].Status = JobStatusFailed
 			r.mutex.Unlock()
-			return
+			return nil
 		}
 
 		r.logger.Info("job completed", "job_name", job.Name)
@@ -108,6 +104,7 @@ func (r *Runner) runJobs(ctx context.Context) {
 		r.jobStates[i].Status = JobStatusCompleted
 		r.mutex.Unlock()
 	}
+	return nil
 }
 
 func (r *Runner) statusHandler(w http.ResponseWriter, req *http.Request) {
