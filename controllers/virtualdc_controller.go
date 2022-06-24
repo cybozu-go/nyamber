@@ -30,6 +30,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -108,6 +109,10 @@ func (r *VirtualDCReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, err
 	}
 
+	if err := r.createService(ctx, vdc); err != nil {
+		return ctrl.Result{}, err
+	}
+
 	logger.Info("reconcile succeeded")
 	return ctrl.Result{}, nil
 }
@@ -148,7 +153,10 @@ func (r *VirtualDCReconciler) createPod(ctx context.Context, vdc *nyamberv1beta1
 	pod.ObjectMeta = metav1.ObjectMeta{
 		Name:      vdc.Name,
 		Namespace: r.PodNameSpace,
-		Labels:    map[string]string{constants.OwnerNamespace: vdc.GetNamespace()},
+		Labels: map[string]string{
+			constants.OwnerNamespace: vdc.GetNamespace(),
+			"app.kubernetes.io/name": vdc.Name,
+		},
 	}
 
 	pod.Spec.Containers[0].Env = append(pod.Spec.Containers[0].Env, []corev1.EnvVar{
@@ -199,6 +207,37 @@ func (r *VirtualDCReconciler) createPod(ctx context.Context, vdc *nyamberv1beta1
 		Status: metav1.ConditionTrue,
 		Reason: nyamberv1beta1.ReasonOK,
 	})
+	return nil
+}
+
+func (r *VirtualDCReconciler) createService(ctx context.Context, vdc *nyamberv1beta1.VirtualDC) error {
+	logger := log.FromContext(ctx)
+	service := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      vdc.Name + "-svc",
+			Namespace: r.PodNameSpace,
+		},
+	}
+	op, err := controllerutil.CreateOrUpdate(ctx, r.Client, service, func() error {
+		service.Spec = corev1.ServiceSpec{
+			Selector: map[string]string{"app.kubernetes.io/name": vdc.Name},
+			Ports: []corev1.ServicePort{
+				{
+					Name:       "status",
+					Protocol:   corev1.ProtocolTCP,
+					Port:       80,
+					TargetPort: intstr.FromInt(constants.ListenPort),
+				},
+			},
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	if op != controllerutil.OperationResultNone {
+		logger.Info("CreateOrUpdate result of service", "operation_result", op)
+	}
 	return nil
 }
 
