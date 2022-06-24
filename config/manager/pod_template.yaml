@@ -2,8 +2,9 @@ apiVersion: v1
 kind: Pod
 spec:
   containers:
-  - image: quay.io/cybozu/ubuntu:20.04
-    imagePullPolicy: IfNotPresent
+  - image: localhost:5151/entrypoint:dev
+    imagePullPolicy: Always
     name: ubuntu
     command:
-      - "pause"
+      - "/entrypoint" 
+      - "test:'echo Hello > /tmp/hello.txt'"
