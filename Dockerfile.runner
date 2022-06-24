@@ -11,16 +11,14 @@ RUN go mod download
 
 # Copy the go source
 COPY cmd/ cmd/
-COPY api/ api/
-COPY controllers/ controllers/
 COPY pkg/ pkg/
 
 # Build
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o manager cmd/nyamber-controller/main.go
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o entrypoint cmd/entrypoint/main.go
 
 FROM quay.io/cybozu/ubuntu:20.04
 WORKDIR /
-COPY --from=builder /workspace/manager .
+COPY --from=builder /workspace/entrypoint .
 USER 65532:65532
 
-ENTRYPOINT ["/manager"]
+CMD ["/entrypoint"]
