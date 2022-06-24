@@ -2,14 +2,22 @@ package controllers
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"net/http"
 	"sync"
 	"time"
 
 	nyamberv1beta1 "github.com/cybozu-go/nyamber/api/v1beta1"
+	"github.com/cybozu-go/nyamber/pkg/constants"
+	"github.com/cybozu-go/nyamber/pkg/entrypoint"
 	"github.com/cybozu-go/well"
 	"github.com/go-logr/logr"
-	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -101,7 +109,6 @@ func newJobWatchProcess(log logr.Logger, k8sClient client.Client, vdc *nyamberv1
 		k8sClient:    k8sClient,
 		vdcNamespace: vdc.Namespace,
 		vdcName:      vdc.Name,
-		vdc:          vdc,
 	}
 }
 
@@ -134,12 +141,75 @@ func (p *jobWatchProcess) run(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			pod := &corev1.Pod{}
-			if err := p.k8sClient.Get(ctx, client.ObjectKey{Namespace: p.vdcNamespace, Name: p.vdcName}, pod); err != nil {
-				p.log.Error(err, "failed to get pod")
+		UPDATE_STATUS:
+			beforeVdc := &nyamberv1beta1.VirtualDC{}
+			if err := p.k8sClient.Get(ctx, client.ObjectKey{Name: p.vdcName, Namespace: p.vdcNamespace}, beforeVdc); err != nil {
+				p.log.Error(err, "failed to get vdc")
 				continue
+			}
+			jobStates, err := p.getJobStates()
+			if err != nil {
+				p.log.Error(err, "failed to get job states")
+				continue
+			}
+			vdc := beforeVdc.DeepCopy()
+			// Completed Running -> Running
+			// Failed Pending -> Pending
+			// TODO: implement merge logic
+			for _, job := range jobStates.Jobs {
+				meta.SetStatusCondition(&vdc.Status.Conditions, getJobCondition(job))
+			}
+			if !equality.Semantic.DeepEqual(vdc.Status, beforeVdc.Status) {
+				p.log.Info("update status", "status", vdc.Status, "before", beforeVdc.Status)
+				if err := p.k8sClient.Status().Update(ctx, vdc); err != nil {
+					p.log.Error(err, "failed to update status")
+					if apierrors.IsConflict(err) {
+						goto UPDATE_STATUS
+					}
+				}
 			}
 		}
 
 	}
+}
+
+func (p *jobWatchProcess) getJobStates() (*entrypoint.StatusResponse, error) {
+	resp, err := http.Get(fmt.Sprintf("%s-svc/%s", p.vdcName, constants.StatusEndPoint))
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	data := make([]byte, 0, 256)
+	if _, err := resp.Body.Read(data); err != nil {
+		return nil, err
+	}
+	statusResp := &entrypoint.StatusResponse{}
+	if err := json.Unmarshal(data, statusResp); err != nil {
+		return nil, err
+	}
+	return statusResp, nil
+}
+
+func getJobCondition(job entrypoint.JobState) metav1.Condition {
+	cond := metav1.Condition{
+		Type: nyamberv1beta1.TypePodJobCompleted,
+	}
+	switch job.Status {
+	case entrypoint.JobStatusFailed:
+		cond.Status = metav1.ConditionFalse
+		cond.Reason = nyamberv1beta1.ReasonPodJobCompletedFailed
+		cond.Message = fmt.Sprintf("%s is failed", job.Name)
+	case entrypoint.JobStatusRunning:
+		cond.Status = metav1.ConditionFalse
+		cond.Reason = nyamberv1beta1.ReasonPodJobCompletedRunning
+		cond.Message = fmt.Sprintf("%s is running", job.Name)
+	case entrypoint.JobStatusPending:
+		cond.Status = metav1.ConditionFalse
+		cond.Reason = nyamberv1beta1.ReasonPodJobCompletedPending
+		cond.Message = fmt.Sprintf("%s is pending", job.Name)
+	case entrypoint.JobStatusCompleted:
+		cond.Status = metav1.ConditionTrue
+		cond.Reason = nyamberv1beta1.ReasonOK
+	}
+	return cond
 }
