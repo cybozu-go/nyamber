@@ -22,7 +22,6 @@ import (
 
 	nyamberv1beta1 "github.com/cybozu-go/nyamber/api/v1beta1"
 	"github.com/cybozu-go/nyamber/pkg/constants"
-	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -38,6 +37,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+	"sigs.k8s.io/yaml"
 )
 
 // VirtualDCReconciler reconciles a VirtualDC object
@@ -54,6 +54,8 @@ type VirtualDCReconciler struct {
 //+kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch;create;update;patch;delete
 
 //+kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;list;watch;create;update;patch;delete
+
+//+kubebuilder:rbac:groups=core,resources=services,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -118,13 +120,16 @@ func (r *VirtualDCReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 }
 
 func (r *VirtualDCReconciler) getPodTemplate(ctx context.Context) (*corev1.Pod, error) {
+	logger := log.FromContext(ctx)
 	cm := &corev1.ConfigMap{}
 	if err := r.Get(ctx, client.ObjectKey{Namespace: constants.Namespace, Name: constants.PodTemplateName}, cm); err != nil {
 		return nil, err
 	}
 
+	logger.Info("cm", "cm.Data", cm.Data)
+
 	pod := &corev1.Pod{}
-	err := yaml.Unmarshal([]byte(cm.Data["pod-template"]), &pod)
+	err := yaml.Unmarshal([]byte(cm.Data["pod-template"]), pod)
 	if err != nil {
 		return nil, err
 	}
@@ -140,6 +145,7 @@ func (r *VirtualDCReconciler) createPod(ctx context.Context, vdc *nyamberv1beta1
 	logger := log.FromContext(ctx)
 
 	pod, err := r.getPodTemplate(ctx)
+	logger.Info("pod", "pod.Spec.Containers", pod.Spec.Containers)
 	if err != nil {
 		meta.SetStatusCondition(&vdc.Status.Conditions, metav1.Condition{
 			Type:    nyamberv1beta1.TypePodCreated,

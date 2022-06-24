@@ -7,4 +7,4 @@ spec:
     name: ubuntu
     command:
       - "/entrypoint" 
-      - "test:'echo Hello > /tmp/hello.txt'"
+      - "test:touch /tmp/hello"
