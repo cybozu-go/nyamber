@@ -13,6 +13,10 @@ import (
 	"github.com/go-logr/logr"
 )
 
+type StatusResponse struct {
+	Jobs []JobState `json:"jobs"`
+}
+
 type JobState struct {
 	Name      string `json:"name"`
 	Status    string `json:"status"`
@@ -120,9 +124,6 @@ func (r *Runner) statusHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	type StatusResponse struct {
-		Jobs []JobState `json:"jobs"`
-	}
 	r.mutex.Lock()
 	resp := &StatusResponse{Jobs: r.jobStates}
 	data, err := json.Marshal(resp)

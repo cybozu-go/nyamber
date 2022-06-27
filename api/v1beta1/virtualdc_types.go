@@ -51,8 +51,9 @@ type VirtualDCStatus struct {
 }
 
 const (
-	TypePodCreated   string = "PodCreated"
-	TypePodAvailable string = "PodAvailable"
+	TypePodCreated      string = "PodCreated"
+	TypePodAvailable    string = "PodAvailable"
+	TypePodJobCompleted string = "PodJobCompleted"
 )
 
 const ReasonOK string = "OK"
@@ -64,6 +65,9 @@ const (
 	ReasonPodAvailableNotAvailable string = "NotAvailable"
 	ReasonPodAvailableNotExists    string = "NotExists"
 	ReasonPodAvailableNotScheduled string = "NotScheduled"
+	ReasonPodJobCompletedPending   string = "Pending"
+	ReasonPodJobCompletedRunning   string = "Running"
+	ReasonPodJobCompletedFailed    string = "Failed"
 )
 
 //+kubebuilder:object:root=true
