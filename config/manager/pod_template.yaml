@@ -7,4 +7,3 @@ spec:
     name: ubuntu
     command:
       - "/entrypoint" 
-      - "test:'echo Hello > /tmp/hello.txt'"

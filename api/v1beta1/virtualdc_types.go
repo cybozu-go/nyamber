@@ -33,6 +33,10 @@ type VirtualDCSpec struct {
 	//+kubebuilder:default=main
 	NecoAppsBranch string `json:"necoAppsBranch,omitempty"`
 
+	// Skip bootstrap of neco apps if this is true
+	//+kubebuilder:validation:Optional
+	SkipNecoApps bool `json:"skipNecoApps,omitempty"`
+
 	// Command is run after creating dctest pods
 	//+kubebuiler:validation:Optional
 	Command []string `json:"command,omitempty"`
@@ -51,8 +55,9 @@ type VirtualDCStatus struct {
 }
 
 const (
-	TypePodCreated   string = "PodCreated"
-	TypePodAvailable string = "PodAvailable"
+	TypePodCreated      string = "PodCreated"
+	TypePodAvailable    string = "PodAvailable"
+	TypePodJobCompleted string = "PodJobCompleted"
 )
 
 const ReasonOK string = "OK"
@@ -64,12 +69,17 @@ const (
 	ReasonPodAvailableNotAvailable string = "NotAvailable"
 	ReasonPodAvailableNotExists    string = "NotExists"
 	ReasonPodAvailableNotScheduled string = "NotScheduled"
+	ReasonPodJobCompletedPending   string = "Pending"
+	ReasonPodJobCompletedRunning   string = "Running"
+	ReasonPodJobCompletedFailed    string = "Failed"
 )
 
 //+kubebuilder:object:root=true
 //+kubebuilder:resource:shortName=vdc
 //+kubebuilder:subresource:status
 //+kubebuilder:printcolumn:name="PODAVAILABLE",type="string",JSONPath=".status.conditions[?(@.type=='PodAvailable')].status"
+//+kubebuilder:printcolumn:name="JOBSTATUS",type="string",JSONPath=".status.conditions[?(@.type=='PodJobCompleted')].reason"
+//+kubebuilder:printcolumn:name="JOBNAME",type="string",JSONPath=".status.conditions[?(@.type=='PodJobCompleted')].message"
 
 // VirtualDC is the Schema for the virtualdcs API
 type VirtualDC struct {

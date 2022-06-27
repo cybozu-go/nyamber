@@ -4,3 +4,7 @@ metadata:
   name: virtualdc-sample
 spec:
   # TODO(user): Add fields here
+  skipNecoApps: true
+  command:
+  - "echo"
+  - "user defined command"

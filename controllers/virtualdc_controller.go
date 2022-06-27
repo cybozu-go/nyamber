@@ -19,10 +19,10 @@ package controllers
 import (
 	"context"
 	"errors"
+	"strings"
 
 	nyamberv1beta1 "github.com/cybozu-go/nyamber/api/v1beta1"
 	"github.com/cybozu-go/nyamber/pkg/constants"
-	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -30,6 +30,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
@@ -37,13 +38,15 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+	"sigs.k8s.io/yaml"
 )
 
 // VirtualDCReconciler reconciles a VirtualDC object
 type VirtualDCReconciler struct {
 	client.Client
-	Scheme       *runtime.Scheme
-	PodNameSpace string
+	Scheme            *runtime.Scheme
+	PodNamespace      string
+	JobProcessManager JobProcessManager
 }
 
 //+kubebuilder:rbac:groups=nyamber.cybozu.io,resources=virtualdcs,verbs=get;list;watch;create;update;patch;delete
@@ -53,6 +56,8 @@ type VirtualDCReconciler struct {
 //+kubebuilder:rbac:groups=core,resources=pods,verbs=get;list;watch;create;update;patch;delete
 
 //+kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;list;watch;create;update;patch;delete
+
+//+kubebuilder:rbac:groups=core,resources=services,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -108,6 +113,13 @@ func (r *VirtualDCReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, err
 	}
 
+	if err := r.createService(ctx, vdc); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	if err := r.JobProcessManager.Start(vdc); err != nil {
+		return ctrl.Result{}, err
+	}
 	logger.Info("reconcile succeeded")
 	return ctrl.Result{}, nil
 }
@@ -117,9 +129,8 @@ func (r *VirtualDCReconciler) getPodTemplate(ctx context.Context) (*corev1.Pod, 
 	if err := r.Get(ctx, client.ObjectKey{Namespace: constants.Namespace, Name: constants.PodTemplateName}, cm); err != nil {
 		return nil, err
 	}
-
 	pod := &corev1.Pod{}
-	err := yaml.Unmarshal([]byte(cm.Data["pod-template"]), &pod)
+	err := yaml.Unmarshal([]byte(cm.Data["pod-template"]), pod)
 	if err != nil {
 		return nil, err
 	}
@@ -147,20 +158,39 @@ func (r *VirtualDCReconciler) createPod(ctx context.Context, vdc *nyamberv1beta1
 
 	pod.ObjectMeta = metav1.ObjectMeta{
 		Name:      vdc.Name,
-		Namespace: r.PodNameSpace,
-		Labels:    map[string]string{constants.OwnerNamespace: vdc.GetNamespace()},
+		Namespace: r.PodNamespace,
+		Labels: map[string]string{
+			constants.LabelKeyOwnerNamespace: vdc.Namespace,
+			constants.LabelKeyOwner:          vdc.Name,
+		},
 	}
 
-	pod.Spec.Containers[0].Env = append(pod.Spec.Containers[0].Env, []corev1.EnvVar{
-		{
-			Name:  "NECO_BRANCH",
-			Value: vdc.Spec.NecoBranch,
-		},
-		{
+	container := &pod.Spec.Containers[0]
+	container.Env = append(container.Env, corev1.EnvVar{
+		Name:  "NECO_BRANCH",
+		Value: vdc.Spec.NecoBranch,
+	})
+
+	container.Args = []string{"neco_bootstrap:/neco-bootstrap"}
+
+	if !vdc.Spec.SkipNecoApps {
+		container.Env = append(container.Env, corev1.EnvVar{
 			Name:  "NECO_APPS_BRANCH",
 			Value: vdc.Spec.NecoAppsBranch,
-		},
-	}...)
+		})
+
+		container.Args = append(
+			container.Args,
+			"neco_apps_bootstrap:/neco-apps-bootstrap",
+		)
+	}
+
+	if len(vdc.Spec.Command) != 0 {
+		container.Args = append(
+			container.Args,
+			"user_defined_command:"+strings.Join(vdc.Spec.Command, " "),
+		)
+	}
 
 	if err := r.Create(ctx, pod); err != nil {
 		if !apierrors.IsAlreadyExists(err) {
@@ -172,10 +202,10 @@ func (r *VirtualDCReconciler) createPod(ctx context.Context, vdc *nyamberv1beta1
 			})
 			return err
 		}
-		if err := r.Get(ctx, client.ObjectKey{Namespace: r.PodNameSpace, Name: vdc.Name}, pod); err != nil {
+		if err := r.Get(ctx, client.ObjectKey{Namespace: r.PodNamespace, Name: vdc.Name}, pod); err != nil {
 			return err
 		}
-		owner := pod.Labels[constants.OwnerNamespace]
+		owner := pod.Labels[constants.LabelKeyOwnerNamespace]
 		if owner != vdc.Namespace {
 			meta.SetStatusCondition(&vdc.Status.Conditions, metav1.Condition{
 				Type:    nyamberv1beta1.TypePodCreated,
@@ -202,9 +232,48 @@ func (r *VirtualDCReconciler) createPod(ctx context.Context, vdc *nyamberv1beta1
 	return nil
 }
 
+func (r *VirtualDCReconciler) createService(ctx context.Context, vdc *nyamberv1beta1.VirtualDC) error {
+	logger := log.FromContext(ctx)
+	svc := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      vdc.Name,
+			Namespace: r.PodNamespace,
+		},
+	}
+	op, err := controllerutil.CreateOrUpdate(ctx, r.Client, svc, func() error {
+		if svc.Labels == nil {
+			svc.Labels = map[string]string{}
+		}
+		svc.Labels[constants.LabelKeyOwnerNamespace] = vdc.Namespace
+		svc.Labels[constants.LabelKeyOwner] = vdc.Name
+		svc.Spec = corev1.ServiceSpec{
+			Selector: map[string]string{
+				constants.LabelKeyOwnerNamespace: vdc.Namespace,
+				constants.LabelKeyOwner:          vdc.Name,
+			},
+			Ports: []corev1.ServicePort{
+				{
+					Name:       "status",
+					Protocol:   corev1.ProtocolTCP,
+					Port:       80,
+					TargetPort: intstr.FromInt(constants.ListenPort),
+				},
+			},
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	if op != controllerutil.OperationResultNone {
+		logger.Info("CreateOrUpdate result of service", "operation_result", op)
+	}
+	return nil
+}
+
 func (r *VirtualDCReconciler) updateStatus(ctx context.Context, vdc *nyamberv1beta1.VirtualDC) error {
 	pod := &corev1.Pod{}
-	if err := r.Get(ctx, client.ObjectKey{Namespace: r.PodNameSpace, Name: vdc.Name}, pod); err != nil {
+	if err := r.Get(ctx, client.ObjectKey{Namespace: r.PodNamespace, Name: vdc.Name}, pod); err != nil {
 		if apierrors.IsNotFound(err) {
 			meta.SetStatusCondition(&vdc.Status.Conditions, metav1.Condition{
 				Type:    nyamberv1beta1.TypePodAvailable,
@@ -235,9 +304,18 @@ func (r *VirtualDCReconciler) updateStatus(ctx context.Context, vdc *nyamberv1be
 
 func (r *VirtualDCReconciler) finalize(ctx context.Context, vdc *nyamberv1beta1.VirtualDC) error {
 	if controllerutil.ContainsFinalizer(vdc, constants.FinalizerName) {
+		if err := r.deleteService(ctx, vdc); err != nil {
+			return err
+		}
+
 		if err := r.deletePod(ctx, vdc); err != nil {
 			return err
 		}
+
+		if err := r.JobProcessManager.Stop(vdc); err != nil {
+			return err
+		}
+
 		controllerutil.RemoveFinalizer(vdc, constants.FinalizerName)
 		err := r.Update(ctx, vdc)
 		if err != nil {
@@ -247,15 +325,36 @@ func (r *VirtualDCReconciler) finalize(ctx context.Context, vdc *nyamberv1beta1.
 	return nil
 }
 
-func (r *VirtualDCReconciler) deletePod(ctx context.Context, vdc *nyamberv1beta1.VirtualDC) error {
-	pod := &corev1.Pod{}
-	if err := r.Get(ctx, client.ObjectKey{Namespace: r.PodNameSpace, Name: vdc.Name}, pod); err != nil {
+func (r *VirtualDCReconciler) deleteService(ctx context.Context, vdc *nyamberv1beta1.VirtualDC) error {
+	svc := &corev1.Service{}
+	if err := r.Get(ctx, client.ObjectKey{Namespace: r.PodNamespace, Name: vdc.Name}, svc); err != nil {
 		if apierrors.IsNotFound(err) {
 			return nil
 		}
 		return err
 	}
-	ownerNs := pod.Labels[constants.OwnerNamespace]
+	ownerNs := svc.Labels[constants.LabelKeyOwnerNamespace]
+	if ownerNs != vdc.Namespace {
+		return nil
+	}
+	uid := svc.GetUID()
+	cond := metav1.Preconditions{
+		UID: &uid,
+	}
+	return r.Delete(ctx, svc, &client.DeleteOptions{
+		Preconditions: &cond,
+	})
+}
+
+func (r *VirtualDCReconciler) deletePod(ctx context.Context, vdc *nyamberv1beta1.VirtualDC) error {
+	pod := &corev1.Pod{}
+	if err := r.Get(ctx, client.ObjectKey{Namespace: r.PodNamespace, Name: vdc.Name}, pod); err != nil {
+		if apierrors.IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+	ownerNs := pod.Labels[constants.LabelKeyOwnerNamespace]
 	if ownerNs != vdc.Namespace {
 		return nil
 	}
@@ -271,7 +370,7 @@ func (r *VirtualDCReconciler) deletePod(ctx context.Context, vdc *nyamberv1beta1
 // SetupWithManager sets up the controller with the Manager.
 func (r *VirtualDCReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	vdcPodHandler := func(o client.Object) []reconcile.Request {
-		owner := o.GetLabels()[constants.OwnerNamespace]
+		owner := o.GetLabels()[constants.LabelKeyOwnerNamespace]
 		if owner == "" {
 			return nil
 		}

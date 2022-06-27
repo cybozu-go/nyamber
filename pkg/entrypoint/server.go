@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
-	"os/exec"
+	"os"
 	"sync"
 	"time"
 
@@ -12,6 +12,10 @@ import (
 	"github.com/cybozu-go/well"
 	"github.com/go-logr/logr"
 )
+
+type StatusResponse struct {
+	Jobs []JobState `json:"jobs"`
+}
 
 type JobState struct {
 	Name      string `json:"name"`
@@ -87,7 +91,10 @@ func (r *Runner) runJobs(ctx context.Context) error {
 		r.jobStates[i].Status = JobStatusRunning
 		r.mutex.Unlock()
 
-		err := exec.CommandContext(ctx, job.Command, job.Args...).Run()
+		cmd := well.CommandContext(ctx, job.Command, job.Args...)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		err := cmd.Run()
 		endTime := time.Now().UTC().Format(time.RFC3339)
 		if err != nil {
 			r.logger.Error(err, "job execution error", "job_name", job.Name)
@@ -113,9 +120,6 @@ func (r *Runner) statusHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	type StatusResponse struct {
-		Jobs []JobState `json:"jobs"`
-	}
 	r.mutex.Lock()
 	resp := &StatusResponse{Jobs: r.jobStates}
 	data, err := json.Marshal(resp)
