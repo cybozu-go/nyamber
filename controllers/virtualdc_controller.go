@@ -125,14 +125,10 @@ func (r *VirtualDCReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 }
 
 func (r *VirtualDCReconciler) getPodTemplate(ctx context.Context) (*corev1.Pod, error) {
-	logger := log.FromContext(ctx)
 	cm := &corev1.ConfigMap{}
 	if err := r.Get(ctx, client.ObjectKey{Namespace: constants.Namespace, Name: constants.PodTemplateName}, cm); err != nil {
 		return nil, err
 	}
-
-	logger.Info("cm", "cm.Data", cm.Data)
-
 	pod := &corev1.Pod{}
 	err := yaml.Unmarshal([]byte(cm.Data["pod-template"]), pod)
 	if err != nil {
@@ -150,7 +146,6 @@ func (r *VirtualDCReconciler) createPod(ctx context.Context, vdc *nyamberv1beta1
 	logger := log.FromContext(ctx)
 
 	pod, err := r.getPodTemplate(ctx)
-	logger.Info("pod", "pod.Spec.Containers", pod.Spec.Containers)
 	if err != nil {
 		meta.SetStatusCondition(&vdc.Status.Conditions, metav1.Condition{
 			Type:    nyamberv1beta1.TypePodCreated,
@@ -170,28 +165,29 @@ func (r *VirtualDCReconciler) createPod(ctx context.Context, vdc *nyamberv1beta1
 		},
 	}
 
-	pod.Spec.Containers[0].Env = append(pod.Spec.Containers[0].Env, corev1.EnvVar{
+	container := &pod.Spec.Containers[0]
+	container.Env = append(container.Env, corev1.EnvVar{
 		Name:  "NECO_BRANCH",
 		Value: vdc.Spec.NecoBranch,
 	})
 
-	pod.Spec.Containers[0].Args = []string{"neco_bootstrap:/neco-bootstrap"}
+	container.Args = []string{"neco_bootstrap:/neco-bootstrap"}
 
 	if !vdc.Spec.SkipNecoApps {
-		pod.Spec.Containers[0].Env = append(pod.Spec.Containers[0].Env, corev1.EnvVar{
+		container.Env = append(container.Env, corev1.EnvVar{
 			Name:  "NECO_APPS_BRANCH",
 			Value: vdc.Spec.NecoAppsBranch,
 		})
 
-		pod.Spec.Containers[0].Args = append(
-			pod.Spec.Containers[0].Args,
+		container.Args = append(
+			container.Args,
 			"neco_apps_bootstrap:/neco-apps-bootstrap",
 		)
 	}
 
 	if len(vdc.Spec.Command) != 0 {
-		pod.Spec.Containers[0].Args = append(
-			pod.Spec.Containers[0].Args,
+		container.Args = append(
+			container.Args,
 			"user_defined_command:"+strings.Join(vdc.Spec.Command, " "),
 		)
 	}

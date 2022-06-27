@@ -99,7 +99,6 @@ type jobWatchProcess struct {
 	k8sClient    client.Client
 	vdcNamespace string
 	vdcName      string
-	vdc          *nyamberv1beta1.VirtualDC
 	cancel       func()
 	env          *well.Environment
 }
@@ -142,37 +141,44 @@ func (p *jobWatchProcess) run(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-		UPDATE_STATUS:
-			beforeVdc := &nyamberv1beta1.VirtualDC{}
-			if err := p.k8sClient.Get(ctx, client.ObjectKey{Name: p.vdcName, Namespace: p.vdcNamespace}, beforeVdc); err != nil {
-				p.log.Error(err, "failed to get vdc")
-				continue
-			}
-			jobStates, err := p.getJobStates()
-			if err != nil {
-				p.log.Error(err, "failed to get job states")
-				continue
-			}
-			vdc := beforeVdc.DeepCopy()
-			for _, job := range jobStates.Jobs {
-				if job.Status != entrypoint.JobStatusCompleted {
-					meta.SetStatusCondition(&vdc.Status.Conditions, getJobCondition(job))
-					break
-				}
-				meta.SetStatusCondition(&vdc.Status.Conditions, getJobCondition(job))
-			}
-			if !equality.Semantic.DeepEqual(vdc.Status, beforeVdc.Status) {
-				p.log.Info("update status", "status", vdc.Status, "before", beforeVdc.Status)
-				if err := p.k8sClient.Status().Update(ctx, vdc); err != nil {
+			for i := 0; i < 3; i++ {
+				retry, err := p.updateStatus(ctx)
+				if err != nil {
 					p.log.Error(err, "failed to update status")
-					if apierrors.IsConflict(err) {
-						goto UPDATE_STATUS
-					}
 				}
+				if retry {
+					time.Sleep(time.Second * 1)
+					continue
+				}
+				break
 			}
 		}
-
 	}
+}
+
+func (p *jobWatchProcess) updateStatus(ctx context.Context) (bool, error) {
+	beforeVdc := &nyamberv1beta1.VirtualDC{}
+	if err := p.k8sClient.Get(ctx, client.ObjectKey{Name: p.vdcName, Namespace: p.vdcNamespace}, beforeVdc); err != nil {
+		return false, err
+	}
+	jobStates, err := p.getJobStates()
+	if err != nil {
+		return false, err
+	}
+	vdc := beforeVdc.DeepCopy()
+	for _, job := range jobStates.Jobs {
+		meta.SetStatusCondition(&vdc.Status.Conditions, getJobCondition(job))
+		if job.Status != entrypoint.JobStatusCompleted {
+			break
+		}
+	}
+	if !equality.Semantic.DeepEqual(vdc.Status, beforeVdc.Status) {
+		p.log.Info("update status", "status", vdc.Status, "before", beforeVdc.Status)
+		if err := p.k8sClient.Status().Update(ctx, vdc); err != nil {
+			return apierrors.IsConflict(err), err
+		}
+	}
+	return false, nil
 }
 
 func (p *jobWatchProcess) getJobStates() (*entrypoint.StatusResponse, error) {
