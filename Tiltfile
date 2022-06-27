@@ -1,6 +1,6 @@
 load('ext://restart_process', 'docker_build_with_restart')
 
-DOCKERFILE = '''FROM golang:alpine
+CONTROLLER_DOCKERFILE = '''FROM golang:alpine
 WORKDIR /
 COPY ./bin/manager /
 CMD ["/manager"]
@@ -12,8 +12,11 @@ def manifests():
 def generate():
     return './bin/controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./...";'
 
-def binary():
+def controller_binary():
     return 'CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/manager cmd/nyamber-controller/main.go'
+
+def entrypoint_binary():
+    return 'CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/entrypoint cmd/entrypoint/main.go'
 
 # Generate manifests and go files
 local_resource('make manifests', manifests(), deps=["api", "controllers"], ignore=['*/*/zz_generated.deepcopy.go'])
@@ -25,21 +28,28 @@ local_resource(
     ignore=['*/*/zz_generated.deepcopy.go'])
 
 # Deploy manager
+watch_file('./config/')
 k8s_yaml(kustomize('./config/dev'))
 
 local_resource(
-    'Watch & Compile', generate() + binary(), deps=['controllers', 'api', 'pkg', 'cmd'],
+    'Watch & Compile (nyamber controller)', generate() + controller_binary(), deps=['controllers', 'api', 'pkg', 'cmd'],
     ignore=['*/*/zz_generated.deepcopy.go'])
+
+local_resource('Watch & Compile (entrypoint)', entrypoint_binary(), deps=['pkg', 'cmd'])
 
 docker_build_with_restart(
     'nyamber-controller:dev', '.',
-    dockerfile_contents=DOCKERFILE,
+    dockerfile_contents=CONTROLLER_DOCKERFILE,
     entrypoint=['/manager'],
     only=['./bin/manager'],
     live_update=[
         sync('./bin/manager', '/manager'),
     ]
 )
+
+local_resource('entrypoint image',
+    'docker build -t localhost:5151/entrypoint:dev -f Dockerfile.runner .; docker push localhost:5151/entrypoint:dev',
+    deps=['Dockerfile.runner', './bin/entrypoint'] )
 
 local_resource(
     'Sample', 'kubectl apply -f ./config/samples/nyamber_v1beta1_virtualdc.yaml',
