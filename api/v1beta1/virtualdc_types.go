@@ -33,6 +33,10 @@ type VirtualDCSpec struct {
 	//+kubebuilder:default=main
 	NecoAppsBranch string `json:"necoAppsBranch,omitempty"`
 
+	// Skip bootstrap of neco apps if this is true
+	//+kubebuilder:validation:Optional
+	SkipNecoApps bool `json:"skipNecoApps,omitempty"`
+
 	// Command is run after creating dctest pods
 	//+kubebuiler:validation:Optional
 	Command []string `json:"command,omitempty"`
@@ -74,6 +78,8 @@ const (
 //+kubebuilder:resource:shortName=vdc
 //+kubebuilder:subresource:status
 //+kubebuilder:printcolumn:name="PODAVAILABLE",type="string",JSONPath=".status.conditions[?(@.type=='PodAvailable')].status"
+//+kubebuilder:printcolumn:name="JOBSTATUS",type="string",JSONPath=".status.conditions[?(@.type=='PodJobCompleted')].reason"
+//+kubebuilder:printcolumn:name="JOBNAME",type="string",JSONPath=".status.conditions[?(@.type=='PodJobCompleted')].message"
 
 // VirtualDC is the Schema for the virtualdcs API
 type VirtualDC struct {

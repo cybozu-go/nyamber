@@ -200,15 +200,15 @@ func getJobCondition(job entrypoint.JobState) metav1.Condition {
 	case entrypoint.JobStatusFailed:
 		cond.Status = metav1.ConditionFalse
 		cond.Reason = nyamberv1beta1.ReasonPodJobCompletedFailed
-		cond.Message = fmt.Sprintf("%s is failed", job.Name)
+		cond.Message = job.Name
 	case entrypoint.JobStatusRunning:
 		cond.Status = metav1.ConditionFalse
 		cond.Reason = nyamberv1beta1.ReasonPodJobCompletedRunning
-		cond.Message = fmt.Sprintf("%s is running", job.Name)
+		cond.Message = job.Name
 	case entrypoint.JobStatusPending:
 		cond.Status = metav1.ConditionFalse
 		cond.Reason = nyamberv1beta1.ReasonPodJobCompletedPending
-		cond.Message = fmt.Sprintf("%s is pending", job.Name)
+		cond.Message = job.Name
 	case entrypoint.JobStatusCompleted:
 		cond.Status = metav1.ConditionTrue
 		cond.Reason = nyamberv1beta1.ReasonOK

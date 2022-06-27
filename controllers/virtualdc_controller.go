@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"errors"
+	"strings"
 
 	nyamberv1beta1 "github.com/cybozu-go/nyamber/api/v1beta1"
 	"github.com/cybozu-go/nyamber/pkg/constants"
@@ -169,16 +170,31 @@ func (r *VirtualDCReconciler) createPod(ctx context.Context, vdc *nyamberv1beta1
 		},
 	}
 
-	pod.Spec.Containers[0].Env = append(pod.Spec.Containers[0].Env, []corev1.EnvVar{
-		{
-			Name:  "NECO_BRANCH",
-			Value: vdc.Spec.NecoBranch,
-		},
-		{
+	pod.Spec.Containers[0].Env = append(pod.Spec.Containers[0].Env, corev1.EnvVar{
+		Name:  "NECO_BRANCH",
+		Value: vdc.Spec.NecoBranch,
+	})
+
+	pod.Spec.Containers[0].Args = []string{"neco_bootstrap:/neco-bootstrap"}
+
+	if !vdc.Spec.SkipNecoApps {
+		pod.Spec.Containers[0].Env = append(pod.Spec.Containers[0].Env, corev1.EnvVar{
 			Name:  "NECO_APPS_BRANCH",
 			Value: vdc.Spec.NecoAppsBranch,
-		},
-	}...)
+		})
+
+		pod.Spec.Containers[0].Args = append(
+			pod.Spec.Containers[0].Args,
+			"neco_apps_bootstrap:/neco-apps-bootstrap",
+		)
+	}
+
+	if len(vdc.Spec.Command) != 0 {
+		pod.Spec.Containers[0].Args = append(
+			pod.Spec.Containers[0].Args,
+			"user_defined_command:"+strings.Join(vdc.Spec.Command, " "),
+		)
+	}
 
 	if err := r.Create(ctx, pod); err != nil {
 		if !apierrors.IsAlreadyExists(err) {

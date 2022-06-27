@@ -1,10 +1,10 @@
 package entrypoint
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"net/http"
+	"os"
 	"sync"
 	"time"
 
@@ -92,16 +92,12 @@ func (r *Runner) runJobs(ctx context.Context) error {
 		r.mutex.Unlock()
 
 		cmd := well.CommandContext(ctx, job.Command, job.Args...)
-		var outBuf bytes.Buffer
-		var errBuf bytes.Buffer
-		cmd.Stdout = &outBuf
-		cmd.Stderr = &errBuf
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
 		err := cmd.Run()
 		endTime := time.Now().UTC().Format(time.RFC3339)
 		if err != nil {
-			r.logger.Error(
-				err, "job execution error", "job_name", job.Name,
-				"stdout", string(outBuf.Bytes()), "stderr", string(errBuf.Bytes()))
+			r.logger.Error(err, "job execution error", "job_name", job.Name)
 			r.mutex.Lock()
 			r.jobStates[i].EndTime = endTime
 			r.jobStates[i].Status = JobStatusFailed
