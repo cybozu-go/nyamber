@@ -38,9 +38,9 @@ type jobProcessManager struct {
 	processes map[string]*jobWatchProcess
 }
 
-func NewSecretUpdater(log logr.Logger, k8sClient client.Client) JobProcessManager {
+func NewJobProcessManager(log logr.Logger, k8sClient client.Client) JobProcessManager {
 	return &jobProcessManager{
-		log:       log.WithName("SecretUpdater"),
+		log:       log.WithName("JobProcessManager"),
 		k8sClient: k8sClient,
 		processes: map[string]*jobWatchProcess{},
 	}
@@ -51,7 +51,7 @@ func (u *jobProcessManager) Start(vdc *nyamberv1beta1.VirtualDC) error {
 	defer u.mu.Unlock()
 
 	if u.stopped {
-		return errors.New("SecretUpdater is already stopped")
+		return errors.New("JobProcessManager is already stopped")
 	}
 
 	vdcNamespacedName := types.NamespacedName{Namespace: vdc.Namespace, Name: vdc.Name}.String()
@@ -157,6 +157,23 @@ func (p *jobWatchProcess) run(ctx context.Context) {
 			// Failed Pending -> Pending
 			// TODO: implement merge logic
 			for _, job := range jobStates.Jobs {
+				switch job.Status {
+				case entrypoint.JobStatusFailed:
+					// failed
+					meta.SetStatusCondition(&vdc.Status.Conditions, getJobCondition(job))
+					break
+				case entrypoint.JobStatusRunning:
+					// running
+					meta.SetStatusCondition(&vdc.Status.Conditions, getJobCondition(job))
+					break
+				case entrypoint.JobStatusPending:
+					// pending
+					meta.SetStatusCondition(&vdc.Status.Conditions, getJobCondition(job))
+					break
+				default:
+					// completed
+					continue
+				}
 				meta.SetStatusCondition(&vdc.Status.Conditions, getJobCondition(job))
 			}
 			if !equality.Semantic.DeepEqual(vdc.Status, beforeVdc.Status) {
@@ -174,7 +191,7 @@ func (p *jobWatchProcess) run(ctx context.Context) {
 }
 
 func (p *jobWatchProcess) getJobStates() (*entrypoint.StatusResponse, error) {
-	resp, err := http.Get(fmt.Sprintf("%s-svc/%s", p.vdcName, constants.StatusEndPoint))
+	resp, err := http.Get(fmt.Sprintf("%s/%s", p.vdcName, constants.StatusEndPoint))
 	if err != nil {
 		return nil, err
 	}
