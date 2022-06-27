@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"sync"
 	"time"
@@ -22,7 +23,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-const interval time.Duration = time.Second * 1 // for development.
+const interval time.Duration = time.Second * 10 // for development.
 
 type JobProcessManager interface {
 	Start(vdc *nyamberv1beta1.VirtualDC) error
@@ -153,26 +154,10 @@ func (p *jobWatchProcess) run(ctx context.Context) {
 				continue
 			}
 			vdc := beforeVdc.DeepCopy()
-			// Completed Running -> Running
-			// Failed Pending -> Pending
-			// TODO: implement merge logic
 			for _, job := range jobStates.Jobs {
-				switch job.Status {
-				case entrypoint.JobStatusFailed:
-					// failed
+				if job.Status != entrypoint.JobStatusCompleted {
 					meta.SetStatusCondition(&vdc.Status.Conditions, getJobCondition(job))
 					break
-				case entrypoint.JobStatusRunning:
-					// running
-					meta.SetStatusCondition(&vdc.Status.Conditions, getJobCondition(job))
-					break
-				case entrypoint.JobStatusPending:
-					// pending
-					meta.SetStatusCondition(&vdc.Status.Conditions, getJobCondition(job))
-					break
-				default:
-					// completed
-					continue
 				}
 				meta.SetStatusCondition(&vdc.Status.Conditions, getJobCondition(job))
 			}
@@ -191,13 +176,13 @@ func (p *jobWatchProcess) run(ctx context.Context) {
 }
 
 func (p *jobWatchProcess) getJobStates() (*entrypoint.StatusResponse, error) {
-	resp, err := http.Get(fmt.Sprintf("%s/%s", p.vdcName, constants.StatusEndPoint))
+	resp, err := http.Get(fmt.Sprintf("http://%s.%s/%s", p.vdcName, p.vdcNamespace, constants.StatusEndPoint))
 	if err != nil {
 		return nil, err
 	}
 	defer resp.Body.Close()
-	data := make([]byte, 0, 256)
-	if _, err := resp.Body.Read(data); err != nil {
+	data, err := io.ReadAll(resp.Body)
+	if err != nil {
 		return nil, err
 	}
 	statusResp := &entrypoint.StatusResponse{}

@@ -35,7 +35,7 @@ local_resource(
     'Watch & Compile (nyamber controller)', generate() + controller_binary(), deps=['controllers', 'api', 'pkg', 'cmd'],
     ignore=['*/*/zz_generated.deepcopy.go'])
 
-# local_resource('Watch & Compile (entrypoint)', entrypoint_binary(), deps=['pkg', 'cmd'])
+local_resource('Watch & Compile (entrypoint)', entrypoint_binary(), deps=['pkg', 'cmd'])
 
 docker_build_with_restart(
     'nyamber-controller:dev', '.',
@@ -47,9 +47,9 @@ docker_build_with_restart(
     ]
 )
 
-# local_resource('entrypoint image',
-#     'docker build -t localhost:5151/entrypoint:dev -f Dockerfile.runner .; docker push localhost:5151/entrypoint:dev',
-#     deps=['Dockerfile.runner', './bin/entrypoint'] )
+local_resource('entrypoint image',
+    'docker build -t localhost:5151/entrypoint:dev -f Dockerfile.runner .; docker push localhost:5151/entrypoint:dev',
+    deps=['Dockerfile.runner', './bin/entrypoint'] )
 
 local_resource(
     'Sample', 'kubectl apply -f ./config/samples/nyamber_v1beta1_virtualdc.yaml',

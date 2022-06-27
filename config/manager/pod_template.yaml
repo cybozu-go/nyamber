@@ -8,3 +8,4 @@ spec:
     command:
       - "/entrypoint" 
       - "test:touch /tmp/hello"
+      - "test_long_run:sleep 60"

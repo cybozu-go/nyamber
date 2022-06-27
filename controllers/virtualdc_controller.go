@@ -43,8 +43,9 @@ import (
 // VirtualDCReconciler reconciles a VirtualDC object
 type VirtualDCReconciler struct {
 	client.Client
-	Scheme       *runtime.Scheme
-	PodNamespace string
+	Scheme            *runtime.Scheme
+	PodNamespace      string
+	JobProcessManager JobProcessManager
 }
 
 //+kubebuilder:rbac:groups=nyamber.cybozu.io,resources=virtualdcs,verbs=get;list;watch;create;update;patch;delete
@@ -115,6 +116,9 @@ func (r *VirtualDCReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{}, err
 	}
 
+	if err := r.JobProcessManager.Start(vdc); err != nil {
+		return ctrl.Result{}, err
+	}
 	logger.Info("reconcile succeeded")
 	return ctrl.Result{}, nil
 }
@@ -293,6 +297,10 @@ func (r *VirtualDCReconciler) finalize(ctx context.Context, vdc *nyamberv1beta1.
 		}
 
 		if err := r.deletePod(ctx, vdc); err != nil {
+			return err
+		}
+
+		if err := r.JobProcessManager.Stop(vdc); err != nil {
 			return err
 		}
 
