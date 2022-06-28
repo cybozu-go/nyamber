@@ -19,11 +19,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-const (
-	testVdcNamespace string = "test-vdc-ns"
-	testPodNamespace string = "test-pod-ns"
-)
-
 type mockJobProcessManager struct {
 	mu        sync.Mutex
 	stopped   bool
@@ -53,10 +48,6 @@ func (m *mockJobProcessManager) StopAll() {
 
 var _ = Describe("VirtualDC controller", func() {
 	ctx := context.Background()
-	var (
-		vdcNs *corev1.Namespace
-		podNs *corev1.Namespace
-	)
 	var stopFunc func()
 	mock := mockJobProcessManager{
 		mu:        sync.Mutex{},
@@ -64,6 +55,8 @@ var _ = Describe("VirtualDC controller", func() {
 	}
 
 	BeforeEach(func() {
+		time.Sleep(100 * time.Millisecond)
+
 		mgr, err := ctrl.NewManager(cfg, ctrl.Options{
 			Scheme:             scheme,
 			LeaderElection:     false,
@@ -81,21 +74,6 @@ var _ = Describe("VirtualDC controller", func() {
 		err = nr.SetupWithManager(mgr)
 		Expect(err).NotTo(HaveOccurred())
 
-		vdcNs = &corev1.Namespace{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: testVdcNamespace,
-			},
-		}
-		err = k8sClient.Create(context.Background(), vdcNs)
-		Expect(err).NotTo(HaveOccurred())
-		podNs = &corev1.Namespace{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: testPodNamespace,
-			},
-		}
-		err = k8sClient.Create(context.Background(), podNs)
-		Expect(err).NotTo(HaveOccurred())
-
 		cctx, cancel := context.WithCancel(ctx)
 		stopFunc = cancel
 		go func() {
@@ -108,11 +86,21 @@ var _ = Describe("VirtualDC controller", func() {
 	})
 
 	AfterEach(func() {
+		err := k8sClient.DeleteAllOf(ctx, &corev1.ConfigMap{}, client.InNamespace(constants.ControllerNamespace))
+		Expect(err).NotTo(HaveOccurred())
+		err = k8sClient.DeleteAllOf(ctx, &corev1.Pod{}, client.InNamespace(testPodNamespace))
+		Expect(err).NotTo(HaveOccurred())
+		svcs := &corev1.ServiceList{}
+		err = k8sClient.List(ctx, svcs, client.InNamespace(testPodNamespace))
+		Expect(err).NotTo(HaveOccurred())
+		for _, svc := range svcs.Items {
+			err := k8sClient.Delete(ctx, &svc)
+			Expect(err).NotTo(HaveOccurred())
+		}
+		err = k8sClient.DeleteAllOf(ctx, &nyamberv1beta1.VirtualDC{}, client.InNamespace(testVdcNamespace))
+		Expect(err).NotTo(HaveOccurred())
+		time.Sleep(100 * time.Millisecond)
 		stopFunc()
-		err := k8sClient.Delete(ctx, vdcNs)
-		Expect(err).NotTo(HaveOccurred())
-		err = k8sClient.Delete(ctx, podNs)
-		Expect(err).NotTo(HaveOccurred())
 		time.Sleep(100 * time.Millisecond)
 	})
 
@@ -221,5 +209,67 @@ spec:
 		vdcNamespacedName := types.NamespacedName{Namespace: vdc.Namespace, Name: vdc.Name}.String()
 		_, ok := mock.processes[vdcNamespacedName]
 		Expect(ok).To(BeTrue())
+	})
+
+	It("should change status based on pod status", func() {
+		By("creating configmap for pod template")
+		podTemplate := `apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - image: entrypoint:envtest
+    name: ubuntu`
+
+		cm := &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: constants.ControllerNamespace,
+				Name:      constants.PodTemplateName,
+			},
+			Data: map[string]string{"pod-template": podTemplate},
+		}
+		err := k8sClient.Create(ctx, cm)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("creating a VirtualDC resource")
+		vdc := &nyamberv1beta1.VirtualDC{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-vdc",
+				Namespace: testVdcNamespace,
+			},
+		}
+		err = k8sClient.Create(ctx, vdc)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("checking to create pod")
+		pod := &corev1.Pod{}
+		Eventually(func() error {
+			if err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testPodNamespace}, pod); err != nil {
+				return err
+			}
+			return nil
+		}).Should(Succeed())
+
+		By("updating pod condtions")
+		pod.Status.Conditions = append(pod.Status.Conditions,
+			corev1.PodCondition{
+				Type:   corev1.PodReady,
+				Status: corev1.ConditionTrue,
+			})
+		err = k8sClient.Update(ctx, pod)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("checking to change vdc status")
+		Eventually(func() error {
+			vdc := &nyamberv1beta1.VirtualDC{}
+			if err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testVdcNamespace}, vdc); err != nil {
+				return err
+			}
+			for _, cond := range vdc.Status.Conditions {
+				if cond.Type == nyamberv1beta1.TypePodAvailable && cond.Status == metav1.ConditionTrue {
+					return nil
+				}
+			}
+			return errors.New("vdc status is expected to be PodAvailable")
+		}).Should(Succeed())
 	})
 })

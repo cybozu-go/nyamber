@@ -45,6 +45,11 @@ var k8sClient client.Client
 var scheme *runtime.Scheme
 var testEnv *envtest.Environment
 
+const (
+	testVdcNamespace string = "test-vdc-ns"
+	testPodNamespace string = "test-pod-ns"
+)
+
 func TestAPIs(t *testing.T) {
 	RegisterFailHandler(Fail)
 
@@ -84,6 +89,20 @@ var _ = BeforeSuite(func() {
 		},
 	}
 	err = k8sClient.Create(context.Background(), ns)
+	Expect(err).NotTo(HaveOccurred())
+	vdcNs := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: testVdcNamespace,
+		},
+	}
+	err = k8sClient.Create(context.Background(), vdcNs)
+	Expect(err).NotTo(HaveOccurred())
+	podNs := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: testPodNamespace,
+		},
+	}
+	err = k8sClient.Create(context.Background(), podNs)
 	Expect(err).NotTo(HaveOccurred())
 })
 
