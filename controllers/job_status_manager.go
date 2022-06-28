@@ -47,50 +47,50 @@ func NewJobProcessManager(log logr.Logger, k8sClient client.Client) JobProcessMa
 	}
 }
 
-func (u *jobProcessManager) Start(vdc *nyamberv1beta1.VirtualDC) error {
-	u.mu.Lock()
-	defer u.mu.Unlock()
+func (j *jobProcessManager) Start(vdc *nyamberv1beta1.VirtualDC) error {
+	j.mu.Lock()
+	defer j.mu.Unlock()
 
-	if u.stopped {
+	if j.stopped {
 		return errors.New("JobProcessManager is already stopped")
 	}
 
 	vdcNamespacedName := types.NamespacedName{Namespace: vdc.Namespace, Name: vdc.Name}.String()
-	if _, ok := u.processes[vdcNamespacedName]; !ok {
+	if _, ok := j.processes[vdcNamespacedName]; !ok {
 		process := newJobWatchProcess(
-			u.log.WithValues("jobWatchProcess", vdcNamespacedName),
-			u.k8sClient,
+			j.log.WithValues("jobWatchProcess", vdcNamespacedName),
+			j.k8sClient,
 			vdc,
 		)
 		process.start()
-		u.processes[vdcNamespacedName] = process
+		j.processes[vdcNamespacedName] = process
 	}
 	return nil
 }
 
-func (u *jobProcessManager) Stop(vdc *nyamberv1beta1.VirtualDC) error {
-	u.mu.Lock()
-	defer u.mu.Unlock()
+func (j *jobProcessManager) Stop(vdc *nyamberv1beta1.VirtualDC) error {
+	j.mu.Lock()
+	defer j.mu.Unlock()
 
 	vdcNamespacedName := types.NamespacedName{Namespace: vdc.Namespace, Name: vdc.Name}.String()
-	if process, ok := u.processes[vdcNamespacedName]; ok {
+	if process, ok := j.processes[vdcNamespacedName]; ok {
 		if err := process.stop(); err != nil {
 			return err
 		}
-		delete(u.processes, vdcNamespacedName)
+		delete(j.processes, vdcNamespacedName)
 	}
 	return nil
 }
 
-func (u *jobProcessManager) StopAll() {
-	u.mu.Lock()
-	defer u.mu.Unlock()
+func (j *jobProcessManager) StopAll() {
+	j.mu.Lock()
+	defer j.mu.Unlock()
 
-	for _, process := range u.processes {
+	for _, process := range j.processes {
 		process.stop()
 	}
-	u.processes = nil
-	u.stopped = true
+	j.processes = nil
+	j.stopped = true
 }
 
 type jobWatchProcess struct {

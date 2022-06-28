@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"errors"
+	"sync"
 	"time"
 
 	nyamberv1beta1 "github.com/cybozu-go/nyamber/api/v1beta1"
@@ -12,6 +13,8 @@ import (
 	. "github.com/onsi/gomega/gstruct"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/apimachinery/pkg/util/intstr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -21,6 +24,33 @@ const (
 	testPodNamespace string = "test-pod-ns"
 )
 
+type mockJobProcessManager struct {
+	mu        sync.Mutex
+	stopped   bool
+	processes map[string]struct{}
+}
+
+func (m *mockJobProcessManager) Start(vdc *nyamberv1beta1.VirtualDC) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if m.stopped {
+		return errors.New("JobProcessManager is already stopped")
+	}
+
+	vdcNamespacedName := types.NamespacedName{Namespace: vdc.Namespace, Name: vdc.Name}.String()
+	m.processes[vdcNamespacedName] = struct{}{}
+
+	return nil
+}
+
+func (m *mockJobProcessManager) Stop(vdc *nyamberv1beta1.VirtualDC) error {
+	return nil
+}
+
+func (m *mockJobProcessManager) StopAll() {
+}
+
 var _ = Describe("VirtualDC controller", func() {
 	ctx := context.Background()
 	var (
@@ -28,6 +58,10 @@ var _ = Describe("VirtualDC controller", func() {
 		podNs *corev1.Namespace
 	)
 	var stopFunc func()
+	mock := mockJobProcessManager{
+		mu:        sync.Mutex{},
+		processes: make(map[string]struct{}),
+	}
 
 	BeforeEach(func() {
 		mgr, err := ctrl.NewManager(cfg, ctrl.Options{
@@ -42,7 +76,7 @@ var _ = Describe("VirtualDC controller", func() {
 			Client:            client,
 			Scheme:            mgr.GetScheme(),
 			PodNamespace:      testPodNamespace,
-			JobProcessManager: NewJobProcessManager(ctrl.Log, client),
+			JobProcessManager: &mock,
 		}
 		err = nr.SetupWithManager(mgr)
 		Expect(err).NotTo(HaveOccurred())
@@ -156,5 +190,36 @@ spec:
 			}),
 		}))
 
+		By("checking to create svc")
+		svc := &corev1.Service{}
+		Eventually(func() error {
+			if err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testPodNamespace}, svc); err != nil {
+				return err
+			}
+			return nil
+		}).Should(Succeed())
+		Expect(svc.Labels).To(MatchAllKeys(Keys{
+			constants.LabelKeyOwnerNamespace: Equal(testVdcNamespace),
+			constants.LabelKeyOwner:          Equal("test-vdc"),
+		}))
+		Expect(svc.Spec).To(MatchFields(IgnoreExtras, Fields{
+			"Selector": MatchAllKeys(Keys{
+				constants.LabelKeyOwnerNamespace: Equal(testVdcNamespace),
+				constants.LabelKeyOwner:          Equal("test-vdc"),
+			}),
+			"Ports": ConsistOf([]corev1.ServicePort{
+				{
+					Name:       "status",
+					Protocol:   corev1.ProtocolTCP,
+					Port:       80,
+					TargetPort: intstr.FromInt(constants.ListenPort),
+				},
+			}),
+		}))
+
+		By("checking to call JobProcessManager.Start")
+		vdcNamespacedName := types.NamespacedName{Namespace: vdc.Namespace, Name: vdc.Name}.String()
+		_, ok := mock.processes[vdcNamespacedName]
+		Expect(ok).To(BeTrue())
 	})
 })
