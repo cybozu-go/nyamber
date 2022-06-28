@@ -126,7 +126,7 @@ func (r *VirtualDCReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 
 func (r *VirtualDCReconciler) getPodTemplate(ctx context.Context) (*corev1.Pod, error) {
 	cm := &corev1.ConfigMap{}
-	if err := r.Get(ctx, client.ObjectKey{Namespace: constants.Namespace, Name: constants.PodTemplateName}, cm); err != nil {
+	if err := r.Get(ctx, client.ObjectKey{Namespace: constants.ControllerNamespace, Name: constants.PodTemplateName}, cm); err != nil {
 		return nil, err
 	}
 	pod := &corev1.Pod{}

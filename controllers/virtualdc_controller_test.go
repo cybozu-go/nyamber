@@ -29,7 +29,7 @@ var _ = Describe("VirtualDC controller", func() {
 			LeaderElection:     false,
 			MetricsBindAddress: "0",
 		})
-		Expect(err).ToNot(HaveOccurred())
+		Expect(err).NotTo(HaveOccurred())
 
 		client := mgr.GetClient()
 		nr := &VirtualDCReconciler{
@@ -41,18 +41,10 @@ var _ = Describe("VirtualDC controller", func() {
 		err = nr.SetupWithManager(mgr)
 		Expect(err).NotTo(HaveOccurred())
 
-		ns := &corev1.Namespace{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: constants.Namespace,
-			},
-		}
-		err = k8sClient.Create(ctx, ns)
-		Expect(err).ToNot(HaveOccurred())
-
-		ctx, cancel := context.WithCancel(ctx)
+		cctx, cancel := context.WithCancel(ctx)
 		stopFunc = cancel
 		go func() {
-			err := mgr.Start(ctx)
+			err := mgr.Start(cctx)
 			if err != nil {
 				panic(err)
 			}
@@ -65,26 +57,28 @@ var _ = Describe("VirtualDC controller", func() {
 		time.Sleep(100 * time.Millisecond)
 	})
 
-	It("should create pods and serivces for a virtualdc resource", func() {
+	It("should create pods and services for a virtualdc resource", func() {
+		By("creating configmap for pod template")
 		podTemplate := `apiVersion: v1
 kind: Pod
 spec:
   containers:
-  - image: localhost:5151/entrypoint:dev
+  - image: entrypoint:envtest
     imagePullPolicy: Always
     name: ubuntu
     command:
       - "/entrypoint"`
 		cm := &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
-				Namespace: constants.Namespace,
+				Namespace: constants.ControllerNamespace,
 				Name:      constants.PodTemplateName,
 			},
 			Data: map[string]string{"pod-template": podTemplate},
 		}
 		err := k8sClient.Create(ctx, cm)
-		Expect(err).ToNot(HaveOccurred())
+		Expect(err).NotTo(HaveOccurred())
 
+		By("creating a VirtualDC resource")
 		vdc := &nyamberv1beta1.VirtualDC{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-vdc",
@@ -98,8 +92,11 @@ spec:
 			},
 		}
 		err = k8sClient.Create(ctx, vdc)
-		Expect(err).ToNot(HaveOccurred())
+		Expect(err).To(HaveOccurred())
 
+		By("adding finalizer")
+
+		By("creating pod")
 		pod := &corev1.Pod{}
 		Eventually(func() error {
 			if err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: "default"}, pod); err != nil {
@@ -109,5 +106,6 @@ spec:
 		}).Should(Succeed())
 		// check pod fields
 		fmt.Println(pod.String())
+
 	})
 })
