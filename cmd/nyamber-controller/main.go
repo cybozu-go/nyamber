@@ -80,10 +80,12 @@ func main() {
 		os.Exit(1)
 	}
 
+	client := mgr.GetClient()
 	if err = (&controllers.VirtualDCReconciler{
-		Client:       mgr.GetClient(),
-		Scheme:       mgr.GetScheme(),
-		PodNameSpace: podNameSpace,
+		Client:            client,
+		Scheme:            mgr.GetScheme(),
+		PodNamespace:      podNameSpace,
+		JobProcessManager: controllers.NewJobProcessManager(ctrl.Log, client),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "VirtualDC")
 		os.Exit(1)

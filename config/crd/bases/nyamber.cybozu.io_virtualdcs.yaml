@@ -21,6 +21,12 @@ spec:
     - jsonPath: .status.conditions[?(@.type=='PodAvailable')].status
       name: PODAVAILABLE
       type: string
+    - jsonPath: .status.conditions[?(@.type=='PodJobCompleted')].reason
+      name: JOBSTATUS
+      type: string
+    - jsonPath: .status.conditions[?(@.type=='PodJobCompleted')].message
+      name: JOBNAME
+      type: string
     name: v1beta1
     schema:
       openAPIV3Schema:
@@ -80,6 +86,9 @@ spec:
                       to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/'
                     type: object
                 type: object
+              skipNecoApps:
+                description: Skip bootstrap of neco apps if this is true
+                type: boolean
             type: object
           status:
             description: VirtualDCStatus defines the observed state of VirtualDC
