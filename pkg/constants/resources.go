@@ -2,4 +2,4 @@ package constants
 
 const Namespace = "nyamber"
 
-const PodTemplateName = Namespace + "-pod-template"
+const PodTemplateName = "nyamber-pod-template"
