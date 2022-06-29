@@ -387,7 +387,7 @@ func (r *VirtualDCReconciler) deleteService(ctx context.Context, vdc *nyamberv1b
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *VirtualDCReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	vdcPodHandler := func(o client.Object) []reconcile.Request {
+	vdcHandler := func(o client.Object) []reconcile.Request {
 		owner := o.GetLabels()[constants.LabelKeyOwnerNamespace]
 		if owner == "" {
 			return nil
@@ -397,7 +397,8 @@ func (r *VirtualDCReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&nyamberv1beta1.VirtualDC{}).
-		Watches(&source.Kind{Type: &corev1.Pod{}}, handler.EnqueueRequestsFromMapFunc(vdcPodHandler)).
+		Watches(&source.Kind{Type: &corev1.Pod{}}, handler.EnqueueRequestsFromMapFunc(vdcHandler)).
+		Watches(&source.Kind{Type: &corev1.Service{}}, handler.EnqueueRequestsFromMapFunc(vdcHandler)).
 		Complete(r)
 }
 

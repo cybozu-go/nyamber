@@ -14,6 +14,7 @@ import (
 	. "github.com/onsi/gomega/gstruct"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -434,10 +435,8 @@ spec:
 			if err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testVdcNamespace}, vdc); err != nil {
 				return err
 			}
-			for _, cond := range vdc.Status.Conditions {
-				if cond.Type == nyamberv1beta1.TypePodCreated && cond.Status == metav1.ConditionFalse {
-					return nil
-				}
+			if meta.IsStatusConditionFalse(vdc.Status.Conditions, nyamberv1beta1.TypePodCreated) {
+				return nil
 			}
 			return fmt.Errorf("vdc status is expected to be PodCreated False, but actual %v", vdc.Status.Conditions)
 		}).Should(Succeed())
@@ -449,11 +448,124 @@ spec:
 
 		By("checking not to create svc")
 		svc := &corev1.Service{}
+		err = k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testPodNamespace}, svc)
+		Expect(err).To(HaveOccurred())
+	})
+
+	It("should not create a pod when the wrong configmap that doesn't have Containers field", func() {
+		By("creating wrong configmap that doesn't have Containers field")
+		cm := &corev1.ConfigMap{}
+		err := k8sClient.Get(ctx, client.ObjectKey{Namespace: constants.ControllerNamespace, Name: constants.PodTemplateName}, cm)
+		Expect(err).NotTo(HaveOccurred())
+
+		podTemplate := `apiVersion: v1
+kind: Pod`
+
+		cm.Data = map[string]string{"pod-template": podTemplate}
+		err = k8sClient.Update(ctx, cm)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("creating a VirtualDC resource")
+		vdc := &nyamberv1beta1.VirtualDC{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-vdc",
+				Namespace: testVdcNamespace,
+			},
+		}
+		err = k8sClient.Create(ctx, vdc)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("checking to update vdc status")
+		Eventually(func() error {
+			if err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testVdcNamespace}, vdc); err != nil {
+				return err
+			}
+			if meta.IsStatusConditionFalse(vdc.Status.Conditions, nyamberv1beta1.TypePodCreated) {
+				return nil
+			}
+			return fmt.Errorf("vdc status is expected to be PodCreated False, but actual %v", vdc.Status.Conditions)
+		}).Should(Succeed())
+
+		By("checking not to create pod")
+		pod := &corev1.Pod{}
+		err = k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testPodNamespace}, pod)
+		Expect(err).To(HaveOccurred())
+
+		By("checking not to create svc")
+		svc := &corev1.Service{}
+		err = k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testPodNamespace}, svc)
+		Expect(err).To(HaveOccurred())
+	})
+
+	It("should recreate the service resource when the service resource is deleted", func() {
+		By("creating a VirtualDC resource")
+		vdc := &nyamberv1beta1.VirtualDC{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-vdc",
+				Namespace: testVdcNamespace,
+			},
+		}
+		err := k8sClient.Create(ctx, vdc)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("checking to create svc")
+		svc := &corev1.Service{}
+		Eventually(func() error {
+			return k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testPodNamespace}, svc)
+		}).Should(Succeed())
+
+		uid := svc.GetUID()
+
+		err = k8sClient.Delete(ctx, svc)
+		Expect(err).NotTo(HaveOccurred())
 		Eventually(func() error {
 			if err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testPodNamespace}, svc); err != nil {
 				return err
 			}
+			if uid == svc.GetUID() {
+				return errors.New("the service resource is not recreated")
+			}
 			return nil
-		}).Should(HaveOccurred())
+		}).Should(Succeed())
+	})
+
+	It("should recreate the service resource when the service resource is deleted", func() {
+		By("creating a VirtualDC resource")
+		vdc := &nyamberv1beta1.VirtualDC{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-vdc",
+				Namespace: testVdcNamespace,
+			},
+		}
+		err := k8sClient.Create(ctx, vdc)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("checking to create pod")
+		pod := &corev1.Pod{}
+		Eventually(func() error {
+			return k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testPodNamespace}, pod)
+		}).Should(Succeed())
+
+		err = k8sClient.Delete(ctx, pod)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("checking to update vdc status")
+		Eventually(func() error {
+			if err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testVdcNamespace}, vdc); err != nil {
+				return err
+			}
+			if !meta.IsStatusConditionTrue(vdc.Status.Conditions, nyamberv1beta1.TypePodCreated) {
+				return fmt.Errorf("vdc status is expected to be PodCreated True, but actual %v", vdc.Status.Conditions)
+			}
+			if !meta.IsStatusConditionFalse(vdc.Status.Conditions, nyamberv1beta1.TypePodAvailable) {
+				return fmt.Errorf("vdc status is expected to be PodAvailable False, but actual %v", vdc.Status.Conditions)
+			}
+			return nil
+		}).Should(Succeed())
+
+		By("checking not to create pod")
+		pod = &corev1.Pod{}
+		err = k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testPodNamespace}, pod)
+		Expect(err).To(HaveOccurred())
 	})
 })
