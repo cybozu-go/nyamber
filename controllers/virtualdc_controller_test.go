@@ -226,8 +226,7 @@ spec:
 
 		By("checking to call JobProcessManager.Start")
 		vdcNamespacedName := types.NamespacedName{Namespace: vdc.Namespace, Name: vdc.Name}.String()
-		_, ok := mock.processes[vdcNamespacedName]
-		Expect(ok).To(BeTrue())
+		Expect(mock.processes).To(HaveKey(vdcNamespacedName))
 
 		By("deleting vdc")
 		err = k8sClient.Delete(ctx, vdc)
@@ -296,7 +295,7 @@ spec:
 					return nil
 				}
 			}
-			return fmt.Errorf("vdc status is expected to be PodAvailable, but acutal %v", vdc.Status.Conditions)
+			return fmt.Errorf("vdc status is expected to be PodAvailable, but actual %v", vdc.Status.Conditions)
 		}).Should(Succeed())
 	})
 
@@ -401,5 +400,60 @@ spec:
 			"neco_apps_bootstrap:/neco-apps-bootstrap",
 			"user_defined_command:test command",
 		}))
+	})
+
+	It("should not create a pod when the wrong configmap was created", func() {
+		By("creating wrong configmap")
+		cm := &corev1.ConfigMap{}
+		err := k8sClient.Get(ctx, client.ObjectKey{Namespace: constants.ControllerNamespace, Name: constants.PodTemplateName}, cm)
+		Expect(err).NotTo(HaveOccurred())
+
+		podTemplate := `apiVersion: v1
+kind: Pod
+spec:
+	containers:
+	- image: entrypoint:envtest
+	  name ubuntu`
+
+		cm.Data = map[string]string{"pod-template": podTemplate}
+		err = k8sClient.Update(ctx, cm)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("creating a VirtualDC resource")
+		vdc := &nyamberv1beta1.VirtualDC{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-vdc",
+				Namespace: testVdcNamespace,
+			},
+		}
+		err = k8sClient.Create(ctx, vdc)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("checking to update vdc status")
+		Eventually(func() error {
+			if err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testVdcNamespace}, vdc); err != nil {
+				return err
+			}
+			for _, cond := range vdc.Status.Conditions {
+				if cond.Type == nyamberv1beta1.TypePodCreated && cond.Status == metav1.ConditionFalse {
+					return nil
+				}
+			}
+			return fmt.Errorf("vdc status is expected to be PodCreated False, but actual %v", vdc.Status.Conditions)
+		}).Should(Succeed())
+
+		By("checking not to create pod")
+		pod := &corev1.Pod{}
+		err = k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testPodNamespace}, pod)
+		Expect(err).To(HaveOccurred())
+
+		By("checking not to create svc")
+		svc := &corev1.Service{}
+		Eventually(func() error {
+			if err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testPodNamespace}, svc); err != nil {
+				return err
+			}
+			return nil
+		}).Should(HaveOccurred())
 	})
 })
