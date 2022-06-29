@@ -84,6 +84,23 @@ var _ = Describe("VirtualDC controller", func() {
 			}
 		}()
 		time.Sleep(100 * time.Millisecond)
+
+		podTemplate := `apiVersion: v1
+kind: Pod
+spec:
+  containers:
+  - image: entrypoint:envtest
+    name: ubuntu`
+
+		cm := &corev1.ConfigMap{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: constants.ControllerNamespace,
+				Name:      constants.PodTemplateName,
+			},
+			Data: map[string]string{"pod-template": podTemplate},
+		}
+		err = k8sClient.Create(ctx, cm)
+		Expect(err).NotTo(HaveOccurred())
 	})
 
 	AfterEach(func() {
@@ -116,24 +133,6 @@ var _ = Describe("VirtualDC controller", func() {
 	})
 
 	It("should create pods and services for a virtualdc resource", func() {
-		By("creating configmap for pod template")
-		podTemplate := `apiVersion: v1
-kind: Pod
-spec:
-  containers:
-  - image: entrypoint:envtest
-    name: ubuntu`
-
-		cm := &corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: constants.ControllerNamespace,
-				Name:      constants.PodTemplateName,
-			},
-			Data: map[string]string{"pod-template": podTemplate},
-		}
-		err := k8sClient.Create(ctx, cm)
-		Expect(err).NotTo(HaveOccurred())
-
 		By("creating a VirtualDC resource")
 		vdc := &nyamberv1beta1.VirtualDC{
 			ObjectMeta: metav1.ObjectMeta{
@@ -141,7 +140,7 @@ spec:
 				Namespace: testVdcNamespace,
 			},
 		}
-		err = k8sClient.Create(ctx, vdc)
+		err := k8sClient.Create(ctx, vdc)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("checking to add finalizer")
@@ -223,24 +222,6 @@ spec:
 	})
 
 	It("should change status based on pod status", func() {
-		By("creating configmap for pod template")
-		podTemplate := `apiVersion: v1
-kind: Pod
-spec:
-  containers:
-  - image: entrypoint:envtest
-    name: ubuntu`
-
-		cm := &corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{
-				Namespace: constants.ControllerNamespace,
-				Name:      constants.PodTemplateName,
-			},
-			Data: map[string]string{"pod-template": podTemplate},
-		}
-		err := k8sClient.Create(ctx, cm)
-		Expect(err).NotTo(HaveOccurred())
-
 		By("creating a VirtualDC resource")
 		vdc := &nyamberv1beta1.VirtualDC{
 			ObjectMeta: metav1.ObjectMeta{
@@ -248,7 +229,7 @@ spec:
 				Namespace: testVdcNamespace,
 			},
 		}
-		err = k8sClient.Create(ctx, vdc)
+		err := k8sClient.Create(ctx, vdc)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("checking to create pod")
@@ -283,5 +264,110 @@ spec:
 			}
 			return fmt.Errorf("vdc status is expected to be PodAvailable, but acutal %v", vdc.Status.Conditions)
 		}).Should(Succeed())
+	})
+
+	It("should create a pod with correct branch name set by VirtualDC spec", func() {
+		By("creating a VirtualDC resource")
+		vdc := &nyamberv1beta1.VirtualDC{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-vdc",
+				Namespace: testVdcNamespace,
+			},
+			Spec: nyamberv1beta1.VirtualDCSpec{
+				NecoBranch:     "test-neco-branch",
+				NecoAppsBranch: "test-neco-apps-branch",
+			},
+		}
+		err := k8sClient.Create(ctx, vdc)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("checking to create pod")
+		pod := &corev1.Pod{}
+		Eventually(func() error {
+			if err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testPodNamespace}, pod); err != nil {
+				return err
+			}
+			return nil
+		}).Should(Succeed())
+
+		By("checking to set Env")
+		Expect(pod.Spec.Containers[0].Env).To(ConsistOf([]corev1.EnvVar{
+			{
+				Name:  "NECO_BRANCH",
+				Value: vdc.Spec.NecoBranch,
+			},
+			{
+				Name:  "NECO_APPS_BRANCH",
+				Value: vdc.Spec.NecoAppsBranch,
+			},
+		}))
+	})
+
+	It("should create a pod with correct command when VirtualDC resource set SkipNecoApps true", func() {
+		By("creating a VirtualDC resource")
+		vdc := &nyamberv1beta1.VirtualDC{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-vdc",
+				Namespace: testVdcNamespace,
+			},
+			Spec: nyamberv1beta1.VirtualDCSpec{
+				SkipNecoApps: true,
+			},
+		}
+		err := k8sClient.Create(ctx, vdc)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("checking to create pod")
+		pod := &corev1.Pod{}
+		Eventually(func() error {
+			if err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testPodNamespace}, pod); err != nil {
+				return err
+			}
+			return nil
+		}).Should(Succeed())
+
+		By("checking to set Env and Args of pod")
+		Expect(pod.Spec.Containers[0]).To(MatchFields(IgnoreExtras, Fields{
+			"Env": ConsistOf([]corev1.EnvVar{
+				{
+					Name:  "NECO_BRANCH",
+					Value: "main",
+				},
+			}),
+			"Args": MatchAllElementsWithIndex(IndexIdentity, Elements{
+				"0": Equal("neco_bootstrap:/neco-bootstrap"),
+			}),
+		}))
+	})
+
+	It("should create a pod with correct command when the user specifies command", func() {
+		By("creating a VirtualDC resource")
+		vdc := &nyamberv1beta1.VirtualDC{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-vdc",
+				Namespace: testVdcNamespace,
+			},
+			Spec: nyamberv1beta1.VirtualDCSpec{
+				Command: []string{"test", "command"},
+			},
+		}
+		err := k8sClient.Create(ctx, vdc)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("checking to create pod")
+		pod := &corev1.Pod{}
+		Eventually(func() error {
+			if err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testPodNamespace}, pod); err != nil {
+				return err
+			}
+			return nil
+		}).Should(Succeed())
+
+		By("checking to set command of pod")
+		Expect(pod.Spec.Containers[0].Args).To(ConsistOf([]string{
+			"neco_bootstrap:/neco-bootstrap",
+			"neco_apps_bootstrap:/neco-apps-bootstrap",
+			"user_defined_command:test command",
+		}))
 	})
 })

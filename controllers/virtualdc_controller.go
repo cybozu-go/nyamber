@@ -77,13 +77,12 @@ func (r *VirtualDCReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 
 	if !vdc.ObjectMeta.DeletionTimestamp.IsZero() {
-		_, err := r.finalize(ctx, vdc) // TODO: handle ctrl.Result
+		finalizeResult, err := r.finalize(ctx, vdc)
 		if err != nil {
 			logger.Error(err, "Finalize error")
 			return ctrl.Result{}, err
 		}
-		logger.Info("Finalize succeeded")
-		return ctrl.Result{}, nil
+		return finalizeResult, nil
 	}
 
 	if !controllerutil.ContainsFinalizer(vdc, constants.FinalizerName) {
@@ -297,6 +296,8 @@ func (r *VirtualDCReconciler) updateStatus(ctx context.Context, vdc *nyamberv1be
 }
 
 func (r *VirtualDCReconciler) finalize(ctx context.Context, vdc *nyamberv1beta1.VirtualDC) (ctrl.Result, error) {
+	logger := log.FromContext(ctx)
+	logger.Info("finalize start")
 	if !controllerutil.ContainsFinalizer(vdc, constants.FinalizerName) {
 		return ctrl.Result{}, nil
 	}
@@ -315,11 +316,17 @@ func (r *VirtualDCReconciler) finalize(ctx context.Context, vdc *nyamberv1beta1.
 		return ctrl.Result{}, err
 	}
 	if requeueService || requeuePod {
+		logger.Info("requeue has occured", "service", requeueService, "pod", requeuePod)
 		return ctrl.Result{Requeue: true}, nil
 	}
 
 	controllerutil.RemoveFinalizer(vdc, constants.FinalizerName)
-	return ctrl.Result{}, r.Update(ctx, vdc)
+	err = r.Update(ctx, vdc)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	logger.Info("Finalize succeeded")
+	return ctrl.Result{}, nil
 }
 
 func (r *VirtualDCReconciler) deletePod(ctx context.Context, vdc *nyamberv1beta1.VirtualDC) (bool, error) {
