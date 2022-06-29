@@ -20,6 +20,7 @@ import (
 	"context"
 	"path/filepath"
 	"testing"
+	"time"
 
 	nyamberv1beta1 "github.com/cybozu-go/nyamber/api/v1beta1"
 	"github.com/cybozu-go/nyamber/pkg/constants"
@@ -52,6 +53,11 @@ const (
 
 func TestAPIs(t *testing.T) {
 	RegisterFailHandler(Fail)
+
+	SetDefaultEventuallyTimeout(10 * time.Second)
+	SetDefaultEventuallyPollingInterval(time.Second)
+	SetDefaultConsistentlyDuration(10 * time.Second)
+	SetDefaultConsistentlyPollingInterval(time.Second)
 
 	RunSpecs(t, "Controller Suite")
 }

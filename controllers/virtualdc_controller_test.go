@@ -3,6 +3,7 @@ package controllers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -99,6 +100,16 @@ var _ = Describe("VirtualDC controller", func() {
 		}
 		err = k8sClient.DeleteAllOf(ctx, &nyamberv1beta1.VirtualDC{}, client.InNamespace(testVdcNamespace))
 		Expect(err).NotTo(HaveOccurred())
+		Eventually(func() error {
+			vdcs := &nyamberv1beta1.VirtualDCList{}
+			if err := k8sClient.List(ctx, vdcs, client.InNamespace(testVdcNamespace)); err != nil {
+				return err
+			}
+			if len(vdcs.Items) != 0 {
+				return errors.New("vdcs is not deleted")
+			}
+			return nil
+		}).Should(Succeed())
 		time.Sleep(100 * time.Millisecond)
 		stopFunc()
 		time.Sleep(100 * time.Millisecond)
@@ -254,8 +265,9 @@ spec:
 			corev1.PodCondition{
 				Type:   corev1.PodReady,
 				Status: corev1.ConditionTrue,
+				Reason: nyamberv1beta1.ReasonOK,
 			})
-		err = k8sClient.Update(ctx, pod)
+		err = k8sClient.Status().Update(ctx, pod)
 		Expect(err).NotTo(HaveOccurred())
 
 		By("checking to change vdc status")
@@ -269,7 +281,7 @@ spec:
 					return nil
 				}
 			}
-			return errors.New("vdc status is expected to be PodAvailable")
+			return fmt.Errorf("vdc status is expected to be PodAvailable, but acutal %v", vdc.Status.Conditions)
 		}).Should(Succeed())
 	})
 })

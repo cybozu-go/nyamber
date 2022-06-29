@@ -300,60 +300,82 @@ func (r *VirtualDCReconciler) finalize(ctx context.Context, vdc *nyamberv1beta1.
 	if !controllerutil.ContainsFinalizer(vdc, constants.FinalizerName) {
 		return ctrl.Result{}, nil
 	}
-	if err := r.deleteService(ctx, vdc); err != nil {
-		return ctrl.Result{}, err
-	}
-
-	pod := &corev1.Pod{}
-	if err := r.Client.Get(ctx, client.ObjectKey{Name: vdc.Name, Namespace: r.PodNamespace}, pod); err != nil {
-		return ctrl.Result{}, err
-	}
-	// TODO: check owner namespace
-	if err := r.deletePod(ctx, pod); err != nil {
-		return ctrl.Result{}, err
-	}
 
 	if err := r.JobProcessManager.Stop(vdc); err != nil {
 		return ctrl.Result{}, err
 	}
 
-	controllerutil.RemoveFinalizer(vdc, constants.FinalizerName)
-	err := r.Update(ctx, vdc)
+	requeueService, err := r.deleteService(ctx, vdc)
 	if err != nil {
 		return ctrl.Result{}, err
 	}
-	return ctrl.Result{}, nil
+
+	requeuePod, err := r.deletePod(ctx, vdc)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	if requeueService || requeuePod {
+		return ctrl.Result{Requeue: true}, nil
+	}
+
+	controllerutil.RemoveFinalizer(vdc, constants.FinalizerName)
+	return ctrl.Result{}, r.Update(ctx, vdc)
 }
 
-func (r *VirtualDCReconciler) deleteService(ctx context.Context, vdc *nyamberv1beta1.VirtualDC) error {
+func (r *VirtualDCReconciler) deletePod(ctx context.Context, vdc *nyamberv1beta1.VirtualDC) (bool, error) {
+	pod := &corev1.Pod{}
+	err := r.Client.Get(ctx, client.ObjectKey{Name: vdc.Name, Namespace: r.PodNamespace}, pod)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return false, nil
+		}
+		return true, err
+	}
+
+	ownerNs, ok := pod.Labels[constants.LabelKeyOwnerNamespace]
+	if !ok || ownerNs != vdc.Namespace {
+		return false, nil
+	}
+	if !pod.ObjectMeta.DeletionTimestamp.IsZero() {
+		return true, nil
+	}
+	uid := pod.GetUID()
+	cond := metav1.Preconditions{
+		UID: &uid,
+	}
+	if err := r.Delete(ctx, pod, &client.DeleteOptions{
+		Preconditions: &cond,
+	}); err != nil {
+		return true, err
+	}
+	return true, nil
+}
+
+func (r *VirtualDCReconciler) deleteService(ctx context.Context, vdc *nyamberv1beta1.VirtualDC) (bool, error) {
 	svc := &corev1.Service{}
 	if err := r.Get(ctx, client.ObjectKey{Namespace: r.PodNamespace, Name: vdc.Name}, svc); err != nil {
 		if apierrors.IsNotFound(err) {
-			return nil
+			return false, nil
 		}
-		return err
+		return true, err
 	}
-	ownerNs := svc.Labels[constants.LabelKeyOwnerNamespace]
-	if ownerNs != vdc.Namespace {
-		return nil
+	ownerNs, ok := svc.Labels[constants.LabelKeyOwnerNamespace]
+	if !ok || ownerNs != vdc.Namespace {
+		return false, nil
+	}
+	if !svc.ObjectMeta.DeletionTimestamp.IsZero() {
+		return true, nil
 	}
 	uid := svc.GetUID()
 	cond := metav1.Preconditions{
 		UID: &uid,
 	}
-	return r.Delete(ctx, svc, &client.DeleteOptions{
+	if err := r.Delete(ctx, svc, &client.DeleteOptions{
 		Preconditions: &cond,
-	})
-}
-
-func (r *VirtualDCReconciler) deletePod(ctx context.Context, pod *corev1.Pod) error {
-	uid := pod.GetUID()
-	cond := metav1.Preconditions{
-		UID: &uid,
+	}); err != nil {
+		return true, err
 	}
-	return r.Delete(ctx, pod, &client.DeleteOptions{
-		Preconditions: &cond,
-	})
+	return true, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
