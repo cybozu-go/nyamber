@@ -13,6 +13,7 @@ import (
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/gstruct"
 	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -41,10 +42,18 @@ func (m *mockJobProcessManager) Start(vdc *nyamberv1beta1.VirtualDC) error {
 }
 
 func (m *mockJobProcessManager) Stop(vdc *nyamberv1beta1.VirtualDC) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	vdcNamespacedName := types.NamespacedName{Namespace: vdc.Namespace, Name: vdc.Name}.String()
+	delete(m.processes, vdcNamespacedName)
 	return nil
 }
 
 func (m *mockJobProcessManager) StopAll() {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.processes = map[string]struct{}{}
 }
 
 var _ = Describe("VirtualDC controller", func() {
@@ -132,7 +141,7 @@ spec:
 		time.Sleep(100 * time.Millisecond)
 	})
 
-	It("should create pods and services for a virtualdc resource", func() {
+	It("should create and delete pods and services for a virtualdc resource", func() {
 		By("creating a VirtualDC resource")
 		vdc := &nyamberv1beta1.VirtualDC{
 			ObjectMeta: metav1.ObjectMeta{
@@ -182,9 +191,9 @@ spec:
 					Value: "main",
 				},
 			}),
-			"Args": MatchAllElementsWithIndex(IndexIdentity, Elements{
-				"0": Equal("neco_bootstrap:/neco-bootstrap"),
-				"1": Equal("neco_apps_bootstrap:/neco-apps-bootstrap"),
+			"Args": Equal([]string{
+				"neco_bootstrap:/neco-bootstrap",
+				"neco_apps_bootstrap:/neco-apps-bootstrap",
 			}),
 		}))
 
@@ -219,6 +228,31 @@ spec:
 		vdcNamespacedName := types.NamespacedName{Namespace: vdc.Namespace, Name: vdc.Name}.String()
 		_, ok := mock.processes[vdcNamespacedName]
 		Expect(ok).To(BeTrue())
+
+		By("deleting vdc")
+		err = k8sClient.Delete(ctx, vdc)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("checking to delete a pod")
+		Eventually(func() bool {
+			err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testPodNamespace}, pod)
+			return apierrors.IsNotFound(err)
+		}).Should(BeTrue())
+
+		By("checking to delete a service")
+		Eventually(func() bool {
+			err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testPodNamespace}, svc)
+			return apierrors.IsNotFound(err)
+		}).Should(BeTrue())
+
+		By("checking to stop jobProcessManager with correct arguments")
+		Expect(mock.processes).NotTo(HaveKey(vdcNamespacedName))
+
+		By("checking to delete a vdc")
+		Eventually(func() bool {
+			err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testPodNamespace}, vdc)
+			return apierrors.IsNotFound(err)
+		}).Should(BeTrue())
 	})
 
 	It("should change status based on pod status", func() {
@@ -334,9 +368,7 @@ spec:
 					Value: "main",
 				},
 			}),
-			"Args": MatchAllElementsWithIndex(IndexIdentity, Elements{
-				"0": Equal("neco_bootstrap:/neco-bootstrap"),
-			}),
+			"Args": Equal([]string{"neco_bootstrap:/neco-bootstrap"}),
 		}))
 	})
 
@@ -364,7 +396,7 @@ spec:
 		}).Should(Succeed())
 
 		By("checking to set command of pod")
-		Expect(pod.Spec.Containers[0].Args).To(ConsistOf([]string{
+		Expect(pod.Spec.Containers[0].Args).To(Equal([]string{
 			"neco_bootstrap:/neco-bootstrap",
 			"neco_apps_bootstrap:/neco-apps-bootstrap",
 			"user_defined_command:test command",
