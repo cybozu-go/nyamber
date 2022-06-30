@@ -22,6 +22,7 @@ import (
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
+	"go.uber.org/zap/zapcore"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -33,6 +34,7 @@ import (
 
 	nyamberv1beta1 "github.com/cybozu-go/nyamber/api/v1beta1"
 	"github.com/cybozu-go/nyamber/controllers"
+	"github.com/cybozu-go/nyamber/hooks"
 	"github.com/cybozu-go/nyamber/pkg/constants"
 	//+kubebuilder:scaffold:imports
 )
@@ -62,6 +64,7 @@ func main() {
 	flag.StringVar(&podNameSpace, "pod-namespace", constants.PodNamespace, "A Namespace to deploy VirtualDC pod.")
 	opts := zap.Options{
 		Development: true,
+		TimeEncoder: zapcore.ISO8601TimeEncoder,
 	}
 	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
@@ -89,6 +92,10 @@ func main() {
 		JobProcessManager: controllers.NewJobProcessManager(ctrl.Log, client),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "VirtualDC")
+		os.Exit(1)
+	}
+	if err = hooks.SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "VirtualDC")
 		os.Exit(1)
 	}
 	//+kubebuilder:scaffold:builder

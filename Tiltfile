@@ -19,8 +19,8 @@ def entrypoint_binary():
     return 'CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o bin/entrypoint cmd/entrypoint/main.go'
 
 # Generate manifests and go files
-local_resource('make manifests', manifests(), deps=["api", "controllers"], ignore=['*/*/zz_generated.deepcopy.go'])
-local_resource('make generate', generate(), deps=["api"], ignore=['*/*/zz_generated.deepcopy.go'])
+local_resource('make manifests', manifests(), deps=["api", "controllers", "hooks"], ignore=['*/*/zz_generated.deepcopy.go'])
+local_resource('make generate', generate(), deps=["api", "hooks"], ignore=['*/*/zz_generated.deepcopy.go'])
 
 # Deploy CRD
 local_resource(
@@ -32,7 +32,7 @@ watch_file('./config/')
 k8s_yaml(kustomize('./config/dev'))
 
 local_resource(
-    'Watch & Compile (nyamber controller)', generate() + controller_binary(), deps=['controllers', 'api', 'pkg', 'cmd'],
+    'Watch & Compile (nyamber controller)', generate() + controller_binary(), deps=['controllers', 'api', 'pkg', 'hooks', 'cmd'],
     ignore=['*/*/zz_generated.deepcopy.go'])
 
 local_resource('Watch & Compile (entrypoint)', entrypoint_binary(), deps=['pkg', 'cmd'])
