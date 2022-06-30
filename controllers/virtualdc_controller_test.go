@@ -529,7 +529,7 @@ kind: Pod`
 		}).Should(Succeed())
 	})
 
-	It("should recreate the service resource when the service resource is deleted", func() {
+	It("should not recreate the pod resource when the pod resource is deleted", func() {
 		By("creating a VirtualDC resource")
 		vdc := &nyamberv1beta1.VirtualDC{
 			ObjectMeta: metav1.ObjectMeta{
@@ -557,6 +557,72 @@ kind: Pod`
 			if !meta.IsStatusConditionTrue(vdc.Status.Conditions, nyamberv1beta1.TypePodCreated) {
 				return fmt.Errorf("vdc status is expected to be PodCreated True, but actual %v", vdc.Status.Conditions)
 			}
+			if !meta.IsStatusConditionFalse(vdc.Status.Conditions, nyamberv1beta1.TypePodAvailable) {
+				return fmt.Errorf("vdc status is expected to be PodAvailable False, but actual %v", vdc.Status.Conditions)
+			}
+			return nil
+		}).Should(Succeed())
+
+		By("checking not to create pod")
+		pod = &corev1.Pod{}
+		err = k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testPodNamespace}, pod)
+		Expect(err).To(HaveOccurred())
+	})
+
+	It("should not create a pod when another pod with same name exists in same namespace", func() {
+		By("creating a pod")
+		pod := &corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-vdc",
+				Namespace: testPodNamespace,
+			},
+			Spec: corev1.PodSpec{
+				Containers: []corev1.Container{
+					{
+						Image: "entrypoint:dev",
+						Name:  "ubuntu",
+					},
+				},
+			},
+		}
+		err := k8sClient.Create(ctx, pod)
+		Expect(err).NotTo(HaveOccurred())
+
+		pod.Status.Conditions = append(pod.Status.Conditions,
+			corev1.PodCondition{
+				Type:   corev1.PodReady,
+				Status: corev1.ConditionTrue,
+				Reason: nyamberv1beta1.ReasonOK,
+			})
+		err = k8sClient.Status().Update(ctx, pod)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("creating a VirtualDC resource")
+		vdc := &nyamberv1beta1.VirtualDC{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-vdc",
+				Namespace: testVdcNamespace,
+			},
+		}
+		err = k8sClient.Create(ctx, vdc)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("checking to update vdc status")
+		Eventually(func() error {
+			if err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testVdcNamespace}, vdc); err != nil {
+				return err
+			}
+			cond := meta.FindStatusCondition(vdc.Status.Conditions, nyamberv1beta1.TypePodCreated)
+			if cond == nil {
+				return fmt.Errorf("vdc condition is nil")
+			}
+			if cond.Status == metav1.ConditionTrue {
+				return fmt.Errorf("vdc status is expected to be PodCreated False, but actual True")
+			}
+			if cond.Reason != nyamberv1beta1.ReasonPodCreatedConflict {
+				return fmt.Errorf("vdc status reason is expected to be PodCreatedConflict, but actual %s", cond.Reason)
+			}
+
 			if !meta.IsStatusConditionFalse(vdc.Status.Conditions, nyamberv1beta1.TypePodAvailable) {
 				return fmt.Errorf("vdc status is expected to be PodAvailable False, but actual %v", vdc.Status.Conditions)
 			}
