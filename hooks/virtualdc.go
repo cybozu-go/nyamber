@@ -34,14 +34,14 @@ import (
 func SetupWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(&nyamberv1beta1.VirtualDC{}).
-		WithValidator(&virtualdcValidator{client: mgr.GetClient()}).
+		WithValidator(&virtualdcValidator{client: mgr.GetAPIReader()}).
 		Complete()
 }
 
 //+kubebuilder:webhook:path=/validate-nyamber-cybozu-io-v1beta1-virtualdc,mutating=false,failurePolicy=fail,sideEffects=None,groups=nyamber.cybozu.io,resources=virtualdcs,verbs=create;update,versions=v1beta1,name=vvirtualdc.kb.io,admissionReviewVersions=v1
 
 type virtualdcValidator struct {
-	client client.Client
+	client client.Reader
 }
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
