@@ -22,9 +22,6 @@ const (
 var _ = Describe("VirtualDC validator", func() {
 	ctx := context.Background()
 
-	BeforeEach(func() {
-	})
-
 	AfterEach(func() {
 		err := k8sClient.DeleteAllOf(ctx, &nyamberv1beta1.VirtualDC{}, client.InNamespace(testVdcNamespace))
 		Expect(err).NotTo(HaveOccurred())
