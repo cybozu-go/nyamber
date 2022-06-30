@@ -278,6 +278,10 @@ spec:
 		By("updating pod condtions")
 		pod.Status.Conditions = append(pod.Status.Conditions,
 			corev1.PodCondition{
+				Type:   corev1.PodScheduled,
+				Status: corev1.ConditionTrue,
+				Reason: nyamberv1beta1.ReasonOK,
+			}, corev1.PodCondition{
 				Type:   corev1.PodReady,
 				Status: corev1.ConditionTrue,
 				Reason: nyamberv1beta1.ReasonOK,
@@ -590,6 +594,10 @@ kind: Pod`
 
 		pod.Status.Conditions = append(pod.Status.Conditions,
 			corev1.PodCondition{
+				Type:   corev1.PodScheduled,
+				Status: corev1.ConditionTrue,
+				Reason: nyamberv1beta1.ReasonOK,
+			}, corev1.PodCondition{
 				Type:   corev1.PodReady,
 				Status: corev1.ConditionTrue,
 				Reason: nyamberv1beta1.ReasonOK,
@@ -612,17 +620,83 @@ kind: Pod`
 			if err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testVdcNamespace}, vdc); err != nil {
 				return err
 			}
-			cond := meta.FindStatusCondition(vdc.Status.Conditions, nyamberv1beta1.TypePodCreated)
-			if cond == nil {
+			condPodCreated := meta.FindStatusCondition(vdc.Status.Conditions, nyamberv1beta1.TypePodCreated)
+			if condPodCreated == nil {
 				return fmt.Errorf("vdc condition is nil")
 			}
-			if cond.Status == metav1.ConditionTrue {
+			if condPodCreated.Status == metav1.ConditionTrue {
 				return fmt.Errorf("vdc status is expected to be PodCreated False, but actual True")
 			}
-			if cond.Reason != nyamberv1beta1.ReasonPodCreatedConflict {
-				return fmt.Errorf("vdc status reason is expected to be PodCreatedConflict, but actual %s", cond.Reason)
+			if condPodCreated.Reason != nyamberv1beta1.ReasonPodCreatedConflict {
+				return fmt.Errorf("vdc status reason is expected to be PodCreatedConflict, but actual %s", condPodCreated.Reason)
 			}
+			if meta.IsStatusConditionTrue(vdc.Status.Conditions, nyamberv1beta1.TypePodAvailable) {
+				return fmt.Errorf("vdc status is expected to be PodAvailable False, but actual %v", vdc.Status.Conditions)
+			}
+			return nil
+		}).Should(Succeed())
+	})
 
+	It("should recreate the service resource when the service resource is deleted", func() {
+		By("creating a VirtualDC resource")
+		vdc := &nyamberv1beta1.VirtualDC{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-vdc",
+				Namespace: testVdcNamespace,
+			},
+		}
+		err := k8sClient.Create(ctx, vdc)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("checking to create svc")
+		svc := &corev1.Service{}
+		Eventually(func() error {
+			return k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testPodNamespace}, svc)
+		}).Should(Succeed())
+
+		uid := svc.GetUID()
+
+		err = k8sClient.Delete(ctx, svc)
+		Expect(err).NotTo(HaveOccurred())
+		Eventually(func() error {
+			if err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testPodNamespace}, svc); err != nil {
+				return err
+			}
+			if uid == svc.GetUID() {
+				return errors.New("the service resource is not recreated")
+			}
+			return nil
+		}).Should(Succeed())
+	})
+
+	It("should not recreate the pod resource when the pod resource is deleted", func() {
+		By("creating a VirtualDC resource")
+		vdc := &nyamberv1beta1.VirtualDC{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-vdc",
+				Namespace: testVdcNamespace,
+			},
+		}
+		err := k8sClient.Create(ctx, vdc)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("checking to create pod")
+		pod := &corev1.Pod{}
+		Eventually(func() error {
+			return k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testPodNamespace}, pod)
+		}).Should(Succeed())
+
+		err = k8sClient.Delete(ctx, pod)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("checking to update vdc status")
+		Eventually(func() error {
+			if err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testVdcNamespace}, vdc); err != nil {
+				return err
+			}
+			if !meta.IsStatusConditionTrue(vdc.Status.Conditions, nyamberv1beta1.TypePodCreated) {
+				return fmt.Errorf("vdc status is expected to be PodCreated True, but actual %v", vdc.Status.Conditions)
+			}
 			if !meta.IsStatusConditionFalse(vdc.Status.Conditions, nyamberv1beta1.TypePodAvailable) {
 				return fmt.Errorf("vdc status is expected to be PodAvailable False, but actual %v", vdc.Status.Conditions)
 			}
@@ -633,5 +707,62 @@ kind: Pod`
 		pod = &corev1.Pod{}
 		err = k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testPodNamespace}, pod)
 		Expect(err).To(HaveOccurred())
+	})
+
+	It("should not create a pod when another pod with same name exists in same namespace", func() {
+		By("creating a service")
+		svc := &corev1.Service{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-vdc",
+				Namespace: testPodNamespace,
+			},
+			Spec: corev1.ServiceSpec{
+				Selector: map[string]string{
+					constants.LabelKeyOwnerNamespace: testVdcNamespace,
+					constants.LabelKeyOwner:          "test-vdc",
+				},
+				Ports: []corev1.ServicePort{
+					{
+						Name:       "status",
+						Protocol:   corev1.ProtocolTCP,
+						Port:       80,
+						TargetPort: intstr.FromInt(constants.ListenPort),
+					},
+				},
+			},
+		}
+		err := k8sClient.Create(ctx, svc)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("creating a VirtualDC resource")
+		vdc := &nyamberv1beta1.VirtualDC{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-vdc",
+				Namespace: testVdcNamespace,
+			},
+		}
+		err = k8sClient.Create(ctx, vdc)
+		Expect(err).NotTo(HaveOccurred())
+
+		// By("checking to update vdc status")
+		// Eventually(func() error {
+		// 	if err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testVdcNamespace}, vdc); err != nil {
+		// 		return err
+		// 	}
+		// 	condPodCreated := meta.FindStatusCondition(vdc.Status.Conditions, nyamberv1beta1.TypePodCreated)
+		// 	if condPodCreated == nil {
+		// 		return fmt.Errorf("vdc condition is nil")
+		// 	}
+		// 	if condPodCreated.Status == metav1.ConditionTrue {
+		// 		return fmt.Errorf("vdc status is expected to be PodCreated False, but actual True")
+		// 	}
+		// 	if condPodCreated.Reason != nyamberv1beta1.ReasonPodCreatedConflict {
+		// 		return fmt.Errorf("vdc status reason is expected to be PodCreatedConflict, but actual %s", condPodCreated.Reason)
+		// 	}
+		// 	if meta.IsStatusConditionTrue(vdc.Status.Conditions, nyamberv1beta1.TypePodAvailable) {
+		// 		return fmt.Errorf("vdc status is expected to be PodAvailable False, but actual %v", vdc.Status.Conditions)
+		// 	}
+		// 	return nil
+		// }).Should(Succeed())
 	})
 })

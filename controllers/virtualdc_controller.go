@@ -213,7 +213,7 @@ func (r *VirtualDCReconciler) createPod(ctx context.Context, vdc *nyamberv1beta1
 				Reason:  nyamberv1beta1.ReasonPodCreatedConflict,
 				Message: "Resource with same name already exists in another namespace",
 			})
-			return err
+			return nil
 		}
 		logger.Info("Pod already exists")
 		meta.SetStatusCondition(&vdc.Status.Conditions, metav1.Condition{
@@ -285,13 +285,37 @@ func (r *VirtualDCReconciler) updateStatus(ctx context.Context, vdc *nyamberv1be
 		}
 		return err
 	}
-	if isStatusConditionTrue(pod, corev1.PodReady) || isStatusConditionTrue(pod, corev1.PodScheduled) {
+	owner := pod.Labels[constants.LabelKeyOwnerNamespace]
+	if owner != vdc.Namespace {
+		meta.SetStatusCondition(&vdc.Status.Conditions, metav1.Condition{
+			Type:    nyamberv1beta1.TypePodAvailable,
+			Status:  metav1.ConditionFalse,
+			Reason:  nyamberv1beta1.ReasonPodAvailableNotAvailable,
+			Message: "Resource with same name already exists in another namespace",
+		})
+		return nil
+	}
+	if !isStatusConditionTrue(pod, corev1.PodScheduled) {
 		meta.SetStatusCondition(&vdc.Status.Conditions, metav1.Condition{
 			Type:   nyamberv1beta1.TypePodAvailable,
-			Status: metav1.ConditionTrue,
-			Reason: nyamberv1beta1.ReasonOK,
+			Status: metav1.ConditionFalse,
+			Reason: nyamberv1beta1.ReasonPodAvailableNotScheduled,
 		})
+		return nil
 	}
+	if !isStatusConditionTrue(pod, corev1.PodReady) {
+		meta.SetStatusCondition(&vdc.Status.Conditions, metav1.Condition{
+			Type:   nyamberv1beta1.TypePodAvailable,
+			Status: metav1.ConditionFalse,
+			Reason: nyamberv1beta1.ReasonPodAvailableNotAvailable,
+		})
+		return nil
+	}
+	meta.SetStatusCondition(&vdc.Status.Conditions, metav1.Condition{
+		Type:   nyamberv1beta1.TypePodAvailable,
+		Status: metav1.ConditionTrue,
+		Reason: nyamberv1beta1.ReasonOK,
+	})
 	return nil
 }
 
