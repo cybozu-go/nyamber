@@ -238,15 +238,12 @@ func (r *VirtualDCReconciler) createService(ctx context.Context, vdc *nyamberv1b
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      vdc.Name,
 			Namespace: r.PodNamespace,
+			Labels: map[string]string{
+				constants.LabelKeyOwnerNamespace: vdc.Namespace,
+				constants.LabelKeyOwner:          vdc.Name,
+			},
 		},
-	}
-	op, err := controllerutil.CreateOrUpdate(ctx, r.Client, svc, func() error {
-		if svc.Labels == nil {
-			svc.Labels = map[string]string{}
-		}
-		svc.Labels[constants.LabelKeyOwnerNamespace] = vdc.Namespace
-		svc.Labels[constants.LabelKeyOwner] = vdc.Name
-		svc.Spec = corev1.ServiceSpec{
+		Spec: corev1.ServiceSpec{
 			Selector: map[string]string{
 				constants.LabelKeyOwnerNamespace: vdc.Namespace,
 				constants.LabelKeyOwner:          vdc.Name,
@@ -259,15 +256,46 @@ func (r *VirtualDCReconciler) createService(ctx context.Context, vdc *nyamberv1b
 					TargetPort: intstr.FromInt(constants.ListenPort),
 				},
 			},
-		}
-		return nil
-	})
+		},
+	}
+	err := r.Create(ctx, svc)
 	if err != nil {
-		return err
+		if !apierrors.IsAlreadyExists(err) {
+			meta.SetStatusCondition(&vdc.Status.Conditions, metav1.Condition{
+				Type:    nyamberv1beta1.TypeServiceCreated,
+				Status:  metav1.ConditionFalse,
+				Reason:  nyamberv1beta1.ReasonServiceCreatedFailed,
+				Message: err.Error(),
+			})
+			return err
+		}
+		if err := r.Get(ctx, client.ObjectKey{Namespace: r.PodNamespace, Name: vdc.Name}, svc); err != nil {
+			return err
+		}
+		owner := svc.Labels[constants.LabelKeyOwnerNamespace]
+		if owner != vdc.Namespace {
+			meta.SetStatusCondition(&vdc.Status.Conditions, metav1.Condition{
+				Type:    nyamberv1beta1.TypeServiceCreated,
+				Status:  metav1.ConditionFalse,
+				Reason:  nyamberv1beta1.ReasonServiceCreatedConflict,
+				Message: "Resource with same name already exists in another namespace",
+			})
+			return nil
+		}
+		logger.Info("Service already exists")
+		meta.SetStatusCondition(&vdc.Status.Conditions, metav1.Condition{
+			Type:   nyamberv1beta1.TypeServiceCreated,
+			Status: metav1.ConditionTrue,
+			Reason: nyamberv1beta1.ReasonOK,
+		})
+		return nil
 	}
-	if op != controllerutil.OperationResultNone {
-		logger.Info("CreateOrUpdate result of service", "operation_result", op)
-	}
+	logger.Info("Service created")
+	meta.SetStatusCondition(&vdc.Status.Conditions, metav1.Condition{
+		Type:   nyamberv1beta1.TypeServiceCreated,
+		Status: metav1.ConditionTrue,
+		Reason: nyamberv1beta1.ReasonOK,
+	})
 	return nil
 }
 

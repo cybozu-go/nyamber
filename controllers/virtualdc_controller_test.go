@@ -744,25 +744,38 @@ kind: Pod`
 		err = k8sClient.Create(ctx, vdc)
 		Expect(err).NotTo(HaveOccurred())
 
-		// By("checking to update vdc status")
-		// Eventually(func() error {
-		// 	if err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testVdcNamespace}, vdc); err != nil {
-		// 		return err
-		// 	}
-		// 	condPodCreated := meta.FindStatusCondition(vdc.Status.Conditions, nyamberv1beta1.TypePodCreated)
-		// 	if condPodCreated == nil {
-		// 		return fmt.Errorf("vdc condition is nil")
-		// 	}
-		// 	if condPodCreated.Status == metav1.ConditionTrue {
-		// 		return fmt.Errorf("vdc status is expected to be PodCreated False, but actual True")
-		// 	}
-		// 	if condPodCreated.Reason != nyamberv1beta1.ReasonPodCreatedConflict {
-		// 		return fmt.Errorf("vdc status reason is expected to be PodCreatedConflict, but actual %s", condPodCreated.Reason)
-		// 	}
-		// 	if meta.IsStatusConditionTrue(vdc.Status.Conditions, nyamberv1beta1.TypePodAvailable) {
-		// 		return fmt.Errorf("vdc status is expected to be PodAvailable False, but actual %v", vdc.Status.Conditions)
-		// 	}
-		// 	return nil
-		// }).Should(Succeed())
+		By("checking to update vdc status")
+		Eventually(func() error {
+			if err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testVdcNamespace}, vdc); err != nil {
+				return err
+			}
+			condServiceCreated := meta.FindStatusCondition(vdc.Status.Conditions, nyamberv1beta1.TypeServiceCreated)
+			if condServiceCreated == nil {
+				return fmt.Errorf("vdc condition is nil")
+			}
+			if condServiceCreated.Status == metav1.ConditionTrue {
+				return fmt.Errorf("vdc status is expected to be ServiceCreated False, but actual True")
+			}
+			if condServiceCreated.Reason != nyamberv1beta1.ReasonServiceCreatedConflict {
+				return fmt.Errorf("vdc status reason is expected to be Conflict, but actual %s", condServiceCreated.Reason)
+			}
+			return nil
+		}).Should(Succeed())
+
+		By("checking not to update service resource")
+		Eventually(func() error {
+			svc2 := &corev1.Service{}
+			if err := k8sClient.Get(ctx, client.ObjectKeyFromObject(svc), svc2); err != nil {
+				return err
+			}
+
+			if svc2.Labels[constants.LabelKeyOwnerNamespace] == testVdcNamespace {
+				return fmt.Errorf("OwnerNameSpace label is expected to nil, but actual %s", testVdcNamespace)
+			}
+			if svc2.Labels[constants.LabelKeyOwner] == testVdcNamespace {
+				return fmt.Errorf("Owner label is expected to nil, but actual %s", "test-vdc")
+			}
+			return nil
+		}).Should(Succeed())
 	})
 })
