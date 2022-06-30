@@ -33,6 +33,7 @@ import (
 
 	nyamberv1beta1 "github.com/cybozu-go/nyamber/api/v1beta1"
 	"github.com/cybozu-go/nyamber/controllers"
+	"github.com/cybozu-go/nyamber/pkg/constants"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -58,7 +59,7 @@ func main() {
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
-	flag.StringVar(&podNameSpace, "pod-namespace", "default", "A Namespace to deploy VirtualDC pod.")
+	flag.StringVar(&podNameSpace, "pod-namespace", constants.PodNamespace, "A Namespace to deploy VirtualDC pod.")
 	opts := zap.Options{
 		Development: true,
 	}

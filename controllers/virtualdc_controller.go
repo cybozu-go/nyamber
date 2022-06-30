@@ -77,12 +77,12 @@ func (r *VirtualDCReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 
 	if !vdc.ObjectMeta.DeletionTimestamp.IsZero() {
-		if err := r.finalize(ctx, vdc); err != nil {
+		finalizeResult, err := r.finalize(ctx, vdc)
+		if err != nil {
 			logger.Error(err, "Finalize error")
 			return ctrl.Result{}, err
 		}
-		logger.Info("Finalize succeeded")
-		return ctrl.Result{}, nil
+		return finalizeResult, nil
 	}
 
 	if !controllerutil.ContainsFinalizer(vdc, constants.FinalizerName) {
@@ -126,7 +126,7 @@ func (r *VirtualDCReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 
 func (r *VirtualDCReconciler) getPodTemplate(ctx context.Context) (*corev1.Pod, error) {
 	cm := &corev1.ConfigMap{}
-	if err := r.Get(ctx, client.ObjectKey{Namespace: constants.Namespace, Name: constants.PodTemplateName}, cm); err != nil {
+	if err := r.Get(ctx, client.ObjectKey{Namespace: constants.ControllerNamespace, Name: constants.PodTemplateName}, cm); err != nil {
 		return nil, err
 	}
 	pod := &corev1.Pod{}
@@ -213,7 +213,7 @@ func (r *VirtualDCReconciler) createPod(ctx context.Context, vdc *nyamberv1beta1
 				Reason:  nyamberv1beta1.ReasonPodCreatedConflict,
 				Message: "Resource with same name already exists in another namespace",
 			})
-			return err
+			return nil
 		}
 		logger.Info("Pod already exists")
 		meta.SetStatusCondition(&vdc.Status.Conditions, metav1.Condition{
@@ -238,15 +238,12 @@ func (r *VirtualDCReconciler) createService(ctx context.Context, vdc *nyamberv1b
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      vdc.Name,
 			Namespace: r.PodNamespace,
+			Labels: map[string]string{
+				constants.LabelKeyOwnerNamespace: vdc.Namespace,
+				constants.LabelKeyOwner:          vdc.Name,
+			},
 		},
-	}
-	op, err := controllerutil.CreateOrUpdate(ctx, r.Client, svc, func() error {
-		if svc.Labels == nil {
-			svc.Labels = map[string]string{}
-		}
-		svc.Labels[constants.LabelKeyOwnerNamespace] = vdc.Namespace
-		svc.Labels[constants.LabelKeyOwner] = vdc.Name
-		svc.Spec = corev1.ServiceSpec{
+		Spec: corev1.ServiceSpec{
 			Selector: map[string]string{
 				constants.LabelKeyOwnerNamespace: vdc.Namespace,
 				constants.LabelKeyOwner:          vdc.Name,
@@ -259,15 +256,46 @@ func (r *VirtualDCReconciler) createService(ctx context.Context, vdc *nyamberv1b
 					TargetPort: intstr.FromInt(constants.ListenPort),
 				},
 			},
-		}
-		return nil
-	})
+		},
+	}
+	err := r.Create(ctx, svc)
 	if err != nil {
-		return err
+		if !apierrors.IsAlreadyExists(err) {
+			meta.SetStatusCondition(&vdc.Status.Conditions, metav1.Condition{
+				Type:    nyamberv1beta1.TypeServiceCreated,
+				Status:  metav1.ConditionFalse,
+				Reason:  nyamberv1beta1.ReasonServiceCreatedFailed,
+				Message: err.Error(),
+			})
+			return err
+		}
+		if err := r.Get(ctx, client.ObjectKey{Namespace: r.PodNamespace, Name: vdc.Name}, svc); err != nil {
+			return err
+		}
+		owner := svc.Labels[constants.LabelKeyOwnerNamespace]
+		if owner != vdc.Namespace {
+			meta.SetStatusCondition(&vdc.Status.Conditions, metav1.Condition{
+				Type:    nyamberv1beta1.TypeServiceCreated,
+				Status:  metav1.ConditionFalse,
+				Reason:  nyamberv1beta1.ReasonServiceCreatedConflict,
+				Message: "Resource with same name already exists in another namespace",
+			})
+			return nil
+		}
+		logger.Info("Service already exists")
+		meta.SetStatusCondition(&vdc.Status.Conditions, metav1.Condition{
+			Type:   nyamberv1beta1.TypeServiceCreated,
+			Status: metav1.ConditionTrue,
+			Reason: nyamberv1beta1.ReasonOK,
+		})
+		return nil
 	}
-	if op != controllerutil.OperationResultNone {
-		logger.Info("CreateOrUpdate result of service", "operation_result", op)
-	}
+	logger.Info("Service created")
+	meta.SetStatusCondition(&vdc.Status.Conditions, metav1.Condition{
+		Type:   nyamberv1beta1.TypeServiceCreated,
+		Status: metav1.ConditionTrue,
+		Reason: nyamberv1beta1.ReasonOK,
+	})
 	return nil
 }
 
@@ -285,91 +313,133 @@ func (r *VirtualDCReconciler) updateStatus(ctx context.Context, vdc *nyamberv1be
 		}
 		return err
 	}
-	if isStatusConditionTrue(pod, corev1.PodReady) {
+	owner := pod.Labels[constants.LabelKeyOwnerNamespace]
+	if owner != vdc.Namespace {
 		meta.SetStatusCondition(&vdc.Status.Conditions, metav1.Condition{
-			Type:   nyamberv1beta1.TypePodAvailable,
-			Status: metav1.ConditionTrue,
-			Reason: nyamberv1beta1.ReasonOK,
+			Type:    nyamberv1beta1.TypePodAvailable,
+			Status:  metav1.ConditionFalse,
+			Reason:  nyamberv1beta1.ReasonPodAvailableNotAvailable,
+			Message: "Resource with same name already exists in another namespace",
 		})
-	}
-	if isStatusConditionTrue(pod, corev1.PodScheduled) {
-		meta.SetStatusCondition(&vdc.Status.Conditions, metav1.Condition{
-			Type:   nyamberv1beta1.TypePodAvailable,
-			Status: metav1.ConditionTrue,
-			Reason: nyamberv1beta1.ReasonOK,
-		})
-	}
-	return nil
-}
-
-func (r *VirtualDCReconciler) finalize(ctx context.Context, vdc *nyamberv1beta1.VirtualDC) error {
-	if controllerutil.ContainsFinalizer(vdc, constants.FinalizerName) {
-		if err := r.deleteService(ctx, vdc); err != nil {
-			return err
-		}
-
-		if err := r.deletePod(ctx, vdc); err != nil {
-			return err
-		}
-
-		if err := r.JobProcessManager.Stop(vdc); err != nil {
-			return err
-		}
-
-		controllerutil.RemoveFinalizer(vdc, constants.FinalizerName)
-		err := r.Update(ctx, vdc)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func (r *VirtualDCReconciler) deleteService(ctx context.Context, vdc *nyamberv1beta1.VirtualDC) error {
-	svc := &corev1.Service{}
-	if err := r.Get(ctx, client.ObjectKey{Namespace: r.PodNamespace, Name: vdc.Name}, svc); err != nil {
-		if apierrors.IsNotFound(err) {
-			return nil
-		}
-		return err
-	}
-	ownerNs := svc.Labels[constants.LabelKeyOwnerNamespace]
-	if ownerNs != vdc.Namespace {
 		return nil
 	}
-	uid := svc.GetUID()
-	cond := metav1.Preconditions{
-		UID: &uid,
+	if !isStatusConditionTrue(pod, corev1.PodScheduled) {
+		meta.SetStatusCondition(&vdc.Status.Conditions, metav1.Condition{
+			Type:   nyamberv1beta1.TypePodAvailable,
+			Status: metav1.ConditionFalse,
+			Reason: nyamberv1beta1.ReasonPodAvailableNotScheduled,
+		})
+		return nil
 	}
-	return r.Delete(ctx, svc, &client.DeleteOptions{
-		Preconditions: &cond,
+	if !isStatusConditionTrue(pod, corev1.PodReady) {
+		meta.SetStatusCondition(&vdc.Status.Conditions, metav1.Condition{
+			Type:   nyamberv1beta1.TypePodAvailable,
+			Status: metav1.ConditionFalse,
+			Reason: nyamberv1beta1.ReasonPodAvailableNotAvailable,
+		})
+		return nil
+	}
+	meta.SetStatusCondition(&vdc.Status.Conditions, metav1.Condition{
+		Type:   nyamberv1beta1.TypePodAvailable,
+		Status: metav1.ConditionTrue,
+		Reason: nyamberv1beta1.ReasonOK,
 	})
+	return nil
 }
 
-func (r *VirtualDCReconciler) deletePod(ctx context.Context, vdc *nyamberv1beta1.VirtualDC) error {
-	pod := &corev1.Pod{}
-	if err := r.Get(ctx, client.ObjectKey{Namespace: r.PodNamespace, Name: vdc.Name}, pod); err != nil {
-		if apierrors.IsNotFound(err) {
-			return nil
-		}
-		return err
+func (r *VirtualDCReconciler) finalize(ctx context.Context, vdc *nyamberv1beta1.VirtualDC) (ctrl.Result, error) {
+	logger := log.FromContext(ctx)
+	logger.Info("finalize start")
+	if !controllerutil.ContainsFinalizer(vdc, constants.FinalizerName) {
+		return ctrl.Result{}, nil
 	}
-	ownerNs := pod.Labels[constants.LabelKeyOwnerNamespace]
-	if ownerNs != vdc.Namespace {
-		return nil
+
+	if err := r.JobProcessManager.Stop(vdc); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	requeueService, err := r.deleteService(ctx, vdc)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+
+	requeuePod, err := r.deletePod(ctx, vdc)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	if requeueService || requeuePod {
+		logger.Info("requeue has occured", "service", requeueService, "pod", requeuePod)
+		return ctrl.Result{Requeue: true}, nil
+	}
+
+	controllerutil.RemoveFinalizer(vdc, constants.FinalizerName)
+	err = r.Update(ctx, vdc)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	logger.Info("Finalize succeeded")
+	return ctrl.Result{}, nil
+}
+
+func (r *VirtualDCReconciler) deletePod(ctx context.Context, vdc *nyamberv1beta1.VirtualDC) (bool, error) {
+	pod := &corev1.Pod{}
+	err := r.Client.Get(ctx, client.ObjectKey{Name: vdc.Name, Namespace: r.PodNamespace}, pod)
+	if err != nil {
+		if apierrors.IsNotFound(err) {
+			return false, nil
+		}
+		return true, err
+	}
+
+	ownerNs, ok := pod.Labels[constants.LabelKeyOwnerNamespace]
+	if !ok || ownerNs != vdc.Namespace {
+		return false, nil
+	}
+	if !pod.ObjectMeta.DeletionTimestamp.IsZero() {
+		return true, nil
 	}
 	uid := pod.GetUID()
 	cond := metav1.Preconditions{
 		UID: &uid,
 	}
-	return r.Delete(ctx, pod, &client.DeleteOptions{
+	if err := r.Delete(ctx, pod, &client.DeleteOptions{
 		Preconditions: &cond,
-	})
+	}); err != nil {
+		return true, err
+	}
+	return true, nil
+}
+
+func (r *VirtualDCReconciler) deleteService(ctx context.Context, vdc *nyamberv1beta1.VirtualDC) (bool, error) {
+	svc := &corev1.Service{}
+	if err := r.Get(ctx, client.ObjectKey{Namespace: r.PodNamespace, Name: vdc.Name}, svc); err != nil {
+		if apierrors.IsNotFound(err) {
+			return false, nil
+		}
+		return true, err
+	}
+	ownerNs, ok := svc.Labels[constants.LabelKeyOwnerNamespace]
+	if !ok || ownerNs != vdc.Namespace {
+		return false, nil
+	}
+	if !svc.ObjectMeta.DeletionTimestamp.IsZero() {
+		return true, nil
+	}
+	uid := svc.GetUID()
+	cond := metav1.Preconditions{
+		UID: &uid,
+	}
+	if err := r.Delete(ctx, svc, &client.DeleteOptions{
+		Preconditions: &cond,
+	}); err != nil {
+		return true, err
+	}
+	return true, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *VirtualDCReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	vdcPodHandler := func(o client.Object) []reconcile.Request {
+	vdcHandler := func(o client.Object) []reconcile.Request {
 		owner := o.GetLabels()[constants.LabelKeyOwnerNamespace]
 		if owner == "" {
 			return nil
@@ -379,7 +449,8 @@ func (r *VirtualDCReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&nyamberv1beta1.VirtualDC{}).
-		Watches(&source.Kind{Type: &corev1.Pod{}}, handler.EnqueueRequestsFromMapFunc(vdcPodHandler)).
+		Watches(&source.Kind{Type: &corev1.Pod{}}, handler.EnqueueRequestsFromMapFunc(vdcHandler)).
+		Watches(&source.Kind{Type: &corev1.Service{}}, handler.EnqueueRequestsFromMapFunc(vdcHandler)).
 		Complete(r)
 }
 

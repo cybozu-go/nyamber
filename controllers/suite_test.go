@@ -17,19 +17,25 @@ limitations under the License.
 package controllers
 
 import (
+	"context"
 	"path/filepath"
 	"testing"
+	"time"
 
+	nyamberv1beta1 "github.com/cybozu-go/nyamber/api/v1beta1"
+	"github.com/cybozu-go/nyamber/pkg/constants"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	"k8s.io/client-go/kubernetes/scheme"
+	"go.uber.org/zap/zapcore"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-
-	nyamberv1beta1 "github.com/cybozu-go/nyamber/api/v1beta1"
 	//+kubebuilder:scaffold:imports
 )
 
@@ -38,16 +44,30 @@ import (
 
 var cfg *rest.Config
 var k8sClient client.Client
+var scheme *runtime.Scheme
 var testEnv *envtest.Environment
+
+const (
+	testVdcNamespace string = "test-vdc-ns"
+	testPodNamespace string = "test-pod-ns"
+)
 
 func TestAPIs(t *testing.T) {
 	RegisterFailHandler(Fail)
+
+	SetDefaultEventuallyTimeout(10 * time.Second)
+	SetDefaultEventuallyPollingInterval(time.Second)
+	SetDefaultConsistentlyDuration(10 * time.Second)
+	SetDefaultConsistentlyPollingInterval(time.Second)
 
 	RunSpecs(t, "Controller Suite")
 }
 
 var _ = BeforeSuite(func() {
-	logf.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true)))
+	ctx := context.Background()
+	logf.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true), func(o *zap.Options) {
+		o.TimeEncoder = zapcore.ISO8601TimeEncoder
+	}))
 
 	By("bootstrapping test environment")
 	testEnv = &envtest.Environment{
@@ -61,15 +81,39 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	Expect(cfg).NotTo(BeNil())
 
-	err = nyamberv1beta1.AddToScheme(scheme.Scheme)
+	scheme = runtime.NewScheme()
+	err = clientgoscheme.AddToScheme(scheme)
+	Expect(err).NotTo(HaveOccurred())
+	err = nyamberv1beta1.AddToScheme(scheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:scheme
 
-	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
+	k8sClient, err = client.New(cfg, client.Options{Scheme: scheme})
 	Expect(err).NotTo(HaveOccurred())
 	Expect(k8sClient).NotTo(BeNil())
 
+	ns := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: constants.ControllerNamespace,
+		},
+	}
+	err = k8sClient.Create(ctx, ns)
+	Expect(err).NotTo(HaveOccurred())
+	vdcNs := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: testVdcNamespace,
+		},
+	}
+	err = k8sClient.Create(ctx, vdcNs)
+	Expect(err).NotTo(HaveOccurred())
+	podNs := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: testPodNamespace,
+		},
+	}
+	err = k8sClient.Create(ctx, podNs)
+	Expect(err).NotTo(HaveOccurred())
 })
 
 var _ = AfterSuite(func() {

@@ -57,6 +57,7 @@ type VirtualDCStatus struct {
 const (
 	TypePodCreated      string = "PodCreated"
 	TypePodAvailable    string = "PodAvailable"
+	TypeServiceCreated  string = "ServiceCreated"
 	TypePodJobCompleted string = "PodJobCompleted"
 )
 
@@ -69,6 +70,8 @@ const (
 	ReasonPodAvailableNotAvailable string = "NotAvailable"
 	ReasonPodAvailableNotExists    string = "NotExists"
 	ReasonPodAvailableNotScheduled string = "NotScheduled"
+	ReasonServiceCreatedConflict   string = "Conflict"
+	ReasonServiceCreatedFailed     string = "Failed"
 	ReasonPodJobCompletedPending   string = "Pending"
 	ReasonPodJobCompletedRunning   string = "Running"
 	ReasonPodJobCompletedFailed    string = "Failed"
