@@ -89,6 +89,8 @@ var _ = Describe("VirtualDC validator", func() {
 		err := k8sClient.Create(ctx, vdc)
 		Expect(err).NotTo(HaveOccurred())
 
+		time.Sleep(1 * time.Second)
+
 		By("creating another virtualdc resource with same name")
 		anotherVdc := &nyamberv1beta1.VirtualDC{
 			ObjectMeta: metav1.ObjectMeta{
