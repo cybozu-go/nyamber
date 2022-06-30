@@ -169,10 +169,7 @@ spec:
 		By("checking to create pod")
 		pod := &corev1.Pod{}
 		Eventually(func() error {
-			if err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testPodNamespace}, pod); err != nil {
-				return err
-			}
-			return nil
+			return k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testPodNamespace}, pod)
 		}).Should(Succeed())
 		Expect(pod.Labels).To(MatchAllKeys(Keys{
 			constants.LabelKeyOwnerNamespace: Equal(testVdcNamespace),
@@ -269,10 +266,7 @@ spec:
 		By("checking to create pod")
 		pod := &corev1.Pod{}
 		Eventually(func() error {
-			if err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testPodNamespace}, pod); err != nil {
-				return err
-			}
-			return nil
+			return k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testPodNamespace}, pod)
 		}).Should(Succeed())
 
 		By("updating pod condtions")
@@ -295,12 +289,10 @@ spec:
 			if err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testVdcNamespace}, vdc); err != nil {
 				return err
 			}
-			for _, cond := range vdc.Status.Conditions {
-				if cond.Type == nyamberv1beta1.TypePodAvailable && cond.Status == metav1.ConditionTrue {
-					return nil
-				}
+			if !meta.IsStatusConditionTrue(vdc.Status.Conditions, nyamberv1beta1.TypePodAvailable) {
+				return fmt.Errorf("vdc status is expected to be PodAvailable, but actual %v", vdc.Status.Conditions)
 			}
-			return fmt.Errorf("vdc status is expected to be PodAvailable, but actual %v", vdc.Status.Conditions)
+			return nil
 		}).Should(Succeed())
 	})
 
@@ -322,10 +314,7 @@ spec:
 		By("checking to create pod")
 		pod := &corev1.Pod{}
 		Eventually(func() error {
-			if err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testPodNamespace}, pod); err != nil {
-				return err
-			}
-			return nil
+			return k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testPodNamespace}, pod)
 		}).Should(Succeed())
 
 		By("checking to set Env")
@@ -358,10 +347,7 @@ spec:
 		By("checking to create pod")
 		pod := &corev1.Pod{}
 		Eventually(func() error {
-			if err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testPodNamespace}, pod); err != nil {
-				return err
-			}
-			return nil
+			return k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testPodNamespace}, pod)
 		}).Should(Succeed())
 
 		By("checking to set Env and Args of pod")
@@ -393,10 +379,7 @@ spec:
 		By("checking to create pod")
 		pod := &corev1.Pod{}
 		Eventually(func() error {
-			if err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testPodNamespace}, pod); err != nil {
-				return err
-			}
-			return nil
+			return k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testPodNamespace}, pod)
 		}).Should(Succeed())
 
 		By("checking to set command of pod")
@@ -630,7 +613,7 @@ kind: Pod`
 			if condPodCreated.Reason != nyamberv1beta1.ReasonPodCreatedConflict {
 				return fmt.Errorf("vdc status reason is expected to be PodCreatedConflict, but actual %s", condPodCreated.Reason)
 			}
-			if meta.IsStatusConditionTrue(vdc.Status.Conditions, nyamberv1beta1.TypePodAvailable) {
+			if !meta.IsStatusConditionFalse(vdc.Status.Conditions, nyamberv1beta1.TypePodAvailable) {
 				return fmt.Errorf("vdc status is expected to be PodAvailable False, but actual %v", vdc.Status.Conditions)
 			}
 			return nil
@@ -764,15 +747,13 @@ kind: Pod`
 
 		By("checking not to update service resource")
 		Eventually(func() error {
-			svc2 := &corev1.Service{}
-			if err := k8sClient.Get(ctx, client.ObjectKeyFromObject(svc), svc2); err != nil {
+			if err := k8sClient.Get(ctx, client.ObjectKeyFromObject(svc), svc); err != nil {
 				return err
 			}
-
-			if svc2.Labels[constants.LabelKeyOwnerNamespace] == testVdcNamespace {
+			if svc.Labels[constants.LabelKeyOwnerNamespace] == testVdcNamespace {
 				return fmt.Errorf("OwnerNameSpace label is expected to nil, but actual %s", testVdcNamespace)
 			}
-			if svc2.Labels[constants.LabelKeyOwner] == testVdcNamespace {
+			if svc.Labels[constants.LabelKeyOwner] == testVdcNamespace {
 				return fmt.Errorf("Owner label is expected to nil, but actual %s", "test-vdc")
 			}
 			return nil
