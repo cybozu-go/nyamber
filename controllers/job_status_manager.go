@@ -32,18 +32,20 @@ type JobProcessManager interface {
 }
 
 type jobProcessManager struct {
-	log       logr.Logger
-	k8sClient client.Client
-	mu        sync.Mutex
-	stopped   bool
-	processes map[string]*jobWatchProcess
+	log          logr.Logger
+	k8sClient    client.Client
+	mu           sync.Mutex
+	stopped      bool
+	processes    map[string]*jobWatchProcess
+	podNamespace string
 }
 
-func NewJobProcessManager(log logr.Logger, k8sClient client.Client) JobProcessManager {
+func NewJobProcessManager(log logr.Logger, k8sClient client.Client, podNamespace string) JobProcessManager {
 	return &jobProcessManager{
-		log:       log.WithName("JobProcessManager"),
-		k8sClient: k8sClient,
-		processes: map[string]*jobWatchProcess{},
+		log:          log.WithName("JobProcessManager"),
+		k8sClient:    k8sClient,
+		processes:    map[string]*jobWatchProcess{},
+		podNamespace: podNamespace,
 	}
 }
 
@@ -61,6 +63,7 @@ func (j *jobProcessManager) Start(vdc *nyamberv1beta1.VirtualDC) error {
 			j.log.WithValues("jobWatchProcess", vdcNamespacedName),
 			j.k8sClient,
 			vdc,
+			j.podNamespace,
 		)
 		process.start()
 		j.processes[vdcNamespacedName] = process
@@ -99,16 +102,18 @@ type jobWatchProcess struct {
 	k8sClient    client.Client
 	vdcNamespace string
 	vdcName      string
+	podNamespace string
 	cancel       func()
 	env          *well.Environment
 }
 
-func newJobWatchProcess(log logr.Logger, k8sClient client.Client, vdc *nyamberv1beta1.VirtualDC) *jobWatchProcess {
+func newJobWatchProcess(log logr.Logger, k8sClient client.Client, vdc *nyamberv1beta1.VirtualDC, podNamespace string) *jobWatchProcess {
 	return &jobWatchProcess{
 		log:          log,
 		k8sClient:    k8sClient,
 		vdcNamespace: vdc.Namespace,
 		vdcName:      vdc.Name,
+		podNamespace: podNamespace,
 	}
 }
 
@@ -182,7 +187,7 @@ func (p *jobWatchProcess) updateStatus(ctx context.Context) (bool, error) {
 }
 
 func (p *jobWatchProcess) getJobStates() (*entrypoint.StatusResponse, error) {
-	resp, err := http.Get(fmt.Sprintf("http://%s.%s/%s", p.vdcName, p.vdcNamespace, constants.StatusEndPoint))
+	resp, err := http.Get(fmt.Sprintf("http://%s.%s/%s", p.vdcName, p.podNamespace, constants.StatusEndPoint))
 	if err != nil {
 		return nil, err
 	}

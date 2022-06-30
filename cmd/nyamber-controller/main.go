@@ -55,13 +55,13 @@ func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
 	var probeAddr string
-	var podNameSpace string
+	var podNamespace string
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
-	flag.StringVar(&podNameSpace, "pod-namespace", constants.PodNamespace, "A Namespace to deploy VirtualDC pod.")
+	flag.StringVar(&podNamespace, "pod-namespace", constants.PodNamespace, "A Namespace to deploy VirtualDC pod.")
 	opts := zap.Options{
 		Development: true,
 		TimeEncoder: zapcore.ISO8601TimeEncoder,
@@ -88,8 +88,8 @@ func main() {
 	if err = (&controllers.VirtualDCReconciler{
 		Client:            client,
 		Scheme:            mgr.GetScheme(),
-		PodNamespace:      podNameSpace,
-		JobProcessManager: controllers.NewJobProcessManager(ctrl.Log, client),
+		PodNamespace:      podNamespace,
+		JobProcessManager: controllers.NewJobProcessManager(ctrl.Log, client, podNamespace),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "VirtualDC")
 		os.Exit(1)

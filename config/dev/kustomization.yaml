@@ -1,4 +1,5 @@
 resources:
   - ../default
+  - ./namespaces.yaml
 patchesStrategicMerge:
   - ./manager.yaml
