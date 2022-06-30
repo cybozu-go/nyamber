@@ -64,6 +64,7 @@ func TestAPIs(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
+	ctx := context.Background()
 	logf.SetLogger(zap.New(zap.WriteTo(GinkgoWriter), zap.UseDevMode(true), func(o *zap.Options) {
 		o.TimeEncoder = zapcore.ISO8601TimeEncoder
 	}))
@@ -97,21 +98,21 @@ var _ = BeforeSuite(func() {
 			Name: constants.ControllerNamespace,
 		},
 	}
-	err = k8sClient.Create(context.Background(), ns)
+	err = k8sClient.Create(ctx, ns)
 	Expect(err).NotTo(HaveOccurred())
 	vdcNs := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: testVdcNamespace,
 		},
 	}
-	err = k8sClient.Create(context.Background(), vdcNs)
+	err = k8sClient.Create(ctx, vdcNs)
 	Expect(err).NotTo(HaveOccurred())
 	podNs := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: testPodNamespace,
 		},
 	}
-	err = k8sClient.Create(context.Background(), podNs)
+	err = k8sClient.Create(ctx, podNs)
 	Expect(err).NotTo(HaveOccurred())
 })
 
