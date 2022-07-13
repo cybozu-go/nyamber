@@ -34,7 +34,7 @@ It should look like:
 
     ```console
     # Set VERSION and confirm it. It should not have "v" prefix.
-    $ VERSION=x.y.x
+    $ VERSION=x.y.z
     $ echo $VERSION
     ```
 
