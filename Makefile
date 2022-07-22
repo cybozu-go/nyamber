@@ -71,15 +71,21 @@ fmt: ## Run go fmt against code.
 vet: ## Run go vet against code.
 	go vet ./...
 
+.PHONY: check-generate
+check-generate: ## Generate manifests and code, and check if diff exists.
+	$(MAKE) manifests
+	$(MAKE) generate
+	git diff --exit-code --name-only
+
 .PHONY: test
-test: manifests generate fmt vet envtest test-tools ## Run tests.
+test: ## Run tests.
 	$(STATICCHECK) ./...
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) --arch=amd64 use $(ENVTEST_K8S_VERSION) -p path)" go test -v ./... -coverprofile cover.out
 
 ##@ Build
 
 .PHONY: build
-build: generate fmt vet ## Build manager binary.
+build: ## Build manager binary.
 	go build -o bin/manager main.go
 
 .PHONY: run
@@ -133,6 +139,9 @@ kustomize: $(KUSTOMIZE) ## Download kustomize locally if necessary.
 $(KUSTOMIZE): $(LOCALBIN)
 	curl -s $(KUSTOMIZE_INSTALL_SCRIPT) | bash -s -- $(subst v,,$(KUSTOMIZE_VERSION)) $(LOCALBIN)
 
+.PHONY: setup
+setup: controller-gen envtest staticcheck
+
 .PHONY: controller-gen
 controller-gen: $(CONTROLLER_GEN) ## Download controller-gen locally if necessary.
 $(CONTROLLER_GEN): $(LOCALBIN)
@@ -143,9 +152,8 @@ envtest: $(ENVTEST) ## Download envtest-setup locally if necessary.
 $(ENVTEST): $(LOCALBIN)
 	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
 
-.PHONY: test-tools
-test-tools: $(STATICCHECK)
-
+.PHONY: staticcheck
+staticcheck: $(STATICCHECK)
 $(STATICCHECK):
 	mkdir -p $(LOCALBIN)
 	GOBIN=$(LOCALBIN) go install honnef.co/go/tools/cmd/staticcheck@latest

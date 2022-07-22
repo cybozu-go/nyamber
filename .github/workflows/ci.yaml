@@ -21,6 +21,10 @@ jobs:
     - uses: actions/setup-go@v3
       with:
         go-version: ${{ env.go-version }}
+    - run: make setup
+    - run: make fmt
+    - run: make vet
+    - run: make check-generate
     - run: make test
   e2e:
     name: End-to-End Tests
@@ -38,6 +42,8 @@ jobs:
         aqua_version: v1.11.0
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - run: make setup E2ETEST_K8S_VERSION=${{ matrix.k8s-version }}
+      working-directory: e2e
     - run: make start E2ETEST_K8S_VERSION=${{ matrix.k8s-version }}
       working-directory: e2e
     - run: make test
