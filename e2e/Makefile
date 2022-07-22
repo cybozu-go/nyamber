@@ -6,7 +6,6 @@ PROJECT_DIR := $(CURDIR)/../
 BIN_DIR := $(PROJECT_DIR)/bin
 
 CURL := curl -sSLf
-KIND := $(BIN_DIR)/kind
 KUBECTL := $(BIN_DIR)/kubectl
 
 KIND_CLUSTER_NAME := nyamber
