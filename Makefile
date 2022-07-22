@@ -22,9 +22,9 @@ KUSTOMIZE ?= $(LOCALBIN)/kustomize
 STATICCHECK = $(LOCALBIN)/staticcheck
 
 ## Tool Versions
-CONTROLLER_TOOLS_VERSION ?= v0.9.0
+CONTROLLER_TOOLS_VERSION ?= v0.9.2
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
-ENVTEST_K8S_VERSION = 1.23
+ENVTEST_K8S_VERSION = 1.24.2
 KUSTOMIZE_VERSION ?= v4.5.5
 
 # Setting SHELL to bash allows bash commands to be executed by recipes.
