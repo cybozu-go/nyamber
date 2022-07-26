@@ -155,7 +155,7 @@ var _ = Describe("entrypoint status API test", func() {
 				{
 					Name:    "test1",
 					Command: "false",
-					Args:    []string{""},
+					Args:    []string{},
 				},
 				{
 					Name:    "test2",
@@ -187,7 +187,7 @@ func startRunner(listenAddr string, jobs []Job) context.CancelFunc {
 }
 
 func gotStatus(g Gomega) (*statusResponse, error) {
-	resp, err := http.Get(fmt.Sprintf("http://%v/status", apiAddr))
+	resp, err := http.Get(fmt.Sprintf("http://%s/%s", apiAddr, constants.StatusEndPoint))
 	g.Expect(err).Should(Succeed())
 	res := &statusResponse{}
 	body, _ := io.ReadAll(resp.Body)
