@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 
+	"github.com/cybozu-go/nyamber/pkg/constants"
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
 	. "github.com/onsi/ginkgo/v2"
@@ -17,8 +18,9 @@ import (
 const apiAddr = "localhost:8080"
 
 type testCase struct {
+	name     string
 	input    []Job
-	expected []statusResponse
+	expected statusResponse
 }
 type statusResponse struct {
 	Jobs []job
@@ -36,142 +38,112 @@ var _ = BeforeSuite(func() {
 
 var _ = Describe("entrypoint status API test", func() {
 	It("should state of successful command changed from running to completed", func() {
-		testcase := testCase{
-			input: []Job{
-				{
-					Name:    "test1",
-					Command: "sleep",
-					Args:    []string{"1"},
+		testCases := []testCase{
+			{
+				name: "one successfull command",
+				input: []Job{
+					{
+						Name:    "test1",
+						Command: "sleep",
+						Args:    []string{"1"},
+					},
 				},
-			},
-			expected: []statusResponse{
-				{Jobs: []job{{Name: "test1", Status: "Running"}}},
-				{Jobs: []job{{Name: "test1", Status: "Completed"}}},
-			},
-		}
-
-		cancel := startRunner(apiAddr, testcase.input)
-		defer cancel()
-
-		for _, expected := range testcase.expected {
-			Eventually(gotStatus, 10, 0.5).Should(Equal(&expected))
-		}
-	})
-
-	It("should state of command with exit code 1 become failed", func() {
-		testcase := testCase{
-			input: []Job{
-				{
-					Name:    "test1",
-					Command: "false",
-					Args:    []string{},
-				}},
-			expected: []statusResponse{
-				{Jobs: []job{{Name: "test1", Status: "Failed"}}},
-			},
-		}
-
-		cancel := startRunner(apiAddr, testcase.input)
-		defer cancel()
-
-		for _, expected := range testcase.expected {
-			Eventually(gotStatus, 10, 0.5).Should(Equal(&expected))
-		}
-	})
-
-	It("should state of unknown command become failed", func() {
-		testcase := testCase{
-			input: []Job{
-				{
-					Name:    "test1",
-					Command: "unknowncommand",
-					Args:    []string{},
-				}},
-			expected: []statusResponse{
-				{Jobs: []job{{Name: "test1", Status: "Failed"}}},
-			},
-		}
-
-		cancel := startRunner(apiAddr, testcase.input)
-		defer cancel()
-
-		for _, expected := range testcase.expected {
-			Eventually(gotStatus, 10, 0.5).Should(Equal(&expected))
-		}
-	})
-
-	It("should state of not permission command become failed", func() {
-		testcase := testCase{
-			input: []Job{
-				{
-					Name:    "test1",
-					Command: "./testresources/testscript.sh",
-					Args:    []string{},
-				}},
-			expected: []statusResponse{
-				{Jobs: []job{{Name: "test1", Status: "Failed"}}},
-			},
-		}
-
-		cancel := startRunner(apiAddr, testcase.input)
-		defer cancel()
-
-		for _, expected := range testcase.expected {
-			Eventually(gotStatus, 10, 0.5).Should(Equal(&expected))
-		}
-	})
-
-	It("should two sucessful command is executed in series", func() {
-
-		testcase := testCase{
-			input: []Job{
-				{
-					Name:    "test1",
-					Command: "echo",
-					Args:    []string{"1"},
+				expected: statusResponse{Jobs: []job{{Name: "test1", Status: "Completed"}}},
+			}, {
+				name: "one command which doesn't complete",
+				input: []Job{
+					{
+						Name:    "test1",
+						Command: "sleep",
+						Args:    []string{"inf"},
+					},
 				},
-				{
-					Name:    "test2",
-					Command: "sleep",
-					Args:    []string{"1"},
-				}},
-			expected: []statusResponse{
-				{Jobs: []job{{Name: "test1", Status: "Completed"}, {Name: "test2", Status: "Running"}}},
-				{Jobs: []job{{Name: "test1", Status: "Completed"}, {Name: "test2", Status: "Completed"}}},
+				expected: statusResponse{Jobs: []job{{Name: "test1", Status: "Running"}}},
+			},
+			{
+				name: "one command which execute with exit code(1)",
+				input: []Job{
+					{
+						Name:    "test1",
+						Command: "false",
+						Args:    []string{},
+					}},
+				expected: statusResponse{Jobs: []job{{Name: "test1", Status: "Failed"}}},
+			},
+			{
+				name: "one command which is not existed",
+				input: []Job{
+					{
+						Name:    "test1",
+						Command: "unknowncommand",
+						Args:    []string{},
+					}},
+				expected: statusResponse{Jobs: []job{{Name: "test1", Status: "Failed"}}},
+			},
+			{
+				name: "one command which doesn't have permission",
+				input: []Job{
+					{
+						Name:    "test1",
+						Command: "./testresources/script_without_exec_permission.sh",
+						Args:    []string{},
+					}},
+				expected: statusResponse{Jobs: []job{{Name: "test1", Status: "Failed"}}},
+			},
+			{
+				name: "two successful command",
+				input: []Job{
+					{
+						Name:    "test1",
+						Command: "echo",
+						Args:    []string{"1"},
+					},
+					{
+						Name:    "test2",
+						Command: "sleep",
+						Args:    []string{"1"},
+					}},
+				expected: statusResponse{Jobs: []job{{Name: "test1", Status: "Completed"}, {Name: "test2", Status: "Completed"}}},
+			},
+			{
+				name: "first command doesn't completed, and second one is pending",
+				input: []Job{
+					{
+						Name:    "test1",
+						Command: "sleep",
+						Args:    []string{"inf"},
+					},
+					{
+						Name:    "test2",
+						Command: "sleep",
+						Args:    []string{"1"},
+					}},
+				expected: statusResponse{Jobs: []job{{Name: "test1", Status: "Running"}, {Name: "test2", Status: "Pending"}}},
+			},
+			{
+				name: "first command is fail and second one is pending",
+				input: []Job{
+					{
+						Name:    "test1",
+						Command: "false",
+						Args:    []string{},
+					},
+					{
+						Name:    "test2",
+						Command: "sleep",
+						Args:    []string{"1"},
+					}},
+				expected: statusResponse{Jobs: []job{{Name: "test1", Status: "Failed"}, {Name: "test2", Status: "Pending"}}},
 			},
 		}
+		for _, tt := range testCases {
+			By(tt.name)
+			func() {
+				cancel := startRunner(apiAddr, tt.input)
+				defer cancel()
 
-		cancel := startRunner(apiAddr, testcase.input)
-		defer cancel()
-
-		for _, expected := range testcase.expected {
-			Eventually(gotStatus, 10, 0.5).Should(Equal(&expected))
-		}
-	})
-	It("should second command is pended when first command fails", func() {
-
-		testcase := testCase{
-			input: []Job{
-				{
-					Name:    "test1",
-					Command: "false",
-					Args:    []string{},
-				},
-				{
-					Name:    "test2",
-					Command: "sleep",
-					Args:    []string{"1"},
-				}},
-			expected: []statusResponse{
-				{Jobs: []job{{Name: "test1", Status: "Failed"}, {Name: "test2", Status: "Pending"}}},
-			},
-		}
-
-		cancel := startRunner(apiAddr, testcase.input)
-		defer cancel()
-
-		for _, expected := range testcase.expected {
-			Eventually(gotStatus, 10, 0.5).Should(Equal(&expected))
+				Eventually(getStatus, 10, 0.5).Should(Equal(&tt.expected))
+			}()
 		}
 	})
 })
@@ -186,12 +158,14 @@ func startRunner(listenAddr string, jobs []Job) context.CancelFunc {
 	return cancel
 }
 
-func gotStatus(g Gomega) (*statusResponse, error) {
+func getStatus(g Gomega) *statusResponse {
 	resp, err := http.Get(fmt.Sprintf("http://%s/%s", apiAddr, constants.StatusEndPoint))
 	g.Expect(err).Should(Succeed())
 	res := &statusResponse{}
-	body, _ := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
+	g.Expect(err).Should(Succeed())
 	defer resp.Body.Close()
-	json.Unmarshal(body, res)
-	return res, nil
+	err = json.Unmarshal(body, res)
+	g.Expect(err).Should(Succeed())
+	return res
 }
