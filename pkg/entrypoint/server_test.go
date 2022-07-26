@@ -3,6 +3,7 @@ package entrypoint
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 
@@ -57,12 +58,54 @@ var _ = Describe("entrypoint status API test", func() {
 		}
 	})
 
-	It("should state of failing command changed from running to failed", func() {
+	It("should state of command with exit code 1 become failed", func() {
 		testcase := testCase{
 			input: []Job{
 				{
 					Name:    "test1",
 					Command: "false",
+					Args:    []string{},
+				}},
+			expected: []statusResponse{
+				{Jobs: []job{{Name: "test1", Status: "Failed"}}},
+			},
+		}
+
+		cancel := startRunner(apiAddr, testcase.input)
+		defer cancel()
+
+		for _, expected := range testcase.expected {
+			Eventually(gotStatus, 10, 0.5).Should(Equal(&expected))
+		}
+	})
+
+	It("should state of unknown command become failed", func() {
+		testcase := testCase{
+			input: []Job{
+				{
+					Name:    "test1",
+					Command: "unknowncommand",
+					Args:    []string{},
+				}},
+			expected: []statusResponse{
+				{Jobs: []job{{Name: "test1", Status: "Failed"}}},
+			},
+		}
+
+		cancel := startRunner(apiAddr, testcase.input)
+		defer cancel()
+
+		for _, expected := range testcase.expected {
+			Eventually(gotStatus, 10, 0.5).Should(Equal(&expected))
+		}
+	})
+
+	It("should state of not permission command become failed", func() {
+		testcase := testCase{
+			input: []Job{
+				{
+					Name:    "test1",
+					Command: "./testresources/testscript.sh",
 					Args:    []string{},
 				}},
 			expected: []statusResponse{
@@ -144,7 +187,7 @@ func startRunner(listenAddr string, jobs []Job) context.CancelFunc {
 }
 
 func gotStatus(g Gomega) (*statusResponse, error) {
-	resp, err := http.Get("http://" + apiAddr + "/status")
+	resp, err := http.Get(fmt.Sprintf("http://%v/status", apiAddr))
 	g.Expect(err).Should(Succeed())
 	res := &statusResponse{}
 	body, _ := io.ReadAll(resp.Body)
