@@ -3,7 +3,6 @@ kind: Pod
 spec:
   containers:
   - image: localhost:5151/entrypoint:dev
-    imagePullPolicy: Always
     name: ubuntu
     command:
       - "/entrypoint" 
