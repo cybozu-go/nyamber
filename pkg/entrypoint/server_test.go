@@ -20,7 +20,7 @@ const apiAddr = "localhost:8080"
 type testCase struct {
 	name     string
 	input    []Job
-	expected statusResponse
+	expected []statusResponse
 }
 type statusResponse struct {
 	Jobs []job
@@ -37,7 +37,7 @@ var _ = BeforeSuite(func() {
 })
 
 var _ = Describe("entrypoint status API test", func() {
-	It("should state of successful command changed from running to completed", func() {
+	It("should state of commands are changed correctly", func() {
 		testCases := []testCase{
 			{
 				name: "one successfull command",
@@ -45,20 +45,13 @@ var _ = Describe("entrypoint status API test", func() {
 					{
 						Name:    "test1",
 						Command: "sleep",
-						Args:    []string{"1"},
+						Args:    []string{"3"},
 					},
 				},
-				expected: statusResponse{Jobs: []job{{Name: "test1", Status: "Completed"}}},
-			}, {
-				name: "one command which doesn't complete",
-				input: []Job{
-					{
-						Name:    "test1",
-						Command: "sleep",
-						Args:    []string{"inf"},
-					},
+				expected: []statusResponse{
+					{Jobs: []job{{Name: "test1", Status: "Running"}}},
+					{Jobs: []job{{Name: "test1", Status: "Completed"}}},
 				},
-				expected: statusResponse{Jobs: []job{{Name: "test1", Status: "Running"}}},
 			},
 			{
 				name: "one command which execute with exit code(1)",
@@ -68,7 +61,9 @@ var _ = Describe("entrypoint status API test", func() {
 						Command: "false",
 						Args:    []string{},
 					}},
-				expected: statusResponse{Jobs: []job{{Name: "test1", Status: "Failed"}}},
+				expected: []statusResponse{
+					{Jobs: []job{{Name: "test1", Status: "Failed"}}},
+				},
 			},
 			{
 				name: "one command which is not existed",
@@ -78,7 +73,9 @@ var _ = Describe("entrypoint status API test", func() {
 						Command: "unknowncommand",
 						Args:    []string{},
 					}},
-				expected: statusResponse{Jobs: []job{{Name: "test1", Status: "Failed"}}},
+				expected: []statusResponse{
+					{Jobs: []job{{Name: "test1", Status: "Failed"}}},
+				},
 			},
 			{
 				name: "one command which doesn't have permission",
@@ -88,37 +85,28 @@ var _ = Describe("entrypoint status API test", func() {
 						Command: "./testresources/script_without_exec_permission.sh",
 						Args:    []string{},
 					}},
-				expected: statusResponse{Jobs: []job{{Name: "test1", Status: "Failed"}}},
+				expected: []statusResponse{
+					{Jobs: []job{{Name: "test1", Status: "Failed"}}},
+				},
 			},
 			{
 				name: "two successful command",
 				input: []Job{
 					{
 						Name:    "test1",
-						Command: "echo",
-						Args:    []string{"1"},
+						Command: "sleep",
+						Args:    []string{"5"},
 					},
 					{
 						Name:    "test2",
 						Command: "sleep",
-						Args:    []string{"1"},
+						Args:    []string{"5"},
 					}},
-				expected: statusResponse{Jobs: []job{{Name: "test1", Status: "Completed"}, {Name: "test2", Status: "Completed"}}},
-			},
-			{
-				name: "first command doesn't completed, and second one is pending",
-				input: []Job{
-					{
-						Name:    "test1",
-						Command: "sleep",
-						Args:    []string{"inf"},
-					},
-					{
-						Name:    "test2",
-						Command: "sleep",
-						Args:    []string{"1"},
-					}},
-				expected: statusResponse{Jobs: []job{{Name: "test1", Status: "Running"}, {Name: "test2", Status: "Pending"}}},
+				expected: []statusResponse{
+					{Jobs: []job{{Name: "test1", Status: "Running"}, {Name: "test2", Status: "Pending"}}},
+					{Jobs: []job{{Name: "test1", Status: "Completed"}, {Name: "test2", Status: "Running"}}},
+					{Jobs: []job{{Name: "test1", Status: "Completed"}, {Name: "test2", Status: "Completed"}}},
+				},
 			},
 			{
 				name: "first command is fail and second one is pending",
@@ -133,7 +121,9 @@ var _ = Describe("entrypoint status API test", func() {
 						Command: "sleep",
 						Args:    []string{"1"},
 					}},
-				expected: statusResponse{Jobs: []job{{Name: "test1", Status: "Failed"}, {Name: "test2", Status: "Pending"}}},
+				expected: []statusResponse{
+					{Jobs: []job{{Name: "test1", Status: "Failed"}, {Name: "test2", Status: "Pending"}}},
+				},
 			},
 		}
 		for _, tt := range testCases {
@@ -141,8 +131,9 @@ var _ = Describe("entrypoint status API test", func() {
 			func() {
 				cancel := startRunner(apiAddr, tt.input)
 				defer cancel()
-
-				Eventually(getStatus, 10, 0.5).Should(Equal(&tt.expected))
+				for _, expected := range tt.expected {
+					Eventually(getStatus, 10, 0.5).Should(Equal(&expected))
+				}
 			}()
 		}
 	})
