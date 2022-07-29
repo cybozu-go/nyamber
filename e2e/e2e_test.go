@@ -42,30 +42,29 @@ var _ = Describe("Nyamber", func() {
 	})
 
 	It("should update status in vdc resource", func() {
-		Eventually(func() error {
+		Eventually(func() ([]metav1.Condition, error) {
 			out, err := kubectl(nil, "get", "vdc", "virtualdc-sample", "-o", "json")
 			if err != nil {
-				return err
+				return nil, err
 			}
 			vdc := &nyamberv1beta1.VirtualDC{}
 			if err := json.Unmarshal(out, vdc); err != nil {
-				return err
+				return nil, err
 			}
-			Expect(vdc.Status.Conditions).To(
-				gstruct.MatchElements(func(element interface{}) string {
-					return fmt.Sprintf("%v", element.(metav1.Condition).Type)
-				},
-					gstruct.IgnoreExtras,
-					gstruct.Elements{
-						nyamberv1beta1.TypePodJobCompleted: gstruct.MatchFields(gstruct.IgnoreExtras,
-							gstruct.Fields{
-								"Type":   Equal(nyamberv1beta1.TypePodJobCompleted),
-								"Reason": Equal(nyamberv1beta1.ReasonOK),
-							}),
-					}),
-			)
-			return nil
-		}, 10).Should(Succeed())
+			return vdc.Status.Conditions, nil
+		}, 10).Should(
+			gstruct.MatchElements(func(element interface{}) string {
+				return fmt.Sprintf("%v", element.(metav1.Condition).Type)
+			},
+				gstruct.IgnoreExtras,
+				gstruct.Elements{
+					nyamberv1beta1.TypePodJobCompleted: gstruct.MatchFields(gstruct.IgnoreExtras,
+						gstruct.Fields{
+							"Type":   Equal(nyamberv1beta1.TypePodJobCompleted),
+							"Reason": Equal(nyamberv1beta1.ReasonOK),
+						}),
+				}),
+		)
 	})
 
 	It("should not modify the existed vdc resources", func() {
