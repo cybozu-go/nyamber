@@ -8,6 +8,8 @@ import (
 	nyamberv1beta1 "github.com/cybozu-go/nyamber/api/v1beta1"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/gstruct"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var _ = Describe("Nyamber", func() {
@@ -49,12 +51,27 @@ var _ = Describe("Nyamber", func() {
 			if err := json.Unmarshal(out, vdc); err != nil {
 				return err
 			}
-			for _, cond := range vdc.Status.Conditions {
-				if cond.Type == nyamberv1beta1.TypePodJobCompleted && cond.Reason == nyamberv1beta1.ReasonOK {
-					return nil
-				}
-			}
-			return fmt.Errorf("Job is not completed")
-		}).Should(Succeed(), 10)
+			Expect(vdc.Status.Conditions).To(
+				gstruct.MatchElements(func(element interface{}) string {
+					return fmt.Sprintf("%v", element.(metav1.Condition).Type)
+				},
+					gstruct.IgnoreExtras,
+					gstruct.Elements{
+						nyamberv1beta1.TypePodJobCompleted: gstruct.MatchFields(gstruct.IgnoreExtras,
+							gstruct.Fields{
+								"Type":   Equal(nyamberv1beta1.TypePodJobCompleted),
+								"Reason": Equal(nyamberv1beta1.ReasonOK),
+							}),
+					}),
+			)
+			return nil
+		}).Should(Succeed())
+	})
+
+	It("should not modify the existed vdc resources", func() {
+		Eventually(func() error {
+			_, err := kubectl(nil, "apply", "-f", "./manifests/vdc_sample2.yaml")
+			return err
+		}).Should(HaveOccurred())
 	})
 })

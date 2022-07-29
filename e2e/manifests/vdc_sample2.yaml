@@ -1,0 +1,8 @@
+apiVersion: nyamber.cybozu.io/v1beta1
+kind: VirtualDC
+metadata:
+  name: virtualdc-sample
+spec:
+  skipNecoApps: true
+  command:
+  - "echo 'hoge2'"
