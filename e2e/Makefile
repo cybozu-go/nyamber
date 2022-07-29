@@ -32,7 +32,6 @@ start:
 	kind create cluster --name=$(KIND_CLUSTER_NAME) --config=$(KIND_CONFIG) --image=kindest/node:v$(E2ETEST_K8S_VERSION) --wait 1m
 	$(MAKE) -C ../ docker-build
 	kind load docker-image nyamber-controller:dev --name=$(KIND_CLUSTER_NAME)
-	docker build -t localhost:5151/entrypoint:dev -f ../Dockerfile.runner ..
 	kind load docker-image localhost:5151/entrypoint:dev --name=$(KIND_CLUSTER_NAME)
 	$(KUBECTL) apply -f https://github.com/jetstack/cert-manager/releases/download/v$(CERT_MANAGER_VERSION)/cert-manager.yaml
 	$(KUBECTL) -n cert-manager wait --for=condition=available --timeout=180s --all deployments

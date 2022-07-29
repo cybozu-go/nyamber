@@ -65,7 +65,7 @@ var _ = Describe("Nyamber", func() {
 					}),
 			)
 			return nil
-		}).Should(Succeed())
+		}, 10).Should(Succeed())
 	})
 
 	It("should not modify the existed vdc resources", func() {
