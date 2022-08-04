@@ -1,8 +1,8 @@
 apiVersion: nyamber.cybozu.io/v1beta1
 kind: VirtualDC
 metadata:
-  name: virtualdc-sample
+  name: vdc-sample2
 spec:
-  skipNecoApps: true
+  necoBranch: "test"
   command:
-  - "echo 'hoge'"
+  - env
