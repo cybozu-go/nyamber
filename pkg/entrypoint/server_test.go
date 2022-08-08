@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 
 	"github.com/cybozu-go/nyamber/pkg/constants"
@@ -40,7 +41,7 @@ var _ = Describe("entrypoint status API test", func() {
 	It("should state of commands are changed correctly", func() {
 		testCases := []testCase{
 			{
-				name: "one successfull command",
+				name: "one successful command",
 				input: []Job{
 					{
 						Name:    "test1",
@@ -135,7 +136,7 @@ var _ = Describe("entrypoint status API test", func() {
 					Eventually(getStatus, 10, 0.5).Should(Equal(&expected))
 				}
 			}()
-			Eventually(func() string { _, err := getStatus(); return err.Error() }, 10, 0.5).Should(ContainSubstring("connect: connection refused"))
+			Eventually(func() error { err := connect(); return err }, 10, 0.5).Should(HaveOccurred())
 		}
 	})
 })
@@ -166,4 +167,13 @@ func getStatus() (*statusResponse, error) {
 		return nil, err
 	}
 	return res, nil
+}
+
+func connect() error {
+	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", apiAddr, constants.ListenPort))
+	if err != nil {
+		return err
+	}
+	conn.Close()
+	return nil
 }
