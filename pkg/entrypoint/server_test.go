@@ -135,7 +135,7 @@ var _ = Describe("entrypoint status API test", func() {
 					Eventually(getStatus, 10, 0.5).Should(Equal(&expected))
 				}
 			}()
-			Eventually(func() error { _, err := getStatus(); return err }, 10, 0.5).Should(HaveOccurred())
+			Eventually(func() string { _, err := getStatus(); return err.Error() }, 10, 0.5).Should(ContainSubstring("connect: connection refused"))
 		}
 	})
 })
