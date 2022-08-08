@@ -15,7 +15,7 @@ import (
 	"go.uber.org/zap"
 )
 
-const apiAddr = "localhost:8080"
+const apiAddr = "localhost"
 
 type testCase struct {
 	name     string
@@ -129,19 +129,20 @@ var _ = Describe("entrypoint status API test", func() {
 		for _, tt := range testCases {
 			By(tt.name)
 			func() {
-				cancel := startRunner(apiAddr, tt.input)
+				cancel := startRunner(tt.input)
 				defer cancel()
 				for _, expected := range tt.expected {
 					Eventually(getStatus, 10, 0.5).Should(Equal(&expected))
 				}
 			}()
+			Eventually(func() string { _, err := getStatus(); return err.Error() }, 10, 0.5).Should(ContainSubstring("connect: connection refused"))
 		}
 	})
 })
 
-func startRunner(listenAddr string, jobs []Job) context.CancelFunc {
+func startRunner(jobs []Job) context.CancelFunc {
 	ctx, cancel := context.WithCancel(context.Background())
-	runner := NewRunner(listenAddr, log, jobs)
+	runner := NewRunner(fmt.Sprintf("%s:%d", apiAddr, constants.ListenPort), log, jobs)
 	go func() {
 		defer GinkgoRecover()
 		Expect(runner.Run(ctx)).To(Succeed())
@@ -149,14 +150,20 @@ func startRunner(listenAddr string, jobs []Job) context.CancelFunc {
 	return cancel
 }
 
-func getStatus(g Gomega) *statusResponse {
-	resp, err := http.Get(fmt.Sprintf("http://%s/%s", apiAddr, constants.StatusEndPoint))
-	g.Expect(err).Should(Succeed())
+func getStatus() (*statusResponse, error) {
+	resp, err := http.Get(fmt.Sprintf("http://%s:%d/%s", apiAddr, constants.ListenPort, constants.StatusEndPoint))
+	if err != nil {
+		return nil, err
+	}
 	res := &statusResponse{}
 	body, err := io.ReadAll(resp.Body)
-	g.Expect(err).Should(Succeed())
+	if err != nil {
+		return nil, err
+	}
 	defer resp.Body.Close()
 	err = json.Unmarshal(body, res)
-	g.Expect(err).Should(Succeed())
-	return res
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
 }
