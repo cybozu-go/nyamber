@@ -17,16 +17,12 @@ import (
 var _ = Describe("Nyamber", func() {
 	It("should prepare", func() {
 		vdcs := []string{"vdc_testcase", "vdc_testcase2", "vdc_testcase3"}
-		Eventually(func() error {
-			_, err := kubectl(nil, "apply", "-f", "../config/dev/namespaces.yaml")
-			return err
-		}).Should(Succeed())
+		_, err := kubectl(nil, "apply", "-f", "./manifests/namespace.yaml")
+		Expect(err).Should(Succeed())
 		for _, v := range vdcs {
 			By(v)
-			Eventually(func() error {
-				_, err := kubectl(nil, "apply", "-f", fmt.Sprintf("./manifests/%s.yaml", v))
-				return err
-			}).Should(Succeed())
+			_, err := kubectl(nil, "apply", "-f", fmt.Sprintf("./manifests/%s.yaml", v))
+			Expect(err).Should(Succeed())
 		}
 	})
 
@@ -98,16 +94,14 @@ var _ = Describe("Nyamber", func() {
 				}
 				return pod, nil
 			}, 5).Should(
-				PointTo(
-					MatchFields(IgnoreExtras, Fields{
-						"Spec": MatchFields(IgnoreExtras, Fields{
-							"Containers": ContainElements(MatchFields(IgnoreExtras, Fields{
-								"Args": Equal(tt.args),
-								"Env":  Equal(tt.env),
-							})),
-						}),
+				PointTo(MatchFields(IgnoreExtras, Fields{
+					"Spec": MatchFields(IgnoreExtras, Fields{
+						"Containers": ContainElements(MatchFields(IgnoreExtras, Fields{
+							"Args": Equal(tt.args),
+							"Env":  Equal(tt.env),
+						})),
 					}),
-				),
+				})),
 			)
 			Eventually(func() error {
 				_, err := kubectl(nil, "get", "svc", "-n", "nyamber-pod", tt.name)
@@ -191,37 +185,25 @@ var _ = Describe("Nyamber", func() {
 					return nil, err
 				}
 				return vdc.Status.Conditions, nil
-			}, 10).Should(
-				ContainElements(
-					MatchFields(IgnoreExtras, tt.condition)))
+			}, 10).Should(ContainElements(MatchFields(IgnoreExtras, tt.condition)))
 		}
 	})
 
 	It("should not modify the existed vdc resources", func() {
-		Eventually(func() error {
-			_, err := kubectl(nil, "apply", "-f", "./manifests/vdc_withsamename.yaml")
-			return err
-		}).Should(HaveOccurred())
+		_, err := kubectl(nil, "apply", "-f", "./manifests/vdc_withsamename.yaml")
+		Expect(err).Should(HaveOccurred())
 	})
 
-	It("should not create if vdc resources with same name exists", func() {
-		Eventually(func() error {
-			_, err := kubectl(nil, "create", "namespace", "nyamber-test")
-			return err
-		}).Should(HaveOccurred())
-		Eventually(func() error {
-			_, err := kubectl(nil, "apply", "-f", "./manifests/vdc_withsamename.yaml", "-n", "nyamber-test")
-			return err
-		}).Should(HaveOccurred())
+	It("should not deploy vdc resources if the vdc resources with same name exists", func() {
+		_, err := kubectl(nil, "apply", "-f", "./manifests/vdc_withsamename.yaml", "-n", "nyamber-test")
+		Expect(err).Should(HaveOccurred())
 	})
 
 	It("should delete pod and svc when vdc resource is deleted", func() {
 		vdcs := []string{"vdc_testcase", "vdc_testcase2", "vdc_testcase3"}
 		for _, v := range vdcs {
-			Eventually(func() error {
-				_, err := kubectl(nil, "delete", "-f", fmt.Sprintf("./manifests/%s.yaml", v))
-				return err
-			}).Should(HaveOccurred())
+			_, err := kubectl(nil, "delete", "-f", fmt.Sprintf("./manifests/%s.yaml", v))
+			Expect(err).Should(Succeed())
 		}
 		for _, v := range vdcs {
 			By(v)
