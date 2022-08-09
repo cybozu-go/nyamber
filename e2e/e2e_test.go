@@ -1,7 +1,6 @@
 package e2e
 
 import (
-	_ "embed"
 	"encoding/json"
 	"fmt"
 	"regexp"
@@ -35,63 +34,53 @@ var _ = Describe("Nyamber", func() {
 		testcases := []struct {
 			name string
 			args []string
-			env  []types.GomegaMatcher
+			env  []corev1.EnvVar
 		}{
 			{
-				"vdc-sample",
+				"vdc-testcase",
 				[]string{"neco_bootstrap:/neco-bootstrap"},
-				[]types.GomegaMatcher{
-					MatchAllFields(
-						Fields{
-							"Name":      Equal("NECO_BRANCH"),
-							"Value":     Equal("main"),
-							"ValueFrom": BeNil(),
-						},
-					),
+				[]corev1.EnvVar{
+					{
+						Name:      "NECO_BRANCH",
+						Value:     "main",
+						ValueFrom: nil,
+					},
 				},
 			},
 			{
-				"vdc-sample2",
+				"vdc-testcase2",
 				[]string{
 					"neco_bootstrap:/neco-bootstrap",
 					"neco_apps_bootstrap:/neco-apps-bootstrap",
 					"user_defined_command:env",
 				},
-				[]types.GomegaMatcher{
-					MatchAllFields(
-						Fields{
-							"Name":      Equal("NECO_BRANCH"),
-							"Value":     Equal("test"),
-							"ValueFrom": BeNil(),
-						},
-					),
-					MatchAllFields(
-						Fields{
-							"Name":      Equal("NECO_APPS_BRANCH"),
-							"Value":     Equal("main"),
-							"ValueFrom": BeNil(),
-						},
-					),
+				[]corev1.EnvVar{
+					{
+						Name:      "NECO_BRANCH",
+						Value:     "test",
+						ValueFrom: nil,
+					},
+					{
+						Name:      "NECO_APPS_BRANCH",
+						Value:     "main",
+						ValueFrom: nil,
+					},
 				},
 			},
 			{
-				"vdc-sample3",
+				"vdc-testcase3",
 				[]string{"neco_bootstrap:/neco-bootstrap", "neco_apps_bootstrap:/neco-apps-bootstrap", "user_defined_command:false"},
-				[]types.GomegaMatcher{
-					MatchAllFields(
-						Fields{
-							"Name":      Equal("NECO_BRANCH"),
-							"Value":     Equal("main"),
-							"ValueFrom": BeNil(),
-						},
-					),
-					MatchAllFields(
-						Fields{
-							"Name":      Equal("NECO_APPS_BRANCH"),
-							"Value":     Equal("main"),
-							"ValueFrom": BeNil(),
-						},
-					),
+				[]corev1.EnvVar{
+					{
+						Name:      "NECO_BRANCH",
+						Value:     "main",
+						ValueFrom: nil,
+					},
+					{
+						Name:      "NECO_APPS_BRANCH",
+						Value:     "main",
+						ValueFrom: nil,
+					},
 				},
 			},
 		}
@@ -113,11 +102,9 @@ var _ = Describe("Nyamber", func() {
 					MatchFields(IgnoreExtras, Fields{
 						"Spec": MatchFields(IgnoreExtras, Fields{
 							"Containers": ContainElements(MatchFields(IgnoreExtras, Fields{
-								"Args": ConsistOf(tt.args),
-								"Env":  ConsistOf(tt.env),
-							},
-							),
-							),
+								"Args": Equal(tt.args),
+								"Env":  Equal(tt.env),
+							})),
 						}),
 					}),
 				),
@@ -138,15 +125,15 @@ var _ = Describe("Nyamber", func() {
 			matcher types.GomegaMatcher
 		}{
 			{
-				"vdc-sample",
+				"vdc-testcase",
 				ContainElements("+ echo neco-bootstrap"),
 			},
 			{
-				"vdc-sample2",
+				"vdc-testcase2",
 				ContainElements("+ echo neco-bootstrap", "+ echo neco-apps-bootstrap", "NECO_BRANCH=test", "NECO_APPS_BRANCH=main"),
 			},
 			{
-				"vdc-sample3",
+				"vdc-testcase3",
 				ContainElements("+ echo neco-bootstrap", "+ echo neco-apps-bootstrap", ContainSubstring("job execution error")),
 			},
 		}
@@ -164,11 +151,11 @@ var _ = Describe("Nyamber", func() {
 
 	It("should update status of entrypoint in vdc resource", func() {
 		testcases := []struct {
-			name    string
-			matcher Fields
+			name      string
+			condition Fields
 		}{
 			{
-				"vdc-sample",
+				"vdc-testcase",
 				Fields{
 					"Reason": Equal(nyamberv1beta1.ReasonOK),
 					"Type":   Equal(nyamberv1beta1.TypePodJobCompleted),
@@ -176,7 +163,7 @@ var _ = Describe("Nyamber", func() {
 				},
 			},
 			{
-				"vdc-sample2",
+				"vdc-testcase2",
 				Fields{
 					"Reason": Equal(nyamberv1beta1.ReasonOK),
 					"Type":   Equal(nyamberv1beta1.TypePodJobCompleted),
@@ -184,7 +171,7 @@ var _ = Describe("Nyamber", func() {
 				},
 			},
 			{
-				"vdc-sample3",
+				"vdc-testcase3",
 				Fields{
 					"Reason": Equal(nyamberv1beta1.ReasonServiceCreatedFailed),
 					"Type":   Equal(nyamberv1beta1.TypePodJobCompleted),
@@ -193,7 +180,7 @@ var _ = Describe("Nyamber", func() {
 			},
 		}
 		for _, tt := range testcases {
-			By("vdc-sample")
+			By(tt.name)
 			Eventually(func() ([]metav1.Condition, error) {
 				out, err := kubectl(nil, "get", "vdc", tt.name, "-o", "json")
 				if err != nil {
@@ -206,7 +193,7 @@ var _ = Describe("Nyamber", func() {
 				return vdc.Status.Conditions, nil
 			}, 10).Should(
 				ContainElements(
-					MatchFields(IgnoreExtras, tt.matcher)))
+					MatchFields(IgnoreExtras, tt.condition)))
 		}
 	})
 

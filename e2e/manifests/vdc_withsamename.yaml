@@ -1,6 +1,6 @@
 apiVersion: nyamber.cybozu.io/v1beta1
 kind: VirtualDC
 metadata:
-  name: vdc-sample
+  name: vdc-testcase
 spec:
   necoBranch: "test"

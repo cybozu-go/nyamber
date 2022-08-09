@@ -1,7 +1,7 @@
 apiVersion: nyamber.cybozu.io/v1beta1
 kind: VirtualDC
 metadata:
-  name: vdc-sample3
+  name: vdc-testcase3
 spec:
   command:
   - "false"
