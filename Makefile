@@ -1,5 +1,6 @@
 # Image URL to use all building/pushing image targets
-IMG ?= nyamber-controller:dev
+CONTROLLER_IMG ?= nyamber-controller:dev
+ENTRYPOINT_IMG ?= localhost:5151/entrypoint:dev
 
 ##@ Build Dependencies
 LOCALBIN ?= $(shell pwd)/bin
@@ -94,11 +95,13 @@ run: manifests generate fmt vet ## Run a controller from your host.
 
 .PHONY: docker-build
 docker-build: ## Build docker image with the manager.
-	docker build -t ${IMG} .
+	DOCKER_BUILDKIT=1 docker build -t ${CONTROLLER_IMG} .
+	DOCKER_BUILDKIT=1 docker build -t ${ENTRYPOINT_IMG} -f ./Dockerfile.runner .
 
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
-	docker push ${IMG}
+	docker push ${CONTROLLER_IMG}
+	docker push ${ENTRYPOINT_IMG}
 
 ##@ Deployment
 
@@ -126,7 +129,7 @@ uninstall: manifests kustomize ## Uninstall CRDs from the K8s cluster specified 
 
 .PHONY: deploy
 deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
-	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
+	cd config/manager && $(KUSTOMIZE) edit set image controller=${CONTROLLER_IMG}
 	$(KUSTOMIZE) build config/default | kubectl apply -f -
 
 .PHONY: undeploy

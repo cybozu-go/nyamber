@@ -1,0 +1,6 @@
+apiVersion: nyamber.cybozu.io/v1beta1
+kind: VirtualDC
+metadata:
+  name: vdc-testcase
+spec:
+  skipNecoApps: true
