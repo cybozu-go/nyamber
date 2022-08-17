@@ -20,6 +20,8 @@ COPY pkg/ pkg/
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o manager cmd/nyamber-controller/main.go
 
 FROM quay.io/cybozu/ubuntu:20.04
+LABEL org.opencontainers.image.source https://github.com/cybozu-go/nyamber
+
 WORKDIR /
 COPY --from=builder /workspace/manager .
 USER 65532:65532
