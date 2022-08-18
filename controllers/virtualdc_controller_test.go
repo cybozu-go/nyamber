@@ -99,7 +99,7 @@ var _ = Describe("VirtualDC controller", func() {
 kind: Pod
 spec:
   containers:
-  - image: entrypoint:envtest
+  - image: nyamber-runner:envtest
     name: ubuntu`
 
 		cm := &corev1.ConfigMap{
@@ -177,7 +177,7 @@ spec:
 		}))
 		Expect(pod.Spec.Containers).To(HaveLen(1))
 		Expect(pod.Spec.Containers[0]).To(MatchFields(IgnoreExtras, Fields{
-			"Image": Equal("entrypoint:envtest"),
+			"Image": Equal("nyamber-runner:envtest"),
 			"Name":  Equal("ubuntu"),
 			"Env": ConsistOf([]corev1.EnvVar{
 				{
@@ -400,7 +400,7 @@ spec:
 kind: Pod
 spec:
 	containers:
-	- image: entrypoint:envtest
+	- image: nyamber-runner:envtest
 	  name ubuntu`
 
 		cm.Data = map[string]string{"pod-template": podTemplate}
@@ -566,7 +566,7 @@ kind: Pod`
 			Spec: corev1.PodSpec{
 				Containers: []corev1.Container{
 					{
-						Image: "entrypoint:dev",
+						Image: "nyamber-runner:dev",
 						Name:  "ubuntu",
 					},
 				},

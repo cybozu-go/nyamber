@@ -47,8 +47,8 @@ docker_build_with_restart(
     ]
 )
 
-local_resource('entrypoint image',
-    'docker build -t localhost:5151/entrypoint:dev -f Dockerfile.runner .; docker push localhost:5151/entrypoint:dev',
+local_resource('runner image',
+    'docker build -t localhost:5151/nyamber-runner:dev -f Dockerfile.runner .; docker push localhost:5151/nyamber-runner:dev',
     deps=['Dockerfile.runner', './bin/entrypoint'] )
 
 local_resource(
