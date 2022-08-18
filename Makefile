@@ -1,6 +1,6 @@
 # Image URL to use all building/pushing image targets
 CONTROLLER_IMG ?= nyamber-controller:dev
-ENTRYPOINT_IMG ?= localhost:5151/entrypoint:dev
+RUNNER_IMG ?= localhost:5151/nyamber-runner:dev
 
 ##@ Build Dependencies
 LOCALBIN ?= $(shell pwd)/bin
@@ -96,12 +96,12 @@ run: manifests generate fmt vet ## Run a controller from your host.
 .PHONY: docker-build
 docker-build: ## Build docker image with the manager.
 	DOCKER_BUILDKIT=1 docker build -t ${CONTROLLER_IMG} .
-	DOCKER_BUILDKIT=1 docker build -t ${ENTRYPOINT_IMG} -f ./Dockerfile.runner .
+	DOCKER_BUILDKIT=1 docker build -t ${RUNNER_IMG} -f ./Dockerfile.runner .
 
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
 	docker push ${CONTROLLER_IMG}
-	docker push ${ENTRYPOINT_IMG}
+	docker push ${RUNNER_IMG}
 
 ##@ Deployment
 

@@ -143,7 +143,7 @@ var _ = Describe("Nyamber", func() {
 		}
 	})
 
-	It("should update status of entrypoint in vdc resource", func() {
+	It("should update status of vdc resource", func() {
 		testcases := []struct {
 			name      string
 			condition Fields

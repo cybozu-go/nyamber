@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Pod
 spec:
   containers:
-  - image: localhost:5151/entrypoint:dev
+  - image: localhost:5151/nyamber-runner:dev
     name: ubuntu
     command:
       - "/entrypoint" 
