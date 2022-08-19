@@ -190,8 +190,8 @@ spec:
 				},
 			}),
 			"Args": Equal([]string{
-				"neco_bootstrap:/neco-bootstrap",
-				"neco_apps_bootstrap:/neco-apps-bootstrap",
+				"neco_bootstrap:/scripts/neco-bootstrap",
+				"neco_apps_bootstrap:/scripts/neco-apps-bootstrap",
 			}),
 		}))
 
@@ -358,7 +358,7 @@ spec:
 					Value: "main",
 				},
 			}),
-			"Args": Equal([]string{"neco_bootstrap:/neco-bootstrap"}),
+			"Args": Equal([]string{"neco_bootstrap:/scripts/neco-bootstrap"}),
 		}))
 	})
 
@@ -384,8 +384,8 @@ spec:
 
 		By("checking to set command of pod")
 		Expect(pod.Spec.Containers[0].Args).To(Equal([]string{
-			"neco_bootstrap:/neco-bootstrap",
-			"neco_apps_bootstrap:/neco-apps-bootstrap",
+			"neco_bootstrap:/scripts/neco-bootstrap",
+			"neco_apps_bootstrap:/scripts/neco-apps-bootstrap",
 			"user_defined_command:test command",
 		}))
 	})

@@ -19,9 +19,11 @@ var _ = Describe("Nyamber vdc e2e test", func() {
 		vdcs := []string{"vdc_testcase", "vdc_testcase2", "vdc_testcase3"}
 		_, err := kubectl(nil, "apply", "-f", "./manifests/namespace.yaml")
 		Expect(err).Should(Succeed())
+		_, err = kubectl(nil, "apply", "-k", "./manifests/script-config")
+		Expect(err).Should(Succeed())
 		for _, v := range vdcs {
 			By(v)
-			_, err := kubectl(nil, "apply", "-f", fmt.Sprintf("./manifests/%s.yaml", v))
+			_, err := kubectl(nil, "apply", "-f", fmt.Sprintf("./manifests/vdc-testcase/%s.yaml", v))
 			Expect(err).Should(Succeed())
 		}
 	})
@@ -34,7 +36,7 @@ var _ = Describe("Nyamber vdc e2e test", func() {
 		}{
 			{
 				"vdc-testcase",
-				[]string{"neco_bootstrap:/neco-bootstrap"},
+				[]string{"neco_bootstrap:/scripts/neco-bootstrap"},
 				[]corev1.EnvVar{
 					{
 						Name:      "NECO_BRANCH",
@@ -46,8 +48,8 @@ var _ = Describe("Nyamber vdc e2e test", func() {
 			{
 				"vdc-testcase2",
 				[]string{
-					"neco_bootstrap:/neco-bootstrap",
-					"neco_apps_bootstrap:/neco-apps-bootstrap",
+					"neco_bootstrap:/scripts/neco-bootstrap",
+					"neco_apps_bootstrap:/scripts/neco-apps-bootstrap",
 					"user_defined_command:env",
 				},
 				[]corev1.EnvVar{
@@ -65,7 +67,10 @@ var _ = Describe("Nyamber vdc e2e test", func() {
 			},
 			{
 				"vdc-testcase3",
-				[]string{"neco_bootstrap:/neco-bootstrap", "neco_apps_bootstrap:/neco-apps-bootstrap", "user_defined_command:false"},
+				[]string{
+					"neco_bootstrap:/scripts/neco-bootstrap",
+					"neco_apps_bootstrap:/scripts/neco-apps-bootstrap",
+					"user_defined_command:false"},
 				[]corev1.EnvVar{
 					{
 						Name:      "NECO_BRANCH",
@@ -190,19 +195,19 @@ var _ = Describe("Nyamber vdc e2e test", func() {
 	})
 
 	It("should not modify the existed vdc resources", func() {
-		_, err := kubectl(nil, "apply", "-f", "./manifests/vdc_withsamename.yaml")
+		_, err := kubectl(nil, "apply", "-f", "./manifests/vdc-testcase/vdc_withsamename.yaml")
 		Expect(err).Should(HaveOccurred())
 	})
 
 	It("should not deploy vdc resources if the vdc resources with same name exists", func() {
-		_, err := kubectl(nil, "apply", "-f", "./manifests/vdc_withsamename.yaml", "-n", "nyamber-test")
+		_, err := kubectl(nil, "apply", "-f", "./manifests/vdc-testcase/vdc_withsamename.yaml", "-n", "nyamber-test")
 		Expect(err).Should(HaveOccurred())
 	})
 
 	It("should delete pod and svc when vdc resource is deleted", func() {
 		vdcs := []string{"vdc_testcase", "vdc_testcase2", "vdc_testcase3"}
 		for _, v := range vdcs {
-			_, err := kubectl(nil, "delete", "-f", fmt.Sprintf("./manifests/%s.yaml", v))
+			_, err := kubectl(nil, "delete", "-f", fmt.Sprintf("./manifests/vdc-testcase/%s.yaml", v))
 			Expect(err).Should(Succeed())
 		}
 		for _, v := range vdcs {

@@ -22,8 +22,8 @@ jobs:
           IMAGE_TAG=${GITHUB_REF#refs/tags/v} # Remove "v" prefix.
           docker tag nyamber-controller:dev ghcr.io/cybozu-go/nyamber-controller:$IMAGE_TAG
           docker push ghcr.io/cybozu-go/nyamber-controller:$IMAGE_TAG
-          docker tag dctest-runner:dev ghcr.io/cybozu-go/dctest-runner:$IMAGE_TAG
-          docker push ghcr.io/cybozu-go/dctest-runner:$IMAGE_TAG
+          docker tag localhost:5151/nyamber-runner:dev ghcr.io/cybozu-go/nyamber-runner:$IMAGE_TAG
+          docker push ghcr.io/cybozu-go/nyamber-runner:$IMAGE_TAG
   release:
     name: Release on GitHub
     needs: image

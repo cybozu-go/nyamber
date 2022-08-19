@@ -53,5 +53,6 @@ logs:
 .PHONY: stop
 stop: 
 	kind delete cluster --name=$(KIND_CLUSTER_NAME)
-	-docker image rm nyamber:dev
+	-docker image rm nyamber-controller:dev
+	-docker image rm localhost:5151/nyamber-runner:dev
 	-docker image prune -f

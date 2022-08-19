@@ -1,7 +1,6 @@
 # Image URL to use all building/pushing image targets
 CONTROLLER_IMG ?= nyamber-controller:dev
 RUNNER_IMG ?= localhost:5151/nyamber-runner:dev
-DCTEST_IMG ?= dctest-runner:dev
 
 ##@ Build Dependencies
 LOCALBIN ?= $(shell pwd)/bin
@@ -98,7 +97,6 @@ run: manifests generate fmt vet ## Run a controller from your host.
 docker-build: ## Build docker image with the manager.
 	DOCKER_BUILDKIT=1 docker build -t ${CONTROLLER_IMG} .
 	DOCKER_BUILDKIT=1 docker build -t ${RUNNER_IMG} -f ./Dockerfile.runner .
-	DOCKER_BUILDKIT=1 docker build -t ${DCTEST_IMG} -f ./Dockerfile.dctestrunner .
 
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
