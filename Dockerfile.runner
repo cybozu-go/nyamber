@@ -23,7 +23,8 @@ LABEL org.opencontainers.image.source https://github.com/cybozu-go/nyamber
 
 WORKDIR /
 COPY --from=builder /workspace/entrypoint .
-COPY scripts/ /
+COPY scripts/test/neco-bootstrap /
+COPY scripts/test/neco-apps-bootstrap /
 USER 65532:65532
 
 CMD ["/entrypoint"]
