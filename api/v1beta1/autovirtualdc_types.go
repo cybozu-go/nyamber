@@ -27,7 +27,6 @@ import (
 type AutoVirtualDCSpec struct {
 	// Template is atemplate for VirtualDC
 	Template VirtualDC `json:"template,omitempty"`
-
 }
 
 // AutoVirtualDCStatus defines the observed state of AutoVirtualDC
