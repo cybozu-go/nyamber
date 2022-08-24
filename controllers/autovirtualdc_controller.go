@@ -98,7 +98,13 @@ func (r *AutoVirtualDCReconciler) createVirtualDC(ctx context.Context, avdc *nya
 		},
 		Spec: avdc.Spec.Template.Spec,
 	}
-	err := r.Create(ctx, vdc)
+
+	err := ctrl.SetControllerReference(avdc, vdc, r.Scheme)
+	if err != nil{
+		return err
+	}
+
+	err = r.Create(ctx, vdc)
 	if err != nil {
 		return err
 	}
@@ -108,5 +114,17 @@ func (r *AutoVirtualDCReconciler) createVirtualDC(ctx context.Context, avdc *nya
 }
 
 func (r *AutoVirtualDCReconciler) finalize(ctx context.Context, avdc *nyamberv1beta1.AutoVirtualDC) (ctrl.Result, error) {
+	logger := log.FromContext(ctx)
+	logger.Info("finalize start")
+	if !controllerutil.ContainsFinalizer(avdc, constants.FinalizerName){
+		return ctrl.Result{}, nil
+	}
+
+	controllerutil.RemoveFinalizer(avdc, constants.FinalizerName)
+	err := r.Update(ctx, avdc)
+	if err != nil {
+		return ctrl.Result{}, err
+	}
+	logger.Info("Finalize succeeded")
 	return ctrl.Result{}, nil
 }
