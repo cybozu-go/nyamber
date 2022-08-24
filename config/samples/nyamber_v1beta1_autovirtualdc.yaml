@@ -1,0 +1,6 @@
+apiVersion: nyamber.cybozu.io/v1beta1
+kind: AutoVirtualDC
+metadata:
+  name: autovirtualdc-sample
+spec:
+  # TODO(user): Add fields here
