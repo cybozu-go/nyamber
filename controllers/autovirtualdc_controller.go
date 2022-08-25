@@ -29,6 +29,8 @@ import (
 
 	nyamberv1beta1 "github.com/cybozu-go/nyamber/api/v1beta1"
 	"github.com/cybozu-go/nyamber/pkg/constants"
+	cron "github.com/robfig/cron/v3"
+	"time"
 )
 
 // AutoVirtualDCReconciler reconciles a AutoVirtualDC object
@@ -140,4 +142,28 @@ func (r *AutoVirtualDCReconciler) finalize(ctx context.Context, avdc *nyamberv1b
 	}
 	logger.Info("Finalize succeeded")
 	return ctrl.Result{}, nil
+}
+
+func (r *AutoVirtualDCReconciler) checkNextOperation(avdc *nyamberv1beta1.AutoVirtualDC) (*nyamberv1beta1.Operation, error){
+	specParser := cron.NewParser(cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow)
+	startSched, err := specParser.Parse(avdc.Spec.StartSchedule)
+	if err != nil{
+		return nil, err
+	}
+	stopSched, err := specParser.Parse(avdc.Spec.StopSchedule)
+	if err != nil{
+		return nil, err
+	}
+	nextStartTime := startSched.Next(time.Now())
+	nextStopTime := stopSched.Next(time.Now())
+	if nextStopTime.After(nextStartTime) {
+		return &nyamberv1beta1.Operation{
+			Name: nyamberv1beta1.Start,
+			Time: metav1.NewTime(nextStartTime),
+		}, nil
+	}
+	return &nyamberv1beta1.Operation{
+		Name: nyamberv1beta1.Stop,
+		Time: metav1.NewTime(nextStopTime),
+	}, nil
 }

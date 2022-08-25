@@ -204,6 +204,8 @@ spec:
                   name:
                     type: string
                   time:
+                    description: Time's format is format that is easy to see for human.
+                    format: date-time
                     type: string
                 type: object
             type: object

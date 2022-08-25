@@ -43,7 +43,8 @@ type AutoVirtualDCStatus struct {
 
 type Operation struct {
 	Name OperationName `json:"name,omitempty"`
-	Time string        `json:"time,omitempty"`
+	// Time's format is format that is easy to see for human.
+	Time metav1.Time       `json:"time,omitempty"`
 }
 
 type OperationName string
