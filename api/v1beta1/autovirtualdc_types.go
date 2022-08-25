@@ -20,20 +20,38 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
 // AutoVirtualDCSpec defines the desired state of AutoVirtualDC
 type AutoVirtualDCSpec struct {
-	// Template is atemplate for VirtualDC
+	// Template is a template for VirtualDC
 	Template VirtualDC `json:"template,omitempty"`
+
+	// StartSchedule is time to start VirtualDC. This format is cron format.
+	StartSchedule string `json:"startSchedule,omitempty"`
+
+	// StopSchedule is time to stop VirtualDC. this format is cron format.
+	StopSchedule string `json:"stopSchedule,omitempty"`
+
+	// TimeoutDuration is the duration of retry.  This format is format used by ParseDuration(https://pkg.go.dev/time#ParseDuration)
+	TimeoutDuration string `json:"timeoutDuration,omitempty"`
 }
 
 // AutoVirtualDCStatus defines the observed state of AutoVirtualDC
 type AutoVirtualDCStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	// next operation of AutoVirtualDC
+	NextOperation Operation `json:"nextOperation,omitempty"`
 }
+
+type Operation struct {
+	Name OperationName `json:"name,omitempty"`
+	Time string        `json:"time,omitempty"`
+}
+
+type OperationName string
+
+const (
+	Start OperationName = "start"
+    Stop OperationName = "stop"
+)
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status

@@ -35,8 +35,16 @@ spec:
           spec:
             description: AutoVirtualDCSpec defines the desired state of AutoVirtualDC
             properties:
+              startSchedule:
+                description: StartSchedule is time to start VirtualDC. This format
+                  is cron format.
+                type: string
+              stopSchedule:
+                description: StopSchedule is time to stop VirtualDC. this format is
+                  cron format.
+                type: string
               template:
-                description: Template is atemplate for VirtualDC
+                description: Template is a template for VirtualDC
                 properties:
                   apiVersion:
                     description: 'APIVersion defines the versioned schema of this
@@ -182,9 +190,22 @@ spec:
                         type: array
                     type: object
                 type: object
+              timeoutDuration:
+                description: TimeoutDuration is the duration of retry.  This format
+                  is format used by ParseDuration(https://pkg.go.dev/time#ParseDuration)
+                type: string
             type: object
           status:
             description: AutoVirtualDCStatus defines the observed state of AutoVirtualDC
+            properties:
+              nextOperation:
+                description: next operation of AutoVirtualDC
+                properties:
+                  name:
+                    type: string
+                  time:
+                    type: string
+                type: object
             type: object
         type: object
     served: true
