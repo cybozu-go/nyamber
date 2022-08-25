@@ -5,11 +5,13 @@ import (
 	"errors"
 
 	"time"
-	"k8s.io/utils/pointer"
+
 	nyamberv1beta1 "github.com/cybozu-go/nyamber/api/v1beta1"
 	"github.com/cybozu-go/nyamber/pkg/constants"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	. "github.com/onsi/gomega/gstruct"
+	"k8s.io/utils/pointer"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -17,9 +19,19 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
+type MockClock struct {
+	now time.Time
+}
+
+func (m *MockClock) Now() time.Time {
+	return m.now
+}
+
 var _ = Describe("AutoVirtualDC controller", func() {
 	ctx := context.Background()
 	var stopFunc func()
+	clock := &MockClock{now: time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)}
+
 	BeforeEach(func() {
 		time.Sleep(100 * time.Millisecond)
 
@@ -34,6 +46,7 @@ var _ = Describe("AutoVirtualDC controller", func() {
 		nr := &AutoVirtualDCReconciler{
 			Client: client,
 			Scheme: mgr.GetScheme(),
+			Clock:  clock,
 		}
 		err = nr.SetupWithManager(mgr)
 		Expect(err).NotTo(HaveOccurred())
@@ -108,15 +121,41 @@ var _ = Describe("AutoVirtualDC controller", func() {
 		By("checking if virtualDC has OwnerReference")
 
 		expectedOwnerReference := metav1.OwnerReference{
-			Kind:       "AutoVirtualDC",
-			APIVersion: "nyamber.cybozu.io/v1beta1",
-			UID:        avdc.UID,
-			Name:       avdc.Name,
-			Controller: pointer.Bool(true),
+			Kind:               "AutoVirtualDC",
+			APIVersion:         "nyamber.cybozu.io/v1beta1",
+			UID:                avdc.UID,
+			Name:               avdc.Name,
+			Controller:         pointer.Bool(true),
 			BlockOwnerDeletion: pointer.Bool(true),
 		}
 		Expect(vdc.ObjectMeta.OwnerReferences).To(ContainElement(expectedOwnerReference))
+	})
 
+	It("should have status according to its schedule", func() {
+		By("creating AutoVirtualDC with schedule")
+		clock.now = time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
+		avdc := &nyamberv1beta1.AutoVirtualDC{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-avdc",
+				Namespace: testNamespace,
+			},
+			Spec: nyamberv1beta1.AutoVirtualDCSpec{
+				StartSchedule: "0 1 * * *",
+				StopSchedule:  "0 5 * * *",
+			},
+		}
+		err := k8sClient.Create(ctx, avdc)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("checking NextOperation")
+		Eventually(func() (*nyamberv1beta1.Operation, error) {
+			if err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-avdc", Namespace: testNamespace}, avdc); err != nil {
+				return nil, err
+			}
+			return avdc.Status.NextOperation, nil
+		}).Should(PointTo(Equal(nyamberv1beta1.Operation{
+			Name: nyamberv1beta1.Start,
+			Time: metav1.NewTime(time.Date(2000, 1, 1, 1, 0, 0, 0, time.UTC)),
+		})))
 	})
 })
-

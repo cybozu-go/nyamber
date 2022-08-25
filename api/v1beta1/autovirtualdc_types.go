@@ -38,20 +38,20 @@ type AutoVirtualDCSpec struct {
 // AutoVirtualDCStatus defines the observed state of AutoVirtualDC
 type AutoVirtualDCStatus struct {
 	// next operation of AutoVirtualDC
-	NextOperation Operation `json:"nextOperation,omitempty"`
+	NextOperation *Operation `json:"nextOperation,omitempty"`
 }
 
 type Operation struct {
 	Name OperationName `json:"name,omitempty"`
 	// Time's format is format that is easy to see for human.
-	Time metav1.Time       `json:"time,omitempty"`
+	Time metav1.Time `json:"time,omitempty"`
 }
 
 type OperationName string
 
 const (
 	Start OperationName = "start"
-    Stop OperationName = "stop"
+	Stop  OperationName = "stop"
 )
 
 //+kubebuilder:object:root=true

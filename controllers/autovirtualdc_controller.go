@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 
+	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -27,16 +28,21 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
+	"time"
+
 	nyamberv1beta1 "github.com/cybozu-go/nyamber/api/v1beta1"
 	"github.com/cybozu-go/nyamber/pkg/constants"
-	cron "github.com/robfig/cron/v3"
-	"time"
 )
 
 // AutoVirtualDCReconciler reconciles a AutoVirtualDC object
 type AutoVirtualDCReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
+	Clock
+}
+
+type Clock interface {
+	Now() time.Time
 }
 
 //+kubebuilder:rbac:groups=nyamber.cybozu.io,resources=autovirtualdcs,verbs=get;list;watch;create;update;patch;delete
@@ -52,7 +58,7 @@ type AutoVirtualDCReconciler struct {
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.11.2/pkg/reconcile
-func (r *AutoVirtualDCReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *AutoVirtualDCReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
 	logger := log.FromContext(ctx)
 
 	avdc := &nyamberv1beta1.AutoVirtualDC{}
@@ -77,7 +83,23 @@ func (r *AutoVirtualDCReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		}
 	}
 
+	defer func(before nyamberv1beta1.AutoVirtualDCStatus) {
+		if equality.Semantic.DeepEqual(avdc.Status, before) {
+			return
+		}
+
+		logger.Info("update status", "status", avdc.Status, "before", before)
+		if err2 := r.Status().Update(ctx, avdc); err2 != nil {
+			logger.Error(err2, "failed to update status")
+			err = err2
+		}
+	}(*avdc.Status.DeepCopy())
+
 	if err := r.createVirtualDC(ctx, avdc); err != nil {
+		return ctrl.Result{}, err
+	}
+
+	if err := r.updateStatus(ctx, avdc); err != nil {
 		return ctrl.Result{}, err
 	}
 
@@ -144,26 +166,11 @@ func (r *AutoVirtualDCReconciler) finalize(ctx context.Context, avdc *nyamberv1b
 	return ctrl.Result{}, nil
 }
 
-func (r *AutoVirtualDCReconciler) checkNextOperation(avdc *nyamberv1beta1.AutoVirtualDC) (*nyamberv1beta1.Operation, error){
-	specParser := cron.NewParser(cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow)
-	startSched, err := specParser.Parse(avdc.Spec.StartSchedule)
-	if err != nil{
-		return nil, err
+func (r *AutoVirtualDCReconciler) updateStatus(ctx context.Context, avdc *nyamberv1beta1.AutoVirtualDC) error {
+	ope, err := checkNextOperation(avdc, r.Now())
+	if err != nil {
+		return err
 	}
-	stopSched, err := specParser.Parse(avdc.Spec.StopSchedule)
-	if err != nil{
-		return nil, err
-	}
-	nextStartTime := startSched.Next(time.Now())
-	nextStopTime := stopSched.Next(time.Now())
-	if nextStopTime.After(nextStartTime) {
-		return &nyamberv1beta1.Operation{
-			Name: nyamberv1beta1.Start,
-			Time: metav1.NewTime(nextStartTime),
-		}, nil
-	}
-	return &nyamberv1beta1.Operation{
-		Name: nyamberv1beta1.Stop,
-		Time: metav1.NewTime(nextStopTime),
-	}, nil
+	avdc.Status.NextOperation = ope
+	return nil
 }
