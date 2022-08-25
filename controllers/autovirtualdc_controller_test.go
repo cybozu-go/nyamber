@@ -3,18 +3,14 @@ package controllers
 import (
 	"context"
 	"errors"
-
 	"time"
 
 	nyamberv1beta1 "github.com/cybozu-go/nyamber/api/v1beta1"
 	"github.com/cybozu-go/nyamber/pkg/constants"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
-	. "github.com/onsi/gomega/gstruct"
-	"k8s.io/utils/pointer"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
+	"k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -132,6 +128,7 @@ var _ = Describe("AutoVirtualDC controller", func() {
 	})
 
 	It("should have status according to its schedule", func() {
+
 		By("creating AutoVirtualDC with schedule")
 		clock.now = time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
 		avdc := &nyamberv1beta1.AutoVirtualDC{
@@ -148,14 +145,17 @@ var _ = Describe("AutoVirtualDC controller", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("checking NextOperation")
-		Eventually(func() (*nyamberv1beta1.Operation, error) {
-			if err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-avdc", Namespace: testNamespace}, avdc); err != nil {
-				return nil, err
-			}
-			return avdc.Status.NextOperation, nil
-		}).Should(PointTo(Equal(nyamberv1beta1.Operation{
-			Name: nyamberv1beta1.Start,
-			Time: metav1.NewTime(time.Date(2000, 1, 1, 1, 0, 0, 0, time.UTC)),
-		})))
+		var operation *nyamberv1beta1.Operation
+
+		Eventually(func(g Gomega) {
+			err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-avdc", Namespace: testNamespace}, avdc)
+			g.Expect(err).NotTo(HaveOccurred())
+			operation = avdc.Status.NextOperation
+			g.Expect(operation).NotTo(BeNil())
+			g.Expect(operation.Name).To(Equal(nyamberv1beta1.Start))
+			expectTime := metav1.NewTime(time.Date(2000, 1, 1, 1, 0, 0, 0, time.UTC))
+			g.Expect(operation.Time.Equal(&expectTime))
+		}).Should(Succeed())
+
 	})
 })

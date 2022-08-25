@@ -3,13 +3,12 @@ package controllers
 import (
 	"time"
 
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
 	nyamberv1beta1 "github.com/cybozu-go/nyamber/api/v1beta1"
 	cron "github.com/robfig/cron/v3"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-func checkNextOperation(avdc *nyamberv1beta1.AutoVirtualDC, now time.Time) (*nyamberv1beta1.Operation, error) {
+func decideNextOperation(avdc *nyamberv1beta1.AutoVirtualDC, now time.Time) (*nyamberv1beta1.Operation, error) {
 	specParser := cron.NewParser(cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow)
 	startSched, err := specParser.Parse(avdc.Spec.StartSchedule)
 	if err != nil {

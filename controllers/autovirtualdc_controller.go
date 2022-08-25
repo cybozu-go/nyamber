@@ -167,7 +167,7 @@ func (r *AutoVirtualDCReconciler) finalize(ctx context.Context, avdc *nyamberv1b
 }
 
 func (r *AutoVirtualDCReconciler) updateStatus(ctx context.Context, avdc *nyamberv1beta1.AutoVirtualDC) error {
-	ope, err := checkNextOperation(avdc, r.Now())
+	ope, err := decideNextOperation(avdc, r.Now())
 	if err != nil {
 		return err
 	}
