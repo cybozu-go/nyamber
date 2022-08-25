@@ -51,12 +51,12 @@ var _ = Describe("AutoVirtualDC controller", func() {
 	})
 
 	AfterEach(func() {
-		err := k8sClient.DeleteAllOf(ctx, &nyamberv1beta1.AutoVirtualDC{}, client.InNamespace(testVdcNamespace))
+		err := k8sClient.DeleteAllOf(ctx, &nyamberv1beta1.AutoVirtualDC{}, client.InNamespace(testNamespace))
 		Expect(err).NotTo(HaveOccurred())
 
 		Eventually(func() error {
 			avdcs := &nyamberv1beta1.AutoVirtualDCList{}
-			if err := k8sClient.List(ctx, avdcs, client.InNamespace(testVdcNamespace)); err != nil {
+			if err := k8sClient.List(ctx, avdcs, client.InNamespace(testNamespace)); err != nil {
 				return err
 			}
 			if len(avdcs.Items) != 0 {
@@ -74,7 +74,7 @@ var _ = Describe("AutoVirtualDC controller", func() {
 		avdc := &nyamberv1beta1.AutoVirtualDC{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-avdc",
-				Namespace: testVdcNamespace,
+				Namespace: testNamespace,
 			},
 		}
 		err := k8sClient.Create(ctx, avdc)
@@ -82,7 +82,7 @@ var _ = Describe("AutoVirtualDC controller", func() {
 
 		By("checking to add finalizer")
 		Eventually(func() error {
-			if err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-avdc", Namespace: testVdcNamespace}, avdc); err != nil {
+			if err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-avdc", Namespace: testNamespace}, avdc); err != nil {
 				return err
 			}
 			for _, elm := range avdc.ObjectMeta.Finalizers {
@@ -96,7 +96,7 @@ var _ = Describe("AutoVirtualDC controller", func() {
 		By("checking to create virtualDC")
 		vdc := &nyamberv1beta1.VirtualDC{}
 		Eventually(func() error {
-			return k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testPodNamespace}, vdc)
+			return k8sClient.Get(ctx, client.ObjectKey{Name: "test-avdc", Namespace: testNamespace}, vdc)
 		}).Should(Succeed())
 
 		By("deleting avdc")
@@ -104,13 +104,7 @@ var _ = Describe("AutoVirtualDC controller", func() {
 		Expect(err).NotTo(HaveOccurred())
 		By("checking to delete virtualDC")
 		Eventually(func() bool {
-			err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testPodNamespace}, vdc)
-			return apierrors.IsNotFound(err)
-		}).Should(BeTrue())
-
-		By("checking to delete virtualDC")
-		Eventually(func() bool {
-			err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testPodNamespace}, vdc)
+			err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-avdc", Namespace: testNamespace}, vdc)
 			return apierrors.IsNotFound(err)
 		}).Should(BeTrue())
 	})

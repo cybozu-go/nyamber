@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -92,7 +93,18 @@ func (r *AutoVirtualDCReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 func (r *AutoVirtualDCReconciler) createVirtualDC(ctx context.Context, avdc *nyamberv1beta1.AutoVirtualDC) error {
 	logger := log.FromContext(ctx)
-	vdc := &nyamberv1beta1.VirtualDC{
+
+	vdc := &nyamberv1beta1.VirtualDC{}
+
+	err := r.Get(ctx, client.ObjectKey{Namespace: avdc.Namespace, Name: avdc.Name}, vdc)
+	if err == nil {
+		return nil
+	}
+	if !apierrors.IsNotFound(err) {
+		return err
+	}
+
+	vdc = &nyamberv1beta1.VirtualDC{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      avdc.Name,
 			Namespace: avdc.Namespace,
@@ -100,7 +112,7 @@ func (r *AutoVirtualDCReconciler) createVirtualDC(ctx context.Context, avdc *nya
 		Spec: avdc.Spec.Template.Spec,
 	}
 
-	err := ctrl.SetControllerReference(avdc, vdc, r.Scheme)
+	err = ctrl.SetControllerReference(avdc, vdc, r.Scheme)
 	if err != nil {
 		return err
 	}
@@ -109,8 +121,8 @@ func (r *AutoVirtualDCReconciler) createVirtualDC(ctx context.Context, avdc *nya
 	if err != nil {
 		return err
 	}
-	logger.Info("VirtualDC created")
 
+	logger.Info("VirtualDC created")
 	return nil
 }
 
