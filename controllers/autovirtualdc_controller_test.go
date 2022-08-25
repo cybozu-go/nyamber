@@ -5,13 +5,12 @@ import (
 	"errors"
 
 	"time"
-
+	"k8s.io/utils/pointer"
 	nyamberv1beta1 "github.com/cybozu-go/nyamber/api/v1beta1"
 	"github.com/cybozu-go/nyamber/pkg/constants"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -53,7 +52,8 @@ var _ = Describe("AutoVirtualDC controller", func() {
 	AfterEach(func() {
 		err := k8sClient.DeleteAllOf(ctx, &nyamberv1beta1.AutoVirtualDC{}, client.InNamespace(testNamespace))
 		Expect(err).NotTo(HaveOccurred())
-
+		err = k8sClient.DeleteAllOf(ctx, &nyamberv1beta1.VirtualDC{}, client.InNamespace(testNamespace))
+		Expect(err).NotTo(HaveOccurred())
 		Eventually(func() error {
 			avdcs := &nyamberv1beta1.AutoVirtualDCList{}
 			if err := k8sClient.List(ctx, avdcs, client.InNamespace(testNamespace)); err != nil {
@@ -61,6 +61,13 @@ var _ = Describe("AutoVirtualDC controller", func() {
 			}
 			if len(avdcs.Items) != 0 {
 				return errors.New("avdcs is not deleted")
+			}
+			vdcs := &nyamberv1beta1.VirtualDCList{}
+			if err := k8sClient.List(ctx, vdcs, client.InNamespace(testNamespace)); err != nil {
+				return err
+			}
+			if len(vdcs.Items) != 0 {
+				return errors.New("vdcs is not deleted")
 			}
 			return nil
 		}).Should(Succeed())
@@ -98,14 +105,17 @@ var _ = Describe("AutoVirtualDC controller", func() {
 		Eventually(func() error {
 			return k8sClient.Get(ctx, client.ObjectKey{Name: "test-avdc", Namespace: testNamespace}, vdc)
 		}).Should(Succeed())
+		By("checking if virtualDC has OwnerReference")
 
-		By("deleting avdc")
-		err = k8sClient.Delete(ctx, avdc)
-		Expect(err).NotTo(HaveOccurred())
-		By("checking to delete virtualDC")
-		Eventually(func() bool {
-			err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-avdc", Namespace: testNamespace}, vdc)
-			return apierrors.IsNotFound(err)
-		}).Should(BeTrue())
+		expectedOwnerReference := metav1.OwnerReference{
+			Kind:       "AutoVirtualDC",
+			APIVersion: "nyamber.cybozu.io/v1beta1",
+			UID:        avdc.UID,
+			Name:       avdc.Name,
+			Controller: pointer.Bool(true),
+			BlockOwnerDeletion: pointer.Bool(true),
+		}
+		Expect(vdc.ObjectMeta.OwnerReferences).To(ContainElement(expectedOwnerReference))
+
 	})
 })
