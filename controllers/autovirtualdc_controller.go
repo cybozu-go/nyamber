@@ -86,6 +86,7 @@ func (r *AutoVirtualDCReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 func (r *AutoVirtualDCReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&nyamberv1beta1.AutoVirtualDC{}).
+		Owns(&nyamberv1beta1.VirtualDC{}).
 		Complete(r)
 }
 
