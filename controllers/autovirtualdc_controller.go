@@ -32,6 +32,7 @@ import (
 
 	nyamberv1beta1 "github.com/cybozu-go/nyamber/api/v1beta1"
 	"github.com/cybozu-go/nyamber/pkg/constants"
+	cron "github.com/robfig/cron/v3"
 )
 
 // AutoVirtualDCReconciler reconciles a AutoVirtualDC object
@@ -95,17 +96,59 @@ func (r *AutoVirtualDCReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		}
 	}(*avdc.Status.DeepCopy())
 
-	if err := r.createVirtualDC(ctx, avdc); err != nil {
-		return ctrl.Result{}, err
+	if avdc.Status.NextOperation == nil {
+		// TODO: fix updateOperation
+		if err := r.updateOperation(ctx, avdc); err != nil{
+			logger.Error(err, "failed to update operation")
+			return ctrl.Result{}, err
+		}
+		return ctrl.Result{Requeue: true}, nil
 	}
 
-	if err := r.updateStatus(ctx, avdc); err != nil {
+	if r.Now().Before(avdc.Status.NextOperation.Time.Time) {
+		return ctrl.Result{Requeue:true,  RequeueAfter: avdc.Status.NextOperation.Time.Sub(r.Now())}, nil
+	}
+
+	switch avdc.Status.NextOperation.Name {
+	case nyamberv1beta1.Start:
+		vdc := &nyamberv1beta1.VirtualDC{}
+		if 
+		err := r.Get(ctx, req.NamespacedName, vdc)
+		if err != nil && !apierrors.IsNotFound(err){
+			return ctrl.Result{}, err
+		}
+		if apierrors.IsNotFound(err){
+			if err := r.createVirtualDC(ctx, avdc); err != nil {
+				return ctrl.Result{}, err
+			}
+		}
+
+		// TODO: check vdc status. if vdc's status is not PodJobCompleted, Requeue. else, go next step.
+		// if stopTime is passed when reconciller is in requeue, nextOperation must be stop
+
+	case nyamberv1beta1.Stop:
+		vdc := &nyamberv1beta1.VirtualDC{}
+		vdc.Name = avdc.Name
+		vdc.Namespace = avdc.Namespace
+		if err := r.Delete(ctx, vdc); err != nil && !apierrors.IsNotFound(err){
+			logger.Error(err, "failed to delete vdc")
+			return ctrl.Result{}, err
+		}
+		if apierrors.IsNotFound(err){
+			logger.Info("vdc is already deleted")
+		}else {
+			logger.Info("deleted vdc successfully")
+		}
+	}
+	// TODO: fix updateOperation
+	if err := r.updateOperation(ctx, avdc); err != nil {
 		return ctrl.Result{}, err
 	}
 
 	logger.Info("reconcile succeeded")
 	return ctrl.Result{}, nil
 }
+
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *AutoVirtualDCReconciler) SetupWithManager(mgr ctrl.Manager) error {
@@ -166,11 +209,41 @@ func (r *AutoVirtualDCReconciler) finalize(ctx context.Context, avdc *nyamberv1b
 	return ctrl.Result{}, nil
 }
 
-func (r *AutoVirtualDCReconciler) updateStatus(ctx context.Context, avdc *nyamberv1beta1.AutoVirtualDC) error {
-	ope, err := decideNextOperation(avdc, r.Now())
+func (r *AutoVirtualDCReconciler) updateOperation(ctx context.Context, avdc *nyamberv1beta1.AutoVirtualDC) error {
+	ope, err := r.decideNextOperation(avdc)
 	if err != nil {
 		return err
 	}
 	avdc.Status.NextOperation = ope
 	return nil
+}
+
+func (r *AutoVirtualDCReconciler)decideNextOperation(avdc *nyamberv1beta1.AutoVirtualDC) (*nyamberv1beta1.Operation, error) {
+	specParser := cron.NewParser(cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow)
+	startSched, err := specParser.Parse(avdc.Spec.StartSchedule)
+	if err != nil {
+		return nil, err
+	}
+	stopSched, err := specParser.Parse(avdc.Spec.StopSchedule)
+	if err != nil {
+		return nil, err
+	}
+	nextStartTime := startSched.Next(r.Now())
+	nextStopTime := stopSched.Next(r.Now())
+	if nextStopTime.After(nextStartTime) {
+		return &nyamberv1beta1.Operation{
+			Name: nyamberv1beta1.Start,
+			Time: metav1.NewTime(nextStartTime),
+		}, nil
+	}
+	return &nyamberv1beta1.Operation{
+		Name: nyamberv1beta1.Stop,
+		Time: metav1.NewTime(nextStopTime),
+	}, nil
+}
+
+type RealClock struct{}
+
+func (r *RealClock) Now() time.Time {
+	return time.Now()
 }
