@@ -3,12 +3,14 @@ package controllers
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	nyamberv1beta1 "github.com/cybozu-go/nyamber/api/v1beta1"
 	"github.com/cybozu-go/nyamber/pkg/constants"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -128,34 +130,101 @@ var _ = Describe("AutoVirtualDC controller", func() {
 	})
 
 	It("should have status according to its schedule", func() {
-
-		By("creating AutoVirtualDC with schedule")
-		clock.now = time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
-		avdc := &nyamberv1beta1.AutoVirtualDC{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-avdc",
-				Namespace: testNamespace,
+		type input struct {
+			now        time.Time
+			conditions []metav1.Condition
+		}
+		testcases := []struct {
+			name     string
+			input    input
+			expected nyamberv1beta1.Operation
+		}{
+			{
+				name: "before startTime after stopTime",
+				input: input{
+					now:        time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
+					conditions: nil,
+				},
+				expected: nyamberv1beta1.Operation{
+					Name: nyamberv1beta1.Start,
+					Time: metav1.NewTime(time.Date(2000, 1, 1, 1, 0, 0, 0, time.UTC)),
+				},
 			},
-			Spec: nyamberv1beta1.AutoVirtualDCSpec{
-				StartSchedule: "0 1 * * *",
-				StopSchedule:  "0 5 * * *",
+			{
+				name: "after startTime before stopTime",
+				input: input{
+					now: time.Date(2000, 1, 1, 2, 0, 0, 0, time.UTC),
+					conditions: []metav1.Condition{
+						{
+							Type:   nyamberv1beta1.TypePodJobCompleted,
+							Status: metav1.ConditionTrue,
+						},
+					},
+				},
+				expected: nyamberv1beta1.Operation{
+					Name: nyamberv1beta1.Stop,
+					Time: metav1.NewTime(time.Date(2000, 1, 1, 5, 0, 0, 0, time.UTC)),
+				},
+			},
+			{
+				name: "after startTime before stopTime (pod job is not completed)",
+				input: input{
+					now: time.Date(2000, 1, 1, 2, 0, 0, 0, time.UTC),
+					conditions: []metav1.Condition{
+						{
+							Type:   nyamberv1beta1.TypePodJobCompleted,
+							Status: metav1.ConditionFalse,
+						},
+					},
+				},
+				expected: nyamberv1beta1.Operation{
+					Name: nyamberv1beta1.Start,
+					Time: metav1.NewTime(time.Date(2000, 1, 1, 2, 0, 0, 0, time.UTC)),
+				},
 			},
 		}
-		err := k8sClient.Create(ctx, avdc)
-		Expect(err).NotTo(HaveOccurred())
 
-		By("checking NextOperation")
-		var operation *nyamberv1beta1.Operation
+		for _, testcase := range testcases {
+			By(fmt.Sprintf("creating AutoVirtualDC with schedule: %s", testcase.name))
+			clock.now = testcase.input.now
+			avdc := &nyamberv1beta1.AutoVirtualDC{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-avdc",
+					Namespace: testNamespace,
+				},
+				Spec: nyamberv1beta1.AutoVirtualDCSpec{
+					StartSchedule: "0 1 * * *",
+					StopSchedule:  "0 5 * * *",
+				},
+			}
+			err := k8sClient.Create(ctx, avdc)
+			Expect(err).NotTo(HaveOccurred())
 
-		Eventually(func(g Gomega) {
-			err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-avdc", Namespace: testNamespace}, avdc)
-			g.Expect(err).NotTo(HaveOccurred())
-			operation = avdc.Status.NextOperation
-			g.Expect(operation).NotTo(BeNil())
-			g.Expect(operation.Name).To(Equal(nyamberv1beta1.Start))
-			expectTime := metav1.NewTime(time.Date(2000, 1, 1, 1, 0, 0, 0, time.UTC))
-			g.Expect(operation.Time.Equal(&expectTime))
-		}).Should(Succeed())
+			if testcase.input.conditions != nil {
+				vdc := &nyamberv1beta1.VirtualDC{}
+				Eventually(func() error {
+					return k8sClient.Get(ctx, client.ObjectKey{Name: "test-avdc", Namespace: testNamespace}, vdc)
+				}).Should(Succeed())
 
+				for _, condition := range testcase.input.conditions {
+					meta.SetStatusCondition(&vdc.Status.Conditions, condition)
+				}
+				err := k8sClient.Status().Update(ctx, vdc)
+				Expect(err).NotTo(HaveOccurred())
+			}
+
+			By("checking NextOperation")
+			var operation *nyamberv1beta1.Operation
+
+			Eventually(func(g Gomega) {
+				err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-avdc", Namespace: testNamespace}, avdc)
+				g.Expect(err).NotTo(HaveOccurred())
+				operation = avdc.Status.NextOperation
+				g.Expect(operation).NotTo(BeNil())
+				g.Expect(operation.Name).To(Equal(testcase.expected.Name))
+				expectTime := testcase.expected.Time
+				g.Expect(operation.Time.Equal(&expectTime))
+			}).Should(Succeed())
+		}
 	})
 })
