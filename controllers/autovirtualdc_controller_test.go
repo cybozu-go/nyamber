@@ -10,6 +10,7 @@ import (
 	"github.com/cybozu-go/nyamber/pkg/constants"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
@@ -158,6 +159,7 @@ var _ = Describe("AutoVirtualDC controller", func() {
 						{
 							Type:   nyamberv1beta1.TypePodJobCompleted,
 							Status: metav1.ConditionTrue,
+							Reason: nyamberv1beta1.ReasonOK,
 						},
 					},
 				},
@@ -174,6 +176,7 @@ var _ = Describe("AutoVirtualDC controller", func() {
 						{
 							Type:   nyamberv1beta1.TypePodJobCompleted,
 							Status: metav1.ConditionFalse,
+							Reason: nyamberv1beta1.ReasonPodJobCompletedRunning,
 						},
 					},
 				},
@@ -225,6 +228,15 @@ var _ = Describe("AutoVirtualDC controller", func() {
 				expectTime := testcase.expected.Time
 				g.Expect(operation.Time.Equal(&expectTime))
 			}).Should(Succeed())
+
+			By("deleting AutoVirtualDC")
+			err = k8sClient.Delete(ctx, avdc)
+			Expect(err).NotTo(HaveOccurred())
+
+			Eventually(func() bool {
+				err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-avdc", Namespace: testNamespace}, avdc)
+				return apierrors.IsNotFound(err)
+			}).Should(BeTrue())
 		}
 	})
 })
