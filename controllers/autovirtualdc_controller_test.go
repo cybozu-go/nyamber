@@ -43,9 +43,10 @@ var _ = Describe("AutoVirtualDC controller", func() {
 
 		client := mgr.GetClient()
 		nr := &AutoVirtualDCReconciler{
-			Client: client,
-			Scheme: mgr.GetScheme(),
-			Clock:  clock,
+			Client:          client,
+			Scheme:          mgr.GetScheme(),
+			Clock:           clock,
+			RequeueInterval: time.Second,
 		}
 		err = nr.SetupWithManager(mgr)
 		Expect(err).NotTo(HaveOccurred())
