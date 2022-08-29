@@ -112,7 +112,7 @@ func (r *AutoVirtualDCReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			logger.Error(err, "failed to update avdc status")
 			return ctrl.Result{}, err
 		}
-		if avdc.Status.NextStopTime.Before(avdc.Status.NextStartTime){
+		if avdc.Status.NextStopTime.Before(avdc.Status.NextStartTime) {
 			nextStartTime := metav1.NewTime(r.Now())
 			avdc.Status.NextStartTime = &nextStartTime
 		}
@@ -175,41 +175,6 @@ func (r *AutoVirtualDCReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func (r *AutoVirtualDCReconciler) createVirtualDC(ctx context.Context, avdc *nyamberv1beta1.AutoVirtualDC) error {
-	logger := log.FromContext(ctx)
-
-	vdc := &nyamberv1beta1.VirtualDC{}
-
-	err := r.Get(ctx, client.ObjectKey{Namespace: avdc.Namespace, Name: avdc.Name}, vdc)
-	if err == nil {
-		return nil
-	}
-	if !apierrors.IsNotFound(err) {
-		return err
-	}
-
-	vdc = &nyamberv1beta1.VirtualDC{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      avdc.Name,
-			Namespace: avdc.Namespace,
-		},
-		Spec: avdc.Spec.Template.Spec,
-	}
-
-	err = ctrl.SetControllerReference(avdc, vdc, r.Scheme)
-	if err != nil {
-		return err
-	}
-
-	err = r.Create(ctx, vdc)
-	if err != nil {
-		return err
-	}
-
-	logger.Info("VirtualDC created")
-	return nil
-}
-
 func (r *AutoVirtualDCReconciler) finalize(ctx context.Context, avdc *nyamberv1beta1.AutoVirtualDC) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 	logger.Info("finalize start")
@@ -256,10 +221,20 @@ func (r *AutoVirtualDCReconciler) reconcileVirtualDC(ctx context.Context, avdc *
 		return false, err
 	}
 	if apierrors.IsNotFound(err) {
-		if err := r.createVirtualDC(ctx, avdc); err != nil {
-			logger.Error(err, "failed to create vdc")
+		vdc.Name = avdc.Name
+		vdc.Namespace = avdc.Namespace
+		vdc.Spec = avdc.Spec.Template.Spec
+		err = ctrl.SetControllerReference(avdc, vdc, r.Scheme)
+		if err != nil {
 			return false, err
 		}
+
+		err = r.Create(ctx, vdc)
+		if err != nil {
+			return false, err
+		}
+
+		logger.Info("VirtualDC created")
 		return true, nil
 	}
 	jobCondition := meta.FindStatusCondition(vdc.Status.Conditions, nyamberv1beta1.TypePodJobCompleted)
@@ -269,14 +244,14 @@ func (r *AutoVirtualDCReconciler) reconcileVirtualDC(ctx context.Context, avdc *
 		return true, nil
 	}
 	// prepare for recreating vdc
-	if jobCondition.Reason == nyamberv1beta1.ReasonPodJobCompletedFailed{
-		if err := r.Delete(ctx, vdc); err != nil{
+	if jobCondition.Reason == nyamberv1beta1.ReasonPodJobCompletedFailed {
+		if err := r.Delete(ctx, vdc); err != nil {
 			return false, err
 		}
 		logger.Info("deleted vdc for recreating vdc. Reason: jobCompletedFailed")
 		return true, nil
 	}
-	if jobCondition.Status == metav1.ConditionFalse{
+	if jobCondition.Status == metav1.ConditionFalse {
 		return true, nil
 	}
 

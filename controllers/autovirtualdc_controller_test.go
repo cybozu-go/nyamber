@@ -117,8 +117,8 @@ var _ = Describe("AutoVirtualDC controller", func() {
 		Eventually(func() error {
 			return k8sClient.Get(ctx, client.ObjectKey{Name: "test-avdc", Namespace: testNamespace}, vdc)
 		}).Should(Succeed())
-		By("checking if virtualDC has OwnerReference")
 
+		By("checking if virtualDC has OwnerReference")
 		expectedOwnerReference := metav1.OwnerReference{
 			Kind:               "AutoVirtualDC",
 			APIVersion:         "nyamber.cybozu.io/v1beta1",
@@ -185,7 +185,6 @@ var _ = Describe("AutoVirtualDC controller", func() {
 		for _, testcase := range testcases {
 			By(fmt.Sprintf("creating AutoVirtualDC with schedule: %s", testcase.name))
 			clock.now = testcase.input.now
-
 			avdc := &nyamberv1beta1.AutoVirtualDC{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-avdc",
@@ -246,8 +245,7 @@ var _ = Describe("AutoVirtualDC controller", func() {
 		err := k8sClient.Create(ctx, avdc)
 		Expect(err).NotTo(HaveOccurred())
 
-		By("checking VirtualDC is created and its condition is correct")
-
+		By("checking VirtualDC is created and set its condition failed")
 		vdc := &nyamberv1beta1.VirtualDC{}
 		Eventually(func() error {
 			return k8sClient.Get(ctx, client.ObjectKey{Name: "test-avdc", Namespace: testNamespace}, vdc)
@@ -261,7 +259,6 @@ var _ = Describe("AutoVirtualDC controller", func() {
 		})
 		err = k8sClient.Status().Update(ctx, vdc)
 		Expect(err).NotTo(HaveOccurred())
-
 
 		By("checking vdc is recreated")
 		Eventually(func(g Gomega) {
