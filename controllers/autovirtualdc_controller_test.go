@@ -201,8 +201,6 @@ var _ = Describe("AutoVirtualDC controller", func() {
 
 			By("checking VirtualDC is created and its condition is correct")
 			if testcase.input.conditions != nil {
-				clock.now = clock.now.Add(time.Second)
-
 				vdc := &nyamberv1beta1.VirtualDC{}
 				Eventually(func() error {
 					return k8sClient.Get(ctx, client.ObjectKey{Name: "test-avdc", Namespace: testNamespace}, vdc)

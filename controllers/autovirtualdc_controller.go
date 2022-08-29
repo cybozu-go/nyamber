@@ -112,14 +112,17 @@ func (r *AutoVirtualDCReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			logger.Error(err, "failed to update avdc status")
 			return ctrl.Result{}, err
 		}
-		nextStartTime := metav1.NewTime(r.Now())
-		avdc.Status.NextStartTime = &nextStartTime
+		if avdc.Status.NextStopTime.Before(avdc.Status.NextStartTime){
+			nextStartTime := metav1.NewTime(r.Now())
+			avdc.Status.NextStartTime = &nextStartTime
+		}
+
 		return ctrl.Result{Requeue: true}, nil
 	}
 
 	now := r.Now()
 	// case 1
-	if (now.Before(avdc.Status.NextStartTime.Time) || now.Equal(avdc.Status.NextStartTime.Time)) && now.Before(avdc.Status.NextStopTime.Time) {
+	if now.Before(avdc.Status.NextStartTime.Time) && now.Before(avdc.Status.NextStopTime.Time) {
 		if avdc.Status.NextStartTime.Before(avdc.Status.NextStopTime) {
 			return ctrl.Result{RequeueAfter: avdc.Status.NextStartTime.Sub(now)}, nil
 		}
