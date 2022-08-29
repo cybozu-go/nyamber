@@ -50,6 +50,7 @@ type Clock interface {
 //+kubebuilder:rbac:groups=nyamber.cybozu.io,resources=autovirtualdcs,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=nyamber.cybozu.io,resources=autovirtualdcs/status,verbs=get;update;patch
 //+kubebuilder:rbac:groups=nyamber.cybozu.io,resources=autovirtualdcs/finalizers,verbs=update
+//+kubebuilder:rbac:groups=nyamber.cybozu.io,resources=virtualdcs,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
@@ -97,43 +98,46 @@ func (r *AutoVirtualDCReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		}
 	}(*avdc.Status.DeepCopy())
 
+	if avdc.Spec.StartSchedule == "" && avdc.Spec.StopSchedule == "" {
+		requeue, err := r.reconcileVirtualDC(ctx, avdc)
+		if err != nil {
+			logger.Error(err, "failed to reconcile VirtualDC")
+			return ctrl.Result{}, err
+		}
+		return ctrl.Result{Requeue: requeue}, nil
+	}
+
 	if avdc.Status.NextStartTime == nil || avdc.Status.NextStopTime == nil {
-		if err := r.updateStatusTime(ctx, avdc); err != nil{
+		if err := r.updateStatusTime(ctx, avdc); err != nil {
 			logger.Error(err, "failed to update avdc status")
 			return ctrl.Result{}, err
 		}
-		*avdc.Status.NextStartTime = metav1.NewTime(r.Now())
+		nextStartTime := metav1.NewTime(r.Now())
+		avdc.Status.NextStartTime = &nextStartTime
 		return ctrl.Result{Requeue: true}, nil
 	}
 
 	now := r.Now()
 	// case 1
-	if now.Before(avdc.Status.NextStartTime.Time) && now.Before(avdc.Status.NextStopTime.Time) {
-		if avdc.Status.NextStartTime.Before(avdc.Status.NextStopTime){
+	if (now.Before(avdc.Status.NextStartTime.Time) || now.Equal(avdc.Status.NextStartTime.Time)) && now.Before(avdc.Status.NextStopTime.Time) {
+		if avdc.Status.NextStartTime.Before(avdc.Status.NextStopTime) {
 			return ctrl.Result{RequeueAfter: avdc.Status.NextStartTime.Sub(now)}, nil
 		}
 		return ctrl.Result{RequeueAfter: avdc.Status.NextStopTime.Sub(now)}, nil
 	}
 
 	// case 2
-	if avdc.Status.NextStartTime.Time.Before(now) && now.Before(avdc.Status.NextStopTime.Time){
-		vdc := &nyamberv1beta1.VirtualDC{}
-		err := r.Get(ctx, req.NamespacedName, vdc)
-		if  err != nil && !apierrors.IsNotFound(err){
-			logger.Error(err, "failed to get vdc")
+	if (avdc.Status.NextStartTime.Time.Before(now) || avdc.Status.NextStartTime.Time.Equal(now)) && now.Before(avdc.Status.NextStopTime.Time) {
+		requeue, err := r.reconcileVirtualDC(ctx, avdc)
+		if err != nil {
+			logger.Error(err, "failed to reconcile VirtualDC")
 			return ctrl.Result{}, err
 		}
-		if apierrors.IsNotFound(err){
-			if err := r.createVirtualDC(ctx, avdc); err !=nil {
-				logger.Error(err, "failed to create vdc")
-				return ctrl.Result{}, err
-			}
+		if requeue {
 			return ctrl.Result{Requeue: true}, nil
 		}
-		if !meta.IsStatusConditionTrue(vdc.Status.Conditions, nyamberv1beta1.TypePodJobCompleted){
-			return ctrl.Result{Requeue: true}, nil
-		}
-		if err := r.updateStatusTime(ctx, avdc); err != nil{
+
+		if err := r.updateStatusTime(ctx, avdc); err != nil {
 			logger.Error(err, "failed to update avdc status")
 			return ctrl.Result{}, err
 		}
@@ -145,22 +149,21 @@ func (r *AutoVirtualDCReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	vdc.Name = avdc.Name
 	vdc.Namespace = avdc.Namespace
 	err = r.Delete(ctx, vdc)
-	if err != nil && !apierrors.IsNotFound(err){
+	if err != nil && !apierrors.IsNotFound(err) {
 		logger.Error(err, "failed to delete vdc")
 		return ctrl.Result{}, err
 	}
-	if apierrors.IsNotFound(err){
+	if apierrors.IsNotFound(err) {
 		logger.Info("vdc is already deleted")
-	}else{
+	} else {
 		logger.Info("vdc is deleted successfully")
 	}
-	if err := r.updateStatusTime(ctx, avdc); err != nil{
+	if err := r.updateStatusTime(ctx, avdc); err != nil {
 		logger.Error(err, "failed to update avdc status")
 		return ctrl.Result{}, err
 	}
 	return ctrl.Result{Requeue: true}, nil
 }
-
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *AutoVirtualDCReconciler) SetupWithManager(mgr ctrl.Manager) error {
@@ -229,11 +232,40 @@ func (r *AutoVirtualDCReconciler) updateStatusTime(ctx context.Context, avdc *ny
 	}
 	stopSched, err := specParser.Parse(avdc.Spec.StopSchedule)
 	if err != nil {
-		return  err
+		return err
 	}
-	*avdc.Status.NextStartTime = metav1.NewTime(startSched.Next(r.Now()))
-	*avdc.Status.NextStopTime = metav1.NewTime(stopSched.Next(r.Now()))
+
+	nextStartTime := metav1.NewTime(startSched.Next(r.Now()))
+	avdc.Status.NextStartTime = &nextStartTime
+	nextStopTime := metav1.NewTime(stopSched.Next(r.Now()))
+	avdc.Status.NextStopTime = &nextStopTime
+
 	return nil
+}
+
+// reconcileVirtualDC reconciles VirtualDC and returns whether to requeue or not and error.
+func (r *AutoVirtualDCReconciler) reconcileVirtualDC(ctx context.Context, avdc *nyamberv1beta1.AutoVirtualDC) (bool, error) {
+	logger := log.FromContext(ctx)
+
+	vdc := &nyamberv1beta1.VirtualDC{}
+	err := r.Get(ctx, client.ObjectKeyFromObject(avdc), vdc)
+	if err != nil && !apierrors.IsNotFound(err) {
+		logger.Error(err, "failed to get vdc")
+		return false, err
+	}
+	if apierrors.IsNotFound(err) {
+		if err := r.createVirtualDC(ctx, avdc); err != nil {
+			logger.Error(err, "failed to create vdc")
+			return false, err
+		}
+		return true, nil
+	}
+
+	if !meta.IsStatusConditionTrue(vdc.Status.Conditions, nyamberv1beta1.TypePodJobCompleted) {
+		return true, nil
+	}
+
+	return false, nil
 }
 
 type RealClock struct{}

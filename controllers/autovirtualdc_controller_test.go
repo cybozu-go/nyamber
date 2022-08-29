@@ -136,10 +136,10 @@ var _ = Describe("AutoVirtualDC controller", func() {
 			conditions []metav1.Condition
 		}
 		testcases := []struct {
-			name     string
-			input    input
+			name                  string
+			input                 input
 			expectedNextStartTime metav1.Time
-			expectedNextStopTime metav1.Time
+			expectedNextStopTime  metav1.Time
 		}{
 			{
 				name: "before startTime after stopTime",
@@ -148,7 +148,7 @@ var _ = Describe("AutoVirtualDC controller", func() {
 					conditions: nil,
 				},
 				expectedNextStartTime: metav1.NewTime(time.Date(2000, 1, 1, 1, 0, 0, 0, time.UTC)),
-				expectedNextStopTime: metav1.NewTime(time.Date(2000, 1, 1, 5, 0, 0, 0, time.UTC)),
+				expectedNextStopTime:  metav1.NewTime(time.Date(2000, 1, 1, 5, 0, 0, 0, time.UTC)),
 			},
 			{
 				name: "after startTime before stopTime",
@@ -163,7 +163,7 @@ var _ = Describe("AutoVirtualDC controller", func() {
 					},
 				},
 				expectedNextStartTime: metav1.NewTime(time.Date(2000, 1, 2, 1, 0, 0, 0, time.UTC)),
-				expectedNextStopTime: metav1.NewTime(time.Date(2000, 1, 1, 5, 0, 0, 0, time.UTC)),
+				expectedNextStopTime:  metav1.NewTime(time.Date(2000, 1, 1, 5, 0, 0, 0, time.UTC)),
 			},
 			{
 				name: "after startTime before stopTime (pod job is not completed)",
@@ -178,13 +178,14 @@ var _ = Describe("AutoVirtualDC controller", func() {
 					},
 				},
 				expectedNextStartTime: metav1.NewTime(time.Date(2000, 1, 1, 2, 0, 0, 0, time.UTC)),
-				expectedNextStopTime: metav1.NewTime(time.Date(2000, 1,1, 5, 0, 0, 0, time.UTC)),
+				expectedNextStopTime:  metav1.NewTime(time.Date(2000, 1, 1, 5, 0, 0, 0, time.UTC)),
 			},
 		}
 
 		for _, testcase := range testcases {
 			By(fmt.Sprintf("creating AutoVirtualDC with schedule: %s", testcase.name))
 			clock.now = testcase.input.now
+
 			avdc := &nyamberv1beta1.AutoVirtualDC{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-avdc",
@@ -198,7 +199,10 @@ var _ = Describe("AutoVirtualDC controller", func() {
 			err := k8sClient.Create(ctx, avdc)
 			Expect(err).NotTo(HaveOccurred())
 
+			By("checking VirtualDC is created and its condition is correct")
 			if testcase.input.conditions != nil {
+				clock.now = clock.now.Add(time.Second)
+
 				vdc := &nyamberv1beta1.VirtualDC{}
 				Eventually(func() error {
 					return k8sClient.Get(ctx, client.ObjectKey{Name: "test-avdc", Namespace: testNamespace}, vdc)
@@ -215,8 +219,10 @@ var _ = Describe("AutoVirtualDC controller", func() {
 			Eventually(func(g Gomega) {
 				err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-avdc", Namespace: testNamespace}, avdc)
 				g.Expect(err).NotTo(HaveOccurred())
-				g.Expect(avdc.Status.NextStartTime.Equal(&testcase.expectedNextStartTime)).To(BeTrue())
-				g.Expect(avdc.Status.NextStopTime.Equal(&testcase.expectedNextStopTime)).To(BeTrue())
+				g.Expect(avdc.Status.NextStartTime).NotTo(BeNil())
+				g.Expect(avdc.Status.NextStartTime.Time).To(BeTemporally("==", testcase.expectedNextStartTime.Time))
+				g.Expect(avdc.Status.NextStopTime).NotTo(BeNil())
+				g.Expect(avdc.Status.NextStopTime.Time).To(BeTemporally("==", testcase.expectedNextStopTime.Time))
 			}).Should(Succeed())
 
 			By("deleting AutoVirtualDC")
