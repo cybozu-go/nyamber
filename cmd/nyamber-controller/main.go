@@ -19,6 +19,7 @@ package main
 import (
 	"flag"
 	"os"
+	"time"
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
@@ -56,12 +57,14 @@ func main() {
 	var enableLeaderElection bool
 	var probeAddr string
 	var podNamespace string
+	var requeueInterval time.Duration
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
 	flag.StringVar(&podNamespace, "pod-namespace", constants.PodNamespace, "A Namespace to deploy VirtualDC pod.")
+	flag.DurationVar(&requeueInterval, "requeue-interval", time.Minute, "Requeue interval on waiting pod-job of VirtualDC to be completed")
 	opts := zap.Options{
 		Development: true,
 		TimeEncoder: zapcore.ISO8601TimeEncoder,
@@ -99,9 +102,10 @@ func main() {
 		os.Exit(1)
 	}
 	if err = (&controllers.AutoVirtualDCReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-		Clock:  &controllers.RealClock{},
+		Client:          mgr.GetClient(),
+		Scheme:          mgr.GetScheme(),
+		Clock:           &controllers.RealClock{},
+		RequeueInterval: requeueInterval,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AutoVirtualDC")
 		os.Exit(1)

@@ -18,7 +18,12 @@ package controllers
 
 import (
 	"context"
+	"fmt"
+	"time"
 
+	nyamberv1beta1 "github.com/cybozu-go/nyamber/api/v1beta1"
+	"github.com/cybozu-go/nyamber/pkg/constants"
+	cron "github.com/robfig/cron/v3"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -28,12 +33,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-
-	"time"
-
-	nyamberv1beta1 "github.com/cybozu-go/nyamber/api/v1beta1"
-	"github.com/cybozu-go/nyamber/pkg/constants"
-	cron "github.com/robfig/cron/v3"
 )
 
 // AutoVirtualDCReconciler reconciles a AutoVirtualDC object
@@ -41,6 +40,7 @@ type AutoVirtualDCReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 	Clock
+	RequeueInterval time.Duration
 }
 
 type Clock interface {
@@ -54,13 +54,6 @@ type Clock interface {
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
-// TODO(user): Modify the Reconcile function to compare the state specified by
-// the AutoVirtualDC object against the actual cluster state, and then
-// perform operations to make the cluster state reflect the state specified by
-// the user.
-//
-// For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.11.2/pkg/reconcile
 func (r *AutoVirtualDCReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
 	logger := log.FromContext(ctx)
 
@@ -72,7 +65,7 @@ func (r *AutoVirtualDCReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	if !avdc.ObjectMeta.DeletionTimestamp.IsZero() {
 		finalizeResult, err := r.finalize(ctx, avdc)
 		if err != nil {
-			logger.Error(err, "Finalize error")
+			logger.Error(err, "finalize error")
 			return ctrl.Result{}, err
 		}
 		return finalizeResult, nil
@@ -82,6 +75,7 @@ func (r *AutoVirtualDCReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		controllerutil.AddFinalizer(avdc, constants.FinalizerName)
 		err := r.Update(ctx, avdc)
 		if err != nil {
+			logger.Error(err, "failed to update AutoVirtualDC")
 			return ctrl.Result{}, err
 		}
 	}
@@ -99,12 +93,12 @@ func (r *AutoVirtualDCReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	}(*avdc.Status.DeepCopy())
 
 	if avdc.Spec.StartSchedule == "" && avdc.Spec.StopSchedule == "" {
-		requeue, err := r.reconcileVirtualDC(ctx, avdc)
+		result, err := r.reconcileVirtualDC(ctx, avdc)
 		if err != nil {
 			logger.Error(err, "failed to reconcile VirtualDC")
 			return ctrl.Result{}, err
 		}
-		return ctrl.Result{Requeue: requeue}, nil
+		return result, nil
 	}
 
 	if avdc.Status.NextStartTime == nil || avdc.Status.NextStopTime == nil {
@@ -130,13 +124,13 @@ func (r *AutoVirtualDCReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 
 	// case 2
 	if (avdc.Status.NextStartTime.Time.Before(now) || avdc.Status.NextStartTime.Time.Equal(now)) && now.Before(avdc.Status.NextStopTime.Time) {
-		requeue, err := r.reconcileVirtualDC(ctx, avdc)
+		result, err := r.reconcileVirtualDC(ctx, avdc)
 		if err != nil {
 			logger.Error(err, "failed to reconcile VirtualDC")
 			return ctrl.Result{}, err
 		}
-		if requeue {
-			return ctrl.Result{Requeue: true}, nil
+		if !result.IsZero() {
+			return result, nil
 		}
 
 		if err := r.updateStatusTime(ctx, avdc); err != nil {
@@ -178,6 +172,7 @@ func (r *AutoVirtualDCReconciler) SetupWithManager(mgr ctrl.Manager) error {
 func (r *AutoVirtualDCReconciler) finalize(ctx context.Context, avdc *nyamberv1beta1.AutoVirtualDC) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 	logger.Info("finalize start")
+
 	if !controllerutil.ContainsFinalizer(avdc, constants.FinalizerName) {
 		return ctrl.Result{}, nil
 	}
@@ -187,7 +182,8 @@ func (r *AutoVirtualDCReconciler) finalize(ctx context.Context, avdc *nyamberv1b
 	if err != nil {
 		return ctrl.Result{}, err
 	}
-	logger.Info("Finalize succeeded")
+
+	logger.Info("finalize succeeded")
 	return ctrl.Result{}, nil
 }
 
@@ -211,51 +207,51 @@ func (r *AutoVirtualDCReconciler) updateStatusTime(ctx context.Context, avdc *ny
 }
 
 // reconcileVirtualDC reconciles VirtualDC and returns whether to requeue or not and error.
-func (r *AutoVirtualDCReconciler) reconcileVirtualDC(ctx context.Context, avdc *nyamberv1beta1.AutoVirtualDC) (bool, error) {
+func (r *AutoVirtualDCReconciler) reconcileVirtualDC(ctx context.Context, avdc *nyamberv1beta1.AutoVirtualDC) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
 	vdc := &nyamberv1beta1.VirtualDC{}
 	err := r.Get(ctx, client.ObjectKeyFromObject(avdc), vdc)
 	if err != nil && !apierrors.IsNotFound(err) {
-		logger.Error(err, "failed to get vdc")
-		return false, err
+		return ctrl.Result{}, fmt.Errorf("failed to get VirtualDC: %w", err)
 	}
+
 	if apierrors.IsNotFound(err) {
 		vdc.Name = avdc.Name
 		vdc.Namespace = avdc.Namespace
 		vdc.Spec = avdc.Spec.Template.Spec
+
 		err = ctrl.SetControllerReference(avdc, vdc, r.Scheme)
 		if err != nil {
-			return false, err
+			return ctrl.Result{}, fmt.Errorf("failed to set controller reference: %w", err)
 		}
 
 		err = r.Create(ctx, vdc)
 		if err != nil {
-			return false, err
+			return ctrl.Result{}, fmt.Errorf("failed to create VirtualDC: %w", err)
 		}
 
 		logger.Info("VirtualDC created")
-		return true, nil
+		return ctrl.Result{RequeueAfter: r.RequeueInterval}, nil
 	}
+
 	jobCondition := meta.FindStatusCondition(vdc.Status.Conditions, nyamberv1beta1.TypePodJobCompleted)
-
-	if jobCondition == nil {
-		logger.Info("job condition is nil")
-		return true, nil
-	}
-	// prepare for recreating vdc
-	if jobCondition.Reason == nyamberv1beta1.ReasonPodJobCompletedFailed {
-		if err := r.Delete(ctx, vdc); err != nil {
-			return false, err
+	if jobCondition != nil {
+		if jobCondition.Reason == nyamberv1beta1.ReasonOK {
+			return ctrl.Result{}, nil
 		}
-		logger.Info("deleted vdc for recreating vdc. Reason: jobCompletedFailed")
-		return true, nil
-	}
-	if jobCondition.Status == metav1.ConditionFalse {
-		return true, nil
+		if jobCondition.Reason == nyamberv1beta1.ReasonPodJobCompletedFailed {
+			// prepare for recreating vdc
+			if err := r.Delete(ctx, vdc); err != nil {
+				return ctrl.Result{}, fmt.Errorf("failed to delete VirtualDC: %w", err)
+			}
+			logger.Info("deleted vdc for recreating vdc. Reason: jobCompletedFailed")
+			return ctrl.Result{Requeue: true}, nil
+		}
 	}
 
-	return false, nil
+	// requeue to recheck VDC condition when VDC is not ready
+	return ctrl.Result{RequeueAfter: r.RequeueInterval}, nil
 }
 
 type RealClock struct{}

@@ -39,11 +39,10 @@ type AutoVirtualDCSpec struct {
 type AutoVirtualDCStatus struct {
 	// next start time of avdc's schedule.
 	NextStartTime *metav1.Time `json:"nextStartTime,omitempty"`
+
 	// next stop time of avdc's schedule.
 	NextStopTime *metav1.Time `json:"nextStopTime,omitempty"`
 }
-
-
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
