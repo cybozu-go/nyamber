@@ -116,7 +116,6 @@ func (r *AutoVirtualDCReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			nextStartTime := metav1.NewTime(r.Now())
 			avdc.Status.NextStartTime = &nextStartTime
 		}
-
 		return ctrl.Result{Requeue: true}, nil
 	}
 
@@ -263,8 +262,21 @@ func (r *AutoVirtualDCReconciler) reconcileVirtualDC(ctx context.Context, avdc *
 		}
 		return true, nil
 	}
+	jobCondition := meta.FindStatusCondition(vdc.Status.Conditions, nyamberv1beta1.TypePodJobCompleted)
 
-	if !meta.IsStatusConditionTrue(vdc.Status.Conditions, nyamberv1beta1.TypePodJobCompleted) {
+	if jobCondition == nil {
+		logger.Info("job condition is nil")
+		return true, nil
+	}
+	// prepare for recreating vdc
+	if jobCondition.Reason == nyamberv1beta1.ReasonPodJobCompletedFailed{
+		if err := r.Delete(ctx, vdc); err != nil{
+			return false, err
+		}
+		logger.Info("deleted vdc for recreating vdc. Reason: jobCompletedFailed")
+		return true, nil
+	}
+	if jobCondition.Status == metav1.ConditionFalse{
 		return true, nil
 	}
 
