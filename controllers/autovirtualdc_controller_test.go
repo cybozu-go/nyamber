@@ -138,7 +138,8 @@ var _ = Describe("AutoVirtualDC controller", func() {
 		testcases := []struct {
 			name     string
 			input    input
-			expected nyamberv1beta1.Operation
+			expectedNextStartTime metav1.Time
+			expectedNextStopTime metav1.Time
 		}{
 			{
 				name: "before startTime after stopTime",
@@ -146,10 +147,8 @@ var _ = Describe("AutoVirtualDC controller", func() {
 					now:        time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC),
 					conditions: nil,
 				},
-				expected: nyamberv1beta1.Operation{
-					Name: nyamberv1beta1.Start,
-					Time: metav1.NewTime(time.Date(2000, 1, 1, 1, 0, 0, 0, time.UTC)),
-				},
+				expectedNextStartTime: metav1.NewTime(time.Date(2000, 1, 1, 1, 0, 0, 0, time.UTC)),
+				expectedNextStopTime: metav1.NewTime(time.Date(2000, 1, 1, 5, 0, 0, 0, time.UTC)),
 			},
 			{
 				name: "after startTime before stopTime",
@@ -163,10 +162,8 @@ var _ = Describe("AutoVirtualDC controller", func() {
 						},
 					},
 				},
-				expected: nyamberv1beta1.Operation{
-					Name: nyamberv1beta1.Stop,
-					Time: metav1.NewTime(time.Date(2000, 1, 1, 5, 0, 0, 0, time.UTC)),
-				},
+				expectedNextStartTime: metav1.NewTime(time.Date(2000, 1, 2, 1, 0, 0, 0, time.UTC)),
+				expectedNextStopTime: metav1.NewTime(time.Date(2000, 1, 1, 5, 0, 0, 0, time.UTC)),
 			},
 			{
 				name: "after startTime before stopTime (pod job is not completed)",
@@ -180,10 +177,8 @@ var _ = Describe("AutoVirtualDC controller", func() {
 						},
 					},
 				},
-				expected: nyamberv1beta1.Operation{
-					Name: nyamberv1beta1.Start,
-					Time: metav1.NewTime(time.Date(2000, 1, 1, 2, 0, 0, 0, time.UTC)),
-				},
+				expectedNextStartTime: metav1.NewTime(time.Date(2000, 1, 1, 2, 0, 0, 0, time.UTC)),
+				expectedNextStopTime: metav1.NewTime(time.Date(2000, 1,1, 5, 0, 0, 0, time.UTC)),
 			},
 		}
 
@@ -216,17 +211,12 @@ var _ = Describe("AutoVirtualDC controller", func() {
 				Expect(err).NotTo(HaveOccurred())
 			}
 
-			By("checking NextOperation")
-			var operation *nyamberv1beta1.Operation
-
+			By("checking status is expected")
 			Eventually(func(g Gomega) {
 				err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-avdc", Namespace: testNamespace}, avdc)
 				g.Expect(err).NotTo(HaveOccurred())
-				operation = avdc.Status.NextOperation
-				g.Expect(operation).NotTo(BeNil())
-				g.Expect(operation.Name).To(Equal(testcase.expected.Name))
-				expectTime := testcase.expected.Time
-				g.Expect(operation.Time.Equal(&expectTime))
+				g.Expect(avdc.Status.NextStartTime.Equal(&testcase.expectedNextStartTime)).To(BeTrue())
+				g.Expect(avdc.Status.NextStopTime.Equal(&testcase.expectedNextStopTime)).To(BeTrue())
 			}).Should(Succeed())
 
 			By("deleting AutoVirtualDC")

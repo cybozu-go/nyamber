@@ -198,16 +198,14 @@ spec:
           status:
             description: AutoVirtualDCStatus defines the observed state of AutoVirtualDC
             properties:
-              nextOperation:
-                description: next operation of AutoVirtualDC
-                properties:
-                  name:
-                    type: string
-                  time:
-                    description: Time's format is format that is easy to see for human.
-                    format: date-time
-                    type: string
-                type: object
+              nextStartTime:
+                description: next start time of avdc's schedule.
+                format: date-time
+                type: string
+              nextStopTime:
+                description: next stop time of avdc's schedule.
+                format: date-time
+                type: string
             type: object
         type: object
     served: true

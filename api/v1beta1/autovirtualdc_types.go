@@ -37,22 +37,13 @@ type AutoVirtualDCSpec struct {
 
 // AutoVirtualDCStatus defines the observed state of AutoVirtualDC
 type AutoVirtualDCStatus struct {
-	// next operation of AutoVirtualDC
-	NextOperation *Operation `json:"nextOperation,omitempty"`
+	// next start time of avdc's schedule.
+	NextStartTime *metav1.Time `json:"nextStartTime,omitempty"`
+	// next stop time of avdc's schedule.
+	NextStopTime *metav1.Time `json:"nextStopTime,omitempty"`
 }
 
-type Operation struct {
-	Name OperationName `json:"name,omitempty"`
-	// Time's format is format that is easy to see for human.
-	Time metav1.Time `json:"time,omitempty"`
-}
 
-type OperationName string
-
-const (
-	Start OperationName = "start"
-	Stop  OperationName = "stop"
-)
 
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status

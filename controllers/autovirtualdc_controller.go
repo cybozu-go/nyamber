@@ -21,6 +21,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -96,57 +97,68 @@ func (r *AutoVirtualDCReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		}
 	}(*avdc.Status.DeepCopy())
 
-	if avdc.Status.NextOperation == nil {
-		// TODO: fix updateOperation
-		if err := r.updateOperation(ctx, avdc); err != nil{
-			logger.Error(err, "failed to update operation")
+	if avdc.Status.NextStartTime == nil || avdc.Status.NextStopTime == nil {
+		if err := r.updateStatusTime(ctx, avdc); err != nil{
+			logger.Error(err, "failed to update avdc status")
+			return ctrl.Result{}, err
+		}
+		*avdc.Status.NextStartTime = metav1.NewTime(r.Now())
+		return ctrl.Result{Requeue: true}, nil
+	}
+
+	now := r.Now()
+	// case 1
+	if now.Before(avdc.Status.NextStartTime.Time) && now.Before(avdc.Status.NextStopTime.Time) {
+		if avdc.Status.NextStartTime.Before(avdc.Status.NextStopTime){
+			return ctrl.Result{RequeueAfter: avdc.Status.NextStartTime.Sub(now)}, nil
+		}
+		return ctrl.Result{RequeueAfter: avdc.Status.NextStopTime.Sub(now)}, nil
+	}
+
+	// case 2
+	if avdc.Status.NextStartTime.Time.Before(now) && now.Before(avdc.Status.NextStopTime.Time){
+		vdc := &nyamberv1beta1.VirtualDC{}
+		err := r.Get(ctx, req.NamespacedName, vdc)
+		if  err != nil && !apierrors.IsNotFound(err){
+			logger.Error(err, "failed to get vdc")
+			return ctrl.Result{}, err
+		}
+		if apierrors.IsNotFound(err){
+			if err := r.createVirtualDC(ctx, avdc); err !=nil {
+				logger.Error(err, "failed to create vdc")
+				return ctrl.Result{}, err
+			}
+			return ctrl.Result{Requeue: true}, nil
+		}
+		if !meta.IsStatusConditionTrue(vdc.Status.Conditions, nyamberv1beta1.TypePodJobCompleted){
+			return ctrl.Result{Requeue: true}, nil
+		}
+		if err := r.updateStatusTime(ctx, avdc); err != nil{
+			logger.Error(err, "failed to update avdc status")
 			return ctrl.Result{}, err
 		}
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	if r.Now().Before(avdc.Status.NextOperation.Time.Time) {
-		return ctrl.Result{Requeue:true,  RequeueAfter: avdc.Status.NextOperation.Time.Sub(r.Now())}, nil
-	}
-
-	switch avdc.Status.NextOperation.Name {
-	case nyamberv1beta1.Start:
-		vdc := &nyamberv1beta1.VirtualDC{}
-		if 
-		err := r.Get(ctx, req.NamespacedName, vdc)
-		if err != nil && !apierrors.IsNotFound(err){
-			return ctrl.Result{}, err
-		}
-		if apierrors.IsNotFound(err){
-			if err := r.createVirtualDC(ctx, avdc); err != nil {
-				return ctrl.Result{}, err
-			}
-		}
-
-		// TODO: check vdc status. if vdc's status is not PodJobCompleted, Requeue. else, go next step.
-		// if stopTime is passed when reconciller is in requeue, nextOperation must be stop
-
-	case nyamberv1beta1.Stop:
-		vdc := &nyamberv1beta1.VirtualDC{}
-		vdc.Name = avdc.Name
-		vdc.Namespace = avdc.Namespace
-		if err := r.Delete(ctx, vdc); err != nil && !apierrors.IsNotFound(err){
-			logger.Error(err, "failed to delete vdc")
-			return ctrl.Result{}, err
-		}
-		if apierrors.IsNotFound(err){
-			logger.Info("vdc is already deleted")
-		}else {
-			logger.Info("deleted vdc successfully")
-		}
-	}
-	// TODO: fix updateOperation
-	if err := r.updateOperation(ctx, avdc); err != nil {
+	// case 3,4,5
+	vdc := &nyamberv1beta1.VirtualDC{}
+	vdc.Name = avdc.Name
+	vdc.Namespace = avdc.Namespace
+	err = r.Delete(ctx, vdc)
+	if err != nil && !apierrors.IsNotFound(err){
+		logger.Error(err, "failed to delete vdc")
 		return ctrl.Result{}, err
 	}
-
-	logger.Info("reconcile succeeded")
-	return ctrl.Result{}, nil
+	if apierrors.IsNotFound(err){
+		logger.Info("vdc is already deleted")
+	}else{
+		logger.Info("vdc is deleted successfully")
+	}
+	if err := r.updateStatusTime(ctx, avdc); err != nil{
+		logger.Error(err, "failed to update avdc status")
+		return ctrl.Result{}, err
+	}
+	return ctrl.Result{Requeue: true}, nil
 }
 
 
@@ -209,37 +221,19 @@ func (r *AutoVirtualDCReconciler) finalize(ctx context.Context, avdc *nyamberv1b
 	return ctrl.Result{}, nil
 }
 
-func (r *AutoVirtualDCReconciler) updateOperation(ctx context.Context, avdc *nyamberv1beta1.AutoVirtualDC) error {
-	ope, err := r.decideNextOperation(avdc)
-	if err != nil {
-		return err
-	}
-	avdc.Status.NextOperation = ope
-	return nil
-}
-
-func (r *AutoVirtualDCReconciler)decideNextOperation(avdc *nyamberv1beta1.AutoVirtualDC) (*nyamberv1beta1.Operation, error) {
+func (r *AutoVirtualDCReconciler) updateStatusTime(ctx context.Context, avdc *nyamberv1beta1.AutoVirtualDC) error {
 	specParser := cron.NewParser(cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow)
 	startSched, err := specParser.Parse(avdc.Spec.StartSchedule)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	stopSched, err := specParser.Parse(avdc.Spec.StopSchedule)
 	if err != nil {
-		return nil, err
+		return  err
 	}
-	nextStartTime := startSched.Next(r.Now())
-	nextStopTime := stopSched.Next(r.Now())
-	if nextStopTime.After(nextStartTime) {
-		return &nyamberv1beta1.Operation{
-			Name: nyamberv1beta1.Start,
-			Time: metav1.NewTime(nextStartTime),
-		}, nil
-	}
-	return &nyamberv1beta1.Operation{
-		Name: nyamberv1beta1.Stop,
-		Time: metav1.NewTime(nextStopTime),
-	}, nil
+	*avdc.Status.NextStartTime = metav1.NewTime(startSched.Next(r.Now()))
+	*avdc.Status.NextStopTime = metav1.NewTime(stopSched.Next(r.Now()))
+	return nil
 }
 
 type RealClock struct{}
