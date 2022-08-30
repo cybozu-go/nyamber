@@ -13,23 +13,18 @@ import (
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/utils/clock/testing"
 	"k8s.io/utils/pointer"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-type MockClock struct {
-	now time.Time
-}
 
-func (m *MockClock) Now() time.Time {
-	return m.now
-}
 
 var _ = Describe("AutoVirtualDC controller", func() {
 	ctx := context.Background()
 	var stopFunc func()
-	clock := &MockClock{now: time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)}
+	clock := testing.NewFakeClock(time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC))
 
 	BeforeEach(func() {
 		time.Sleep(100 * time.Millisecond)
@@ -185,7 +180,7 @@ var _ = Describe("AutoVirtualDC controller", func() {
 
 		for _, testcase := range testcases {
 			By(fmt.Sprintf("creating AutoVirtualDC with schedule: %s", testcase.name))
-			clock.now = testcase.input.now
+			clock.SetTime(testcase.input.now)
 			avdc := &nyamberv1beta1.AutoVirtualDC{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-avdc",
@@ -236,7 +231,7 @@ var _ = Describe("AutoVirtualDC controller", func() {
 
 	It("should recreate vdc if vdc's condition is bad", func() {
 		By("creating AutoVirtualDC")
-		clock.now = time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC)
+		clock.SetTime(time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC))
 		avdc := &nyamberv1beta1.AutoVirtualDC{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-avdc",
@@ -253,6 +248,15 @@ var _ = Describe("AutoVirtualDC controller", func() {
 		}).Should(Succeed())
 		previousVdcUid := vdc.UID
 
+		By("checking vdc is not recreated")
+		Consistently(func(g Gomega){
+			vdc := &nyamberv1beta1.VirtualDC{}
+			err = k8sClient.Get(ctx, client.ObjectKey{Name: "test-avdc", Namespace: testNamespace}, vdc)
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(vdc.UID).To(Equal(previousVdcUid))
+		}).WithTimeout(5 * time.Second).WithPolling(1 * time.Second).Should(Succeed())
+
+		By("setting vdc's status to be failed")
 		meta.SetStatusCondition(&vdc.Status.Conditions, metav1.Condition{
 			Type:   nyamberv1beta1.TypePodJobCompleted,
 			Status: metav1.ConditionFalse,
@@ -262,11 +266,47 @@ var _ = Describe("AutoVirtualDC controller", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("checking vdc is recreated")
+		vdc = &nyamberv1beta1.VirtualDC{}
 		Eventually(func(g Gomega) {
-			vdc := &nyamberv1beta1.VirtualDC{}
 			err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-avdc", Namespace: testNamespace}, vdc)
 			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(vdc.UID).NotTo(Equal(previousVdcUid))
 		}).Should(Succeed())
+		previousVdcUid = vdc.UID
+
+		By("setting vdc's status to be pending")
+		meta.SetStatusCondition(&vdc.Status.Conditions, metav1.Condition{
+			Type:   nyamberv1beta1.TypePodJobCompleted,
+			Status: metav1.ConditionFalse,
+			Reason: nyamberv1beta1.ReasonPodJobCompletedPending,
+		})
+		err = k8sClient.Status().Update(ctx, vdc)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("checking vdc is not recreated")
+		Consistently(func(g Gomega){
+			vdc := &nyamberv1beta1.VirtualDC{}
+			err = k8sClient.Get(ctx, client.ObjectKey{Name: "test-avdc", Namespace: testNamespace}, vdc)
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(vdc.UID).To(Equal(previousVdcUid))
+		}).WithTimeout(5 * time.Second).WithPolling(1 * time.Second).Should(Succeed())
+
+		By("setting vdc's status to be completed")
+		meta.SetStatusCondition(&vdc.Status.Conditions, metav1.Condition{
+			Type:   nyamberv1beta1.TypePodJobCompleted,
+			Status: metav1.ConditionTrue,
+			Reason: nyamberv1beta1.ReasonOK,
+		})
+		err = k8sClient.Status().Update(ctx, vdc)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("checking vdc is not recreated")
+		Consistently(func(g Gomega){
+			vdc := &nyamberv1beta1.VirtualDC{}
+			err = k8sClient.Get(ctx, client.ObjectKey{Name: "test-avdc", Namespace: testNamespace}, vdc)
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(vdc.UID).To(Equal(previousVdcUid))
+		}).WithTimeout(5 * time.Second).WithPolling(1 * time.Second).Should(Succeed())
 	})
+
 })
