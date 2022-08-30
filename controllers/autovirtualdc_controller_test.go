@@ -470,6 +470,7 @@ var _ = Describe("AutoVirtualDC controller", func() {
 			g.Expect(vdc.UID).To(Equal(previousVdcUid))
 		}).Should(Succeed())
 	})
+
 	It("should delete vdc if vdc's status keeps pending but stopTime has come.", func() {
 		By("creating AutoVirtualDC between startTime and stopTime")
 		clock.SetTime(time.Date(2000, 1, 1, 2, 0, 0, 0, time.UTC))
@@ -500,6 +501,148 @@ var _ = Describe("AutoVirtualDC controller", func() {
 		})
 		err = k8sClient.Status().Update(ctx, vdc)
 		Expect(err).NotTo(HaveOccurred())
+
+		By("checking vdc deleted when stopTime comes")
+		clock.SetTime(time.Date(2000, 1, 1, 5, 0, 0, 0, time.UTC))
+		Eventually(func() bool {
+			vdc := &nyamberv1beta1.VirtualDC{}
+			err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-avdc", Namespace: testNamespace}, vdc)
+			return apierrors.IsNotFound(err)
+		}).Should(BeTrue())
+	})
+
+	It("should not recreate vdc if timeout has passed", func() {
+		By("creating AutoVirtualDC between startTime and stopTime")
+		clock.SetTime(time.Date(2000, 1, 1, 1, 0, 0, 0, time.UTC))
+		avdc := &nyamberv1beta1.AutoVirtualDC{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-avdc",
+				Namespace: testNamespace,
+			},
+			Spec: nyamberv1beta1.AutoVirtualDCSpec{
+				StartSchedule: "0 1 * * *",
+				StopSchedule:  "0 5 * * *",
+				TimeoutDuration: "1h",
+			},
+		}
+		err := k8sClient.Create(ctx, avdc)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("checking VirtualDC is created")
+		vdc := &nyamberv1beta1.VirtualDC{}
+		Eventually(func() error {
+			return k8sClient.Get(ctx, client.ObjectKey{Name: "test-avdc", Namespace: testNamespace}, vdc)
+		}).Should(Succeed())
+		previousVdcUid := vdc.UID
+
+		By("setting vdc's status to be failed")
+		meta.SetStatusCondition(&vdc.Status.Conditions, metav1.Condition{
+			Type:   nyamberv1beta1.TypePodJobCompleted,
+			Status: metav1.ConditionFalse,
+			Reason: nyamberv1beta1.ReasonPodJobCompletedFailed,
+		})
+		err = k8sClient.Status().Update(ctx, vdc)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("checking vdc is recreated when vdc failed")
+		Eventually(func(g Gomega) {
+			vdc = &nyamberv1beta1.VirtualDC{}
+			err = k8sClient.Get(ctx, client.ObjectKey{Name: "test-avdc", Namespace: testNamespace}, vdc)
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(vdc.UID).NotTo(Equal(previousVdcUid))
+		}).Should(Succeed())
+		previousVdcUid = vdc.UID
+
+		By("Setting the time to the time when the timeout has expired")
+		clock.SetTime(time.Date(2000, 1, 1, 2, 0, 0, 1, time.UTC))
+
+		By("setting vdc's status to be failed")
+		meta.SetStatusCondition(&vdc.Status.Conditions, metav1.Condition{
+			Type:   nyamberv1beta1.TypePodJobCompleted,
+			Status: metav1.ConditionFalse,
+			Reason: nyamberv1beta1.ReasonPodJobCompletedFailed,
+		})
+		err = k8sClient.Status().Update(ctx, vdc)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("checking vdc is not recreated if timeout has passed")
+		Consistently(func(g Gomega) {
+			vdc := &nyamberv1beta1.VirtualDC{}
+			err = k8sClient.Get(ctx, client.ObjectKey{Name: "test-avdc", Namespace: testNamespace}, vdc)
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(vdc.UID).To(Equal(previousVdcUid))
+		}).Should(Succeed())
+
+		By("checking vdc deleted when stopTime comes")
+		clock.SetTime(time.Date(2000, 1, 1, 5, 0, 0, 0, time.UTC))
+		Eventually(func() bool {
+			vdc := &nyamberv1beta1.VirtualDC{}
+			err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-avdc", Namespace: testNamespace}, vdc)
+			return apierrors.IsNotFound(err)
+		}).Should(BeTrue())
+	})
+
+	It("should not recreate vdc once avdc starts creating vdc. ", func() {
+		By("creating AutoVirtualDC between startTime and stopTime")
+		clock.SetTime(time.Date(2000, 1, 1, 1, 0, 0, 0, time.UTC))
+		avdc := &nyamberv1beta1.AutoVirtualDC{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-avdc",
+				Namespace: testNamespace,
+			},
+			Spec: nyamberv1beta1.AutoVirtualDCSpec{
+				StartSchedule: "0 1 * * *",
+				StopSchedule:  "0 5 * * *",
+				TimeoutDuration: "0s",
+			},
+		}
+		err := k8sClient.Create(ctx, avdc)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("checking VirtualDC is created")
+		vdc := &nyamberv1beta1.VirtualDC{}
+		Eventually(func() error {
+			return k8sClient.Get(ctx, client.ObjectKey{Name: "test-avdc", Namespace: testNamespace}, vdc)
+		}).Should(Succeed())
+		previousVdcUid := vdc.UID
+
+		By("setting vdc's status to be failed")
+		meta.SetStatusCondition(&vdc.Status.Conditions, metav1.Condition{
+			Type:   nyamberv1beta1.TypePodJobCompleted,
+			Status: metav1.ConditionFalse,
+			Reason: nyamberv1beta1.ReasonPodJobCompletedFailed,
+		})
+		err = k8sClient.Status().Update(ctx, vdc)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("checking vdc is recreated when vdc failed")
+		Eventually(func(g Gomega) {
+			vdc = &nyamberv1beta1.VirtualDC{}
+			err = k8sClient.Get(ctx, client.ObjectKey{Name: "test-avdc", Namespace: testNamespace}, vdc)
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(vdc.UID).NotTo(Equal(previousVdcUid))
+		}).Should(Succeed())
+		previousVdcUid = vdc.UID
+
+		By("Setting the time to the time when the timeout has expired")
+		clock.SetTime(time.Date(2000, 1, 1, 1, 0, 0, 1, time.UTC))
+
+		By("setting vdc's status to be failed")
+		meta.SetStatusCondition(&vdc.Status.Conditions, metav1.Condition{
+			Type:   nyamberv1beta1.TypePodJobCompleted,
+			Status: metav1.ConditionFalse,
+			Reason: nyamberv1beta1.ReasonPodJobCompletedFailed,
+		})
+		err = k8sClient.Status().Update(ctx, vdc)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("checking vdc is not recreated if timeout has passed")
+		Consistently(func(g Gomega) {
+			vdc := &nyamberv1beta1.VirtualDC{}
+			err = k8sClient.Get(ctx, client.ObjectKey{Name: "test-avdc", Namespace: testNamespace}, vdc)
+			g.Expect(err).NotTo(HaveOccurred())
+			g.Expect(vdc.UID).To(Equal(previousVdcUid))
+		}).Should(Succeed())
 
 		By("checking vdc deleted when stopTime comes")
 		clock.SetTime(time.Date(2000, 1, 1, 5, 0, 0, 0, time.UTC))
