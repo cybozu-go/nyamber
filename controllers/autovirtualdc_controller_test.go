@@ -227,7 +227,7 @@ var _ = Describe("AutoVirtualDC controller", func() {
 		}
 	})
 
-	It("should recreate vdc if vdc's condition is bad", func() {
+	It("should operate VDC according to its status without schedule", func() {
 		By("creating AutoVirtualDC")
 		clock.SetTime(time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC))
 		avdc := &nyamberv1beta1.AutoVirtualDC{
