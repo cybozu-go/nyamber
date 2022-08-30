@@ -145,6 +145,7 @@ func (r *AutoVirtualDCReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	vdc := &nyamberv1beta1.VirtualDC{}
 	vdc.Name = avdc.Name
 	vdc.Namespace = avdc.Namespace
+
 	err = r.Delete(ctx, vdc)
 	if err != nil && !apierrors.IsNotFound(err) {
 		logger.Error(err, "failed to delete vdc")
@@ -243,6 +244,17 @@ func (r *AutoVirtualDCReconciler) reconcileVirtualDC(ctx context.Context, avdc *
 		}
 		if jobCondition.Reason == nyamberv1beta1.ReasonPodJobCompletedFailed {
 			// prepare for recreating vdc
+			if avdc.Spec.TimeoutDuration != "" {
+				timeoutDuration, err := time.ParseDuration(avdc.Spec.TimeoutDuration)
+				if err != nil {
+					return ctrl.Result{}, err
+				}
+				// if timeout has passed, early return.
+				if r.Now().After(avdc.Status.NextStartTime.Time.Add(timeoutDuration)) {
+					return ctrl.Result{RequeueAfter: r.Sub(avdc.Status.NextStopTime.Time, r.Now())}, nil
+				}
+			}
+
 			if err := r.Delete(ctx, vdc); err != nil {
 				return ctrl.Result{}, fmt.Errorf("failed to delete VirtualDC: %w", err)
 			}
