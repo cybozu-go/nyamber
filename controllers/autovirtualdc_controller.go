@@ -107,6 +107,7 @@ func (r *AutoVirtualDCReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			logger.Error(err, "failed to update avdc status")
 			return ctrl.Result{}, err
 		}
+		// set NextStartTime to now if now is between start-time and stop-time
 		if avdc.Status.NextStopTime.Before(avdc.Status.NextStartTime) {
 			nextStartTime := metav1.NewTime(r.Now())
 			avdc.Status.NextStartTime = &nextStartTime
@@ -115,7 +116,7 @@ func (r *AutoVirtualDCReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	}
 
 	now := r.Now()
-	// case 1
+	// requeue after next operation if now is before both of NextStartTime and NextStopTime
 	if now.Before(avdc.Status.NextStartTime.Time) && now.Before(avdc.Status.NextStopTime.Time) {
 		if avdc.Status.NextStartTime.Before(avdc.Status.NextStopTime) {
 			return ctrl.Result{RequeueAfter: r.Sub(avdc.Status.NextStartTime.Time, now)}, nil
@@ -123,7 +124,7 @@ func (r *AutoVirtualDCReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{RequeueAfter: r.Sub(avdc.Status.NextStopTime.Time, now)}, nil
 	}
 
-	// case 2
+	// create VDC if now is after or equal to NextStartTime and before NextStopTime
 	if (avdc.Status.NextStartTime.Time.Before(now) || avdc.Status.NextStartTime.Time.Equal(now)) && now.Before(avdc.Status.NextStopTime.Time) {
 		result, err := r.reconcileVirtualDC(ctx, avdc)
 		if err != nil {
@@ -141,7 +142,7 @@ func (r *AutoVirtualDCReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	// case 3,4,5
+	// delete VDC if now is after or equal to NextStopTime
 	vdc := &nyamberv1beta1.VirtualDC{}
 	vdc.Name = avdc.Name
 	vdc.Namespace = avdc.Namespace
@@ -156,6 +157,7 @@ func (r *AutoVirtualDCReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	} else {
 		logger.Info("vdc is deleted successfully")
 	}
+
 	if err := r.updateStatusTime(ctx, avdc); err != nil {
 		logger.Error(err, "failed to update avdc status")
 		return ctrl.Result{}, err
@@ -237,34 +239,32 @@ func (r *AutoVirtualDCReconciler) reconcileVirtualDC(ctx context.Context, avdc *
 		return ctrl.Result{RequeueAfter: r.RequeueInterval}, nil
 	}
 
-	jobCondition := meta.FindStatusCondition(vdc.Status.Conditions, nyamberv1beta1.TypePodJobCompleted)
-	if jobCondition != nil {
-		if jobCondition.Reason == nyamberv1beta1.ReasonOK {
-			return ctrl.Result{}, nil
-		}
-		if jobCondition.Reason == nyamberv1beta1.ReasonPodJobCompletedFailed {
-			// prepare for recreating vdc
-			if avdc.Spec.TimeoutDuration != "" {
-				timeoutDuration, err := time.ParseDuration(avdc.Spec.TimeoutDuration)
-				if err != nil {
-					return ctrl.Result{}, err
-				}
-				// if timeout has passed, early return.
-				if r.Now().After(avdc.Status.NextStartTime.Time.Add(timeoutDuration)) {
-					return ctrl.Result{RequeueAfter: r.Sub(avdc.Status.NextStopTime.Time, r.Now())}, nil
-				}
-			}
+	isJobFinished, reason := isJobFinished(vdc)
+	if !isJobFinished {
+		// requeue to recheck VDC condition when VDC is not ready
+		return ctrl.Result{RequeueAfter: r.RequeueInterval}, nil
+	}
+	if reason == nyamberv1beta1.ReasonOK {
+		return ctrl.Result{}, nil
+	}
 
-			if err := r.Delete(ctx, vdc); err != nil {
-				return ctrl.Result{}, fmt.Errorf("failed to delete VirtualDC: %w", err)
-			}
-			logger.Info("deleted vdc for recreating vdc. Reason: jobCompletedFailed")
-			return ctrl.Result{Requeue: true}, nil
+	if avdc.Spec.TimeoutDuration != "" {
+		timeoutDuration, err := time.ParseDuration(avdc.Spec.TimeoutDuration)
+		if err != nil {
+			return ctrl.Result{}, err
+		}
+		if r.Now().After(avdc.Status.NextStartTime.Time.Add(timeoutDuration)) {
+			logger.Info("requeue after next stop-time because timeout has passed.")
+			return ctrl.Result{RequeueAfter: r.Sub(avdc.Status.NextStopTime.Time, r.Now())}, nil
 		}
 	}
 
-	// requeue to recheck VDC condition when VDC is not ready
-	return ctrl.Result{RequeueAfter: r.RequeueInterval}, nil
+	if err := r.Delete(ctx, vdc); err != nil {
+		return ctrl.Result{}, fmt.Errorf("failed to delete VirtualDC: %w", err)
+	}
+	logger.Info("deleted vdc to recreate it. Reason: jobCompletedFailed")
+
+	return ctrl.Result{Requeue: true}, nil
 }
 
 type RealClock struct{}
@@ -275,4 +275,13 @@ func (r *RealClock) Now() time.Time {
 
 func (r *RealClock) Sub(a, b time.Time) time.Duration {
 	return a.Sub(b)
+}
+
+// isJobFinished returns if Reason of VDC PodJobCompleted is Completed or Failed and its Reason.
+func isJobFinished(vdc *nyamberv1beta1.VirtualDC) (bool, string) {
+	jobCondition := meta.FindStatusCondition(vdc.Status.Conditions, nyamberv1beta1.TypePodJobCompleted)
+	if jobCondition == nil {
+		return false, ""
+	}
+	return jobCondition.Reason == nyamberv1beta1.ReasonOK || jobCondition.Reason == nyamberv1beta1.ReasonPodJobCompletedFailed, jobCondition.Reason
 }
