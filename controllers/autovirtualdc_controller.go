@@ -45,6 +45,7 @@ type AutoVirtualDCReconciler struct {
 
 type Clock interface {
 	Now() time.Time
+	Sub(a, b time.Time) time.Duration
 }
 
 //+kubebuilder:rbac:groups=nyamber.cybozu.io,resources=autovirtualdcs,verbs=get;list;watch;create;update;patch;delete
@@ -117,9 +118,9 @@ func (r *AutoVirtualDCReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	// case 1
 	if now.Before(avdc.Status.NextStartTime.Time) && now.Before(avdc.Status.NextStopTime.Time) {
 		if avdc.Status.NextStartTime.Before(avdc.Status.NextStopTime) {
-			return ctrl.Result{RequeueAfter: avdc.Status.NextStartTime.Sub(now)}, nil
+			return ctrl.Result{RequeueAfter: r.Sub(avdc.Status.NextStartTime.Time, now)}, nil
 		}
-		return ctrl.Result{RequeueAfter: avdc.Status.NextStopTime.Sub(now)}, nil
+		return ctrl.Result{RequeueAfter: r.Sub(avdc.Status.NextStopTime.Time, now)}, nil
 	}
 
 	// case 2
@@ -258,4 +259,8 @@ type RealClock struct{}
 
 func (r *RealClock) Now() time.Time {
 	return time.Now()
+}
+
+func (r *RealClock) Sub(a, b time.Time) time.Duration {
+	return a.Sub(b)
 }
