@@ -19,8 +19,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-
-
 var _ = Describe("AutoVirtualDC controller", func() {
 	ctx := context.Background()
 	var stopFunc func()
@@ -241,7 +239,8 @@ var _ = Describe("AutoVirtualDC controller", func() {
 		err := k8sClient.Create(ctx, avdc)
 		Expect(err).NotTo(HaveOccurred())
 
-		By("checking VirtualDC is created and set its condition failed")
+		By("checking VirtualDC is created")
+		clock.Step(time.Second)
 		vdc := &nyamberv1beta1.VirtualDC{}
 		Eventually(func() error {
 			return k8sClient.Get(ctx, client.ObjectKey{Name: "test-avdc", Namespace: testNamespace}, vdc)
@@ -249,14 +248,16 @@ var _ = Describe("AutoVirtualDC controller", func() {
 		previousVdcUid := vdc.UID
 
 		By("checking vdc is not recreated")
-		Consistently(func(g Gomega){
+		clock.Step(time.Second)
+		Consistently(func(g Gomega) {
 			vdc := &nyamberv1beta1.VirtualDC{}
 			err = k8sClient.Get(ctx, client.ObjectKey{Name: "test-avdc", Namespace: testNamespace}, vdc)
 			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(vdc.UID).To(Equal(previousVdcUid))
-		}).WithTimeout(5 * time.Second).WithPolling(1 * time.Second).Should(Succeed())
+		}).WithTimeout(5 * time.Second).WithPolling(time.Second).Should(Succeed())
 
 		By("setting vdc's status to be failed")
+		clock.Step(time.Second)
 		meta.SetStatusCondition(&vdc.Status.Conditions, metav1.Condition{
 			Type:   nyamberv1beta1.TypePodJobCompleted,
 			Status: metav1.ConditionFalse,
@@ -266,6 +267,7 @@ var _ = Describe("AutoVirtualDC controller", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("checking vdc is recreated")
+		clock.Step(time.Second)
 		vdc = &nyamberv1beta1.VirtualDC{}
 		Eventually(func(g Gomega) {
 			err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-avdc", Namespace: testNamespace}, vdc)
@@ -275,6 +277,7 @@ var _ = Describe("AutoVirtualDC controller", func() {
 		previousVdcUid = vdc.UID
 
 		By("setting vdc's status to be pending")
+		clock.Step(time.Second)
 		meta.SetStatusCondition(&vdc.Status.Conditions, metav1.Condition{
 			Type:   nyamberv1beta1.TypePodJobCompleted,
 			Status: metav1.ConditionFalse,
@@ -284,14 +287,16 @@ var _ = Describe("AutoVirtualDC controller", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("checking vdc is not recreated")
-		Consistently(func(g Gomega){
+		clock.Step(time.Second)
+		Consistently(func(g Gomega) {
 			vdc := &nyamberv1beta1.VirtualDC{}
 			err = k8sClient.Get(ctx, client.ObjectKey{Name: "test-avdc", Namespace: testNamespace}, vdc)
 			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(vdc.UID).To(Equal(previousVdcUid))
-		}).WithTimeout(5 * time.Second).WithPolling(1 * time.Second).Should(Succeed())
+		}).WithTimeout(5 * time.Second).WithPolling(time.Second).Should(Succeed())
 
 		By("setting vdc's status to be completed")
+		clock.Step(time.Second)
 		meta.SetStatusCondition(&vdc.Status.Conditions, metav1.Condition{
 			Type:   nyamberv1beta1.TypePodJobCompleted,
 			Status: metav1.ConditionTrue,
@@ -301,12 +306,12 @@ var _ = Describe("AutoVirtualDC controller", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		By("checking vdc is not recreated")
-		Consistently(func(g Gomega){
+		clock.Step(time.Second)
+		Consistently(func(g Gomega) {
 			vdc := &nyamberv1beta1.VirtualDC{}
 			err = k8sClient.Get(ctx, client.ObjectKey{Name: "test-avdc", Namespace: testNamespace}, vdc)
 			g.Expect(err).NotTo(HaveOccurred())
 			g.Expect(vdc.UID).To(Equal(previousVdcUid))
-		}).WithTimeout(5 * time.Second).WithPolling(1 * time.Second).Should(Succeed())
+		}).WithTimeout(5 * time.Second).WithPolling(time.Second).Should(Succeed())
 	})
-
 })
