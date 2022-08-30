@@ -430,7 +430,7 @@ var _ = Describe("AutoVirtualDC controller", func() {
 		}).Should(Succeed())
 	})
 
-	It("should operate VDC according to its status with schedule. creating avdc  between stopTime and startTime", func() {
+	It("should operate VDC according to its status with schedule, creating AVDC  between stopTime and startTime", func() {
 		By("creating AutoVirtualDC between stopTime and startTime")
 		clock.SetTime(time.Date(2000, 1, 1, 0, 0, 0, 0, time.UTC))
 		avdc := &nyamberv1beta1.AutoVirtualDC{
@@ -471,7 +471,7 @@ var _ = Describe("AutoVirtualDC controller", func() {
 		}).Should(Succeed())
 	})
 
-	It("should delete vdc if vdc's status keeps pending but stopTime has come.", func() {
+	It("should delete VDC if VDC's status keeps pending but stopTime has come.", func() {
 		By("creating AutoVirtualDC between startTime and stopTime")
 		clock.SetTime(time.Date(2000, 1, 1, 2, 0, 0, 0, time.UTC))
 		avdc := &nyamberv1beta1.AutoVirtualDC{
@@ -511,7 +511,7 @@ var _ = Describe("AutoVirtualDC controller", func() {
 		}).Should(BeTrue())
 	})
 
-	It("should not recreate vdc if timeout has passed", func() {
+	It("should operate VDC according to TimeoutDuration of AVDC", func() {
 		By("creating AutoVirtualDC between startTime and stopTime")
 		clock.SetTime(time.Date(2000, 1, 1, 1, 0, 0, 0, time.UTC))
 		avdc := &nyamberv1beta1.AutoVirtualDC{
@@ -520,8 +520,8 @@ var _ = Describe("AutoVirtualDC controller", func() {
 				Namespace: testNamespace,
 			},
 			Spec: nyamberv1beta1.AutoVirtualDCSpec{
-				StartSchedule: "0 1 * * *",
-				StopSchedule:  "0 5 * * *",
+				StartSchedule:   "0 1 * * *",
+				StopSchedule:    "0 5 * * *",
 				TimeoutDuration: "1h",
 			},
 		}
@@ -582,7 +582,7 @@ var _ = Describe("AutoVirtualDC controller", func() {
 		}).Should(BeTrue())
 	})
 
-	It("should not recreate vdc once avdc starts creating vdc. ", func() {
+	It("should not recreate VDC with TimeoutDuration 0", func() {
 		By("creating AutoVirtualDC between startTime and stopTime")
 		clock.SetTime(time.Date(2000, 1, 1, 1, 0, 0, 0, time.UTC))
 		avdc := &nyamberv1beta1.AutoVirtualDC{
@@ -591,8 +591,8 @@ var _ = Describe("AutoVirtualDC controller", func() {
 				Namespace: testNamespace,
 			},
 			Spec: nyamberv1beta1.AutoVirtualDCSpec{
-				StartSchedule: "0 1 * * *",
-				StopSchedule:  "0 5 * * *",
+				StartSchedule:   "0 1 * * *",
+				StopSchedule:    "0 5 * * *",
 				TimeoutDuration: "0s",
 			},
 		}
