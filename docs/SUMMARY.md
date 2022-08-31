@@ -3,6 +3,7 @@
 [Template](README.md)
 
 # User manual
+[UserManual](user-manual.md)
 
 # Developer documents
 

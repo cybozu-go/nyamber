@@ -3,10 +3,18 @@
 [![PkgGoDev](https://pkg.go.dev/badge/github.com/cybozu-go/nyamber?tab=overview)](https://pkg.go.dev/github.com/cybozu-go/nyamber?tab=overview)
 [![Go Report Card](https://goreportcard.com/badge/github.com/cybozu-go/nyamber)](https://goreportcard.com/report/github.com/cybozu-go/nyamber)
 
-Nyamber: Custom controllers to create Neco environment
+Nyamber
 ============================
+Nyamber is a custom controller to create Neco environment
 
-**Project Status**: Initial development
+## Features
+- Run a dctest in a pod
+- Created a pod which runs dctest and a service to access the pod corresponding to vdc custom resources
+- Run user-defined command
+- Reflect to vdc resources in status of executed command
+
+## Supported Software
+- Kubernetes: 1.22, 1.23, 1.24
 
 ## Documentation
 
