@@ -121,7 +121,7 @@ var _ = Describe("Nyamber", func() {
 	It("should create vdc according to avdc", func() {
 		By("checking vdc is created")
 		Eventually(func() (*nyamberv1beta1.VirtualDC, error) {
-			out, err := kubectl(nil, "get", "virtualdc", "-n", "nyamber-pod", "auto-virtual-dc", "-o", "json")
+			out, err := kubectl(nil, "get", "virtualdc", "auto-virtual-dc", "-o", "json")
 			if err != nil {
 				return nil, err
 			}

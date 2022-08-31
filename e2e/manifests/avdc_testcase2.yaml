@@ -1,7 +1,7 @@
 apiVersion: nyamber.cybozu.io/v1beta1
 kind: AutoVirtualDC
 metadata:
-  name: auto-virtual-dc
+  name: auto-virtual-dc2
 spec:
   template:
     spec:
