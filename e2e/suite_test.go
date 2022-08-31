@@ -17,3 +17,7 @@ func TestE2e(t *testing.T) {
 	SetDefaultEventuallyPollingInterval(100 * time.Millisecond)
 	RunSpecs(t, "E2e Suite")
 }
+
+var _ = BeforeSuite(func() {
+	
+})

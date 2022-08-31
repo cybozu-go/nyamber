@@ -254,4 +254,27 @@ var _ = Describe("Nyamber", func() {
 			}).Should(HaveOccurred())
 		}
 	})
+	
+	It("should delete vdc and avdc", func() {
+		_, err := kubectl(nil, "delete", "-f", "./manifests/avdc_testcase.yaml")
+		Expect(err).Should(Succeed())
+
+
+		Eventually(func() error {
+			_, err := kubectl(nil, "get", "autovirtualdc")
+			if err != nil {
+				return err
+			}
+			return nil
+		}).Should(HaveOccurred())
+		Eventually(func() error {
+			_, err := kubectl(nil, "get", "virtualdc")
+			if err != nil {
+				return err
+			}
+			return nil
+		}).Should(HaveOccurred())
+
+	})
+
 })
