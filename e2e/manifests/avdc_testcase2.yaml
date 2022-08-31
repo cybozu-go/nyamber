@@ -1,0 +1,14 @@
+apiVersion: nyamber.cybozu.io/v1beta1
+kind: AutoVirtualDC
+metadata:
+  name: auto-virtual-dc
+spec:
+  template:
+    spec:
+        necoBranch: release
+        necoAppsBranch: release
+        command:
+        - env
+  startSchedule: "0 hoge * * *"
+  stopSchedule: "0 1 * * *"
+  timeoutDuration: "20m"
