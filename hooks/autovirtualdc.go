@@ -95,7 +95,7 @@ func (v autoVirtualdcValidator) ValidateDelete(ctx context.Context, obj runtime.
 
 func (v autoVirtualdcValidator) validateTimeoutDuration(avdc *nyamberv1beta1.AutoVirtualDC) field.ErrorList {
 	var errs field.ErrorList
-    if avdc.Spec.TimeoutDuration == "" {
+	if avdc.Spec.TimeoutDuration == "" {
 		return errs
 	}
 	_, err := time.ParseDuration(avdc.Spec.TimeoutDuration)

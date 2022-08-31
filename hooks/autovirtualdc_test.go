@@ -48,28 +48,28 @@ var _ = Describe("AutoVirtualDC validator", func() {
 				"only startSchedule is blank",
 				nyamberv1beta1.AutoVirtualDCSpec{
 					StartSchedule: "",
-					StopSchedule: "0 5 * * *",
+					StopSchedule:  "0 5 * * *",
 				},
 			},
 			{
 				"only stopSchedule is blank",
 				nyamberv1beta1.AutoVirtualDCSpec{
 					StartSchedule: "0 2 * * *",
-					StopSchedule: "",
+					StopSchedule:  "",
 				},
 			},
 			{
 				"startSchedule can not be parsed",
 				nyamberv1beta1.AutoVirtualDCSpec{
 					StartSchedule: "0 0",
-					StopSchedule: "0 2 * * *",
+					StopSchedule:  "0 2 * * *",
 				},
 			},
 			{
 				"stopSchedule can not be parsed",
 				nyamberv1beta1.AutoVirtualDCSpec{
 					StartSchedule: "0 5 * * *",
-					StopSchedule: "0 hoge * * *",
+					StopSchedule:  "0 hoge * * *",
 				},
 			},
 			{
@@ -80,9 +80,9 @@ var _ = Describe("AutoVirtualDC validator", func() {
 			},
 		}
 
-		for _, testcase := range testcases{
+		for _, testcase := range testcases {
 			By(testcase.name)
-            avdc := &nyamberv1beta1.AutoVirtualDC{
+			avdc := &nyamberv1beta1.AutoVirtualDC{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-avdc",
 					Namespace: testNamespace,
@@ -101,8 +101,8 @@ var _ = Describe("AutoVirtualDC validator", func() {
 				Namespace: testNamespace,
 			},
 			Spec: nyamberv1beta1.AutoVirtualDCSpec{
-				StartSchedule:   "",
-				StopSchedule:    "",
+				StartSchedule: "",
+				StopSchedule:  "",
 			},
 		}
 		err := k8sClient.Create(ctx, avdc)
@@ -150,32 +150,32 @@ var _ = Describe("AutoVirtualDC validator", func() {
 	})
 })
 
-func makeAutoVirtualDC() *nyamberv1beta1.AutoVirtualDC{
+func makeAutoVirtualDC() *nyamberv1beta1.AutoVirtualDC {
 	return &nyamberv1beta1.AutoVirtualDC{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "test-avdc",
-				Namespace: testNamespace,
-			},
-			Spec: nyamberv1beta1.AutoVirtualDCSpec{
-				StartSchedule:   "0 1 * * *",
-				StopSchedule:    "0 5 * * *",
-				TimeoutDuration: "1h",
-				Template: nyamberv1beta1.VirtualDC{
-					Spec: nyamberv1beta1.VirtualDCSpec{
-						NecoBranch:     "test",
-						NecoAppsBranch: "test",
-						SkipNecoApps:   false,
-						Command:        []string{"test", "command"},
-						Resources: corev1.ResourceRequirements{
-							Limits: corev1.ResourceList{
-								corev1.ResourceCPU: resource.MustParse("100m"),
-							},
-							Requests: corev1.ResourceList{
-								corev1.ResourceCPU: resource.MustParse("100m"),
-							},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test-avdc",
+			Namespace: testNamespace,
+		},
+		Spec: nyamberv1beta1.AutoVirtualDCSpec{
+			StartSchedule:   "0 1 * * *",
+			StopSchedule:    "0 5 * * *",
+			TimeoutDuration: "1h",
+			Template: nyamberv1beta1.VirtualDC{
+				Spec: nyamberv1beta1.VirtualDCSpec{
+					NecoBranch:     "test",
+					NecoAppsBranch: "test",
+					SkipNecoApps:   false,
+					Command:        []string{"test", "command"},
+					Resources: corev1.ResourceRequirements{
+						Limits: corev1.ResourceList{
+							corev1.ResourceCPU: resource.MustParse("100m"),
+						},
+						Requests: corev1.ResourceList{
+							corev1.ResourceCPU: resource.MustParse("100m"),
 						},
 					},
 				},
 			},
-		}
+		},
+	}
 }

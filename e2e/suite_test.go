@@ -1,7 +1,6 @@
 package e2e
 
 import (
-	"context"
 	"testing"
 	"time"
 
@@ -21,8 +20,8 @@ func TestE2e(t *testing.T) {
 
 var _ = BeforeSuite(func() {
 	By("deleting all autovirtualDC and virtualDC")
-	_, err := kubectl(nil, "delete", "autovirtualdc","--all")
+	_, err := kubectl(nil, "delete", "autovirtualdc", "--all")
 	Expect(err).NotTo(HaveOccurred())
-	_, err = kubectl(nil, "delete",  "virtualdc", "--all")
+	_, err = kubectl(nil, "delete", "virtualdc", "--all")
 	Expect(err).NotTo(HaveOccurred())
 })

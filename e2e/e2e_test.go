@@ -142,8 +142,6 @@ var _ = Describe("Nyamber", func() {
 		)
 	})
 
-
-
 	It("should execute all commands correctly", func() {
 		testcases := []struct {
 			name    string
@@ -254,11 +252,10 @@ var _ = Describe("Nyamber", func() {
 			}).Should(HaveOccurred())
 		}
 	})
-	
+
 	It("should delete vdc and avdc", func() {
 		_, err := kubectl(nil, "delete", "-f", "./manifests/avdc_testcase.yaml")
 		Expect(err).Should(Succeed())
-
 
 		Eventually(func() error {
 			_, err := kubectl(nil, "get", "autovirtualdc")
