@@ -31,7 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-func SetupWebhookWithManager(mgr ctrl.Manager) error {
+func SetupVirtualDCWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(&nyamberv1beta1.VirtualDC{}).
 		WithValidator(&virtualdcValidator{client: mgr.GetClient()}).

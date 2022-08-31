@@ -97,7 +97,7 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "VirtualDC")
 		os.Exit(1)
 	}
-	if err = hooks.SetupWebhookWithManager(mgr); err != nil {
+	if err = hooks.SetupVirtualDCWebhookWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create webhook", "webhook", "VirtualDC")
 		os.Exit(1)
 	}
