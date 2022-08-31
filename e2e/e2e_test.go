@@ -258,20 +258,13 @@ var _ = Describe("Nyamber", func() {
 		Expect(err).Should(Succeed())
 
 		Eventually(func() error {
-			_, err := kubectl(nil, "get", "autovirtualdc")
-			if err != nil {
-				return err
-			}
-			return nil
+			_, err := kubectl(nil, "get", "autovirtualdc", "auto-virtual-dc")
+			return err
 		}).Should(HaveOccurred())
+
 		Eventually(func() error {
-			_, err := kubectl(nil, "get", "virtualdc")
-			if err != nil {
-				return err
-			}
-			return nil
+			_, err := kubectl(nil, "get", "virtualdc", "auto-virtual-dc")
+			return err
 		}).Should(HaveOccurred())
-
 	})
-
 })
