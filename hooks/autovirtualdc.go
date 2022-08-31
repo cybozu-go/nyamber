@@ -30,7 +30,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-
 func SetupAutoVirtualDCWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(&nyamberv1beta1.AutoVirtualDC{}).
@@ -40,21 +39,21 @@ func SetupAutoVirtualDCWebhookWithManager(mgr ctrl.Manager) error {
 
 type autoVirtualdcValidator struct{}
 
-
 // TODO(user): change verbs to "verbs=create;update;delete" if you want to enable deletion validation.
 //+kubebuilder:webhook:path=/validate-nyamber-cybozu-io-v1beta1-autovirtualdc,mutating=false,failurePolicy=fail,sideEffects=None,groups=nyamber.cybozu.io,resources=autovirtualdcs,verbs=create;update,versions=v1beta1,name=vautovirtualdc.kb.io,admissionReviewVersions=v1
-
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
 func (v autoVirtualdcValidator) ValidateCreate(ctx context.Context, obj runtime.Object) error {
 	logger := log.FromContext(ctx)
-	avdcName := obj.(*nyamberv1beta1.AutoVirtualDC).Name
-	logger.Info("validate create", "name", avdcName)
+	avdc := obj.(*nyamberv1beta1.AutoVirtualDC)
+	logger.Info("validate create", "name", avdc.Name)
 
-	errs := v.validateCommon(obj)
+	errs := v.validateTimeoutDuration(avdc)
+	errs = append(errs, v.validateSchedule(avdc)...)
+
 	if len(errs) > 0 {
-		err := apierrors.NewInvalid(schema.GroupKind{Group: nyamberv1beta1.GroupVersion.Group, Kind: "AutoVirtualDC"}, avdcName, errs)
-		logger.Error(err, "validation error", "name", avdcName)
+		err := apierrors.NewInvalid(schema.GroupKind{Group: nyamberv1beta1.GroupVersion.Group, Kind: "AutoVirtualDC"}, avdc.Name, errs)
+		logger.Error(err, "validation error", "name", avdc.Name)
 		return err
 	}
 
@@ -64,13 +63,25 @@ func (v autoVirtualdcValidator) ValidateCreate(ctx context.Context, obj runtime.
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
 func (v autoVirtualdcValidator) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) error {
 	logger := log.FromContext(ctx)
-	avdcName := newObj.(*nyamberv1beta1.AutoVirtualDC).Name
-	logger.Info("validate update", "name", avdcName)
+	avdc := newObj.(*nyamberv1beta1.AutoVirtualDC)
+	logger.Info("validate update", "name", avdc.Name)
 
-	errs := v.validateCommon(newObj)
+	errs := v.validateTimeoutDuration(avdc)
+
+	oldSpec := oldObj.(*nyamberv1beta1.AutoVirtualDC).Spec
+	newSpec := newObj.(*nyamberv1beta1.AutoVirtualDC).Spec
+
+	if oldSpec.StartSchedule != newSpec.StartSchedule {
+		errs = append(errs, field.Forbidden(field.NewPath("spec", "startSchedule"), "the field is immutable"))
+	}
+
+	if oldSpec.StopSchedule != newSpec.StopSchedule {
+		errs = append(errs, field.Forbidden(field.NewPath("spec", "stopSchedule"), "the field is immutable"))
+	}
+
 	if len(errs) > 0 {
-		err := apierrors.NewInvalid(schema.GroupKind{Group: nyamberv1beta1.GroupVersion.Group, Kind: "AutoVirtualDC"}, avdcName, errs)
-		logger.Error(err, "validation error", "name", avdcName)
+		err := apierrors.NewInvalid(schema.GroupKind{Group: nyamberv1beta1.GroupVersion.Group, Kind: "AutoVirtualDC"}, avdc.Name, errs)
+		logger.Error(err, "validation error", "name", avdc.Name)
 		return err
 	}
 
@@ -82,16 +93,26 @@ func (v autoVirtualdcValidator) ValidateDelete(ctx context.Context, obj runtime.
 	return nil
 }
 
-func (v autoVirtualdcValidator) validateCommon(obj runtime.Object) field.ErrorList {
+func (v autoVirtualdcValidator) validateTimeoutDuration(avdc *nyamberv1beta1.AutoVirtualDC) field.ErrorList {
 	var errs field.ErrorList
-	avdc :=  obj.(*nyamberv1beta1.AutoVirtualDC)
 
-	if (avdc.Spec.StartSchedule != "" && avdc.Spec.StopSchedule == "") || (avdc.Spec.StartSchedule == "" && avdc.Spec.StopSchedule != ""){
+	_, err := time.ParseDuration(avdc.Spec.TimeoutDuration)
+	if err != nil {
+		errs = append(errs, field.Invalid(field.NewPath("spec", "timeoutDuration"), avdc.Spec.TimeoutDuration, "the field can not be parsed"))
+	}
+
+	return errs
+}
+
+func (v autoVirtualdcValidator) validateSchedule(avdc *nyamberv1beta1.AutoVirtualDC) field.ErrorList {
+	var errs field.ErrorList
+
+	if (avdc.Spec.StartSchedule != "" && avdc.Spec.StopSchedule == "") || (avdc.Spec.StartSchedule == "" && avdc.Spec.StopSchedule != "") {
 		errs = append(errs, field.Forbidden(field.NewPath("spec", "startSchedule"), "specifing only one side is not allowed"))
 		errs = append(errs, field.Forbidden(field.NewPath("spec", "stopSchedule"), "specifing only one side is not allowed"))
 	}
 
-	if avdc.Spec.StartSchedule != "" && avdc.Spec.StopSchedule != ""{
+	if avdc.Spec.StartSchedule != "" && avdc.Spec.StopSchedule != "" {
 		specParser := cron.NewParser(cron.Minute | cron.Hour | cron.Dom | cron.Month | cron.Dow)
 		_, err := specParser.Parse(avdc.Spec.StartSchedule)
 		if err != nil {
@@ -103,11 +124,5 @@ func (v autoVirtualdcValidator) validateCommon(obj runtime.Object) field.ErrorLi
 		}
 	}
 
-	_, err := time.ParseDuration(avdc.Spec.TimeoutDuration)
-	if err != nil {
-		errs = append(errs, field.Invalid(field.NewPath("spec", "timeoutDuration"), avdc.Spec.TimeoutDuration, "the field can not be parsed"))
-	}
-
 	return errs
-
 }
