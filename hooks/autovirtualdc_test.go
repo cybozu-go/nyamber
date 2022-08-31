@@ -33,8 +33,125 @@ var _ = Describe("AutoVirtualDC validator", func() {
 		time.Sleep(100 * time.Millisecond)
 	})
 
-	It("should allow to create autovirtualdc resources", func() {
+	It("should allow to create autovirtualdc resources if the manifest is valid", func() {
+		avdc := makeAutoVirtualDC()
+		err := k8sClient.Create(ctx, avdc)
+		Expect(err).NotTo(HaveOccurred())
+	})
+
+	It("should deny to create autoVirtualDC resources when the specified only startSchedule is blank", func() {
+		testcases := []struct {
+			name string
+			spec nyamberv1beta1.AutoVirtualDCSpec
+		}{
+			{
+				"only startSchedule is blank",
+				nyamberv1beta1.AutoVirtualDCSpec{
+					StartSchedule: "",
+					StopSchedule: "0 5 * * *",
+				},
+			},
+			{
+				"only stopSchedule is blank",
+				nyamberv1beta1.AutoVirtualDCSpec{
+					StartSchedule: "0 2 * * *",
+					StopSchedule: "",
+				},
+			},
+			{
+				"startSchedule can not be parsed",
+				nyamberv1beta1.AutoVirtualDCSpec{
+					StartSchedule: "0 0",
+					StopSchedule: "0 2 * * *",
+				},
+			},
+			{
+				"stopSchedule can not be parsed",
+				nyamberv1beta1.AutoVirtualDCSpec{
+					StartSchedule: "0 5 * * *",
+					StopSchedule: "0 hoge * * *",
+				},
+			},
+			{
+				"timeoutDuration can not be parsed",
+				nyamberv1beta1.AutoVirtualDCSpec{
+					TimeoutDuration: "hoge",
+				},
+			},
+		}
+
+		for _, testcase := range testcases{
+			By(testcase.name)
+            avdc := &nyamberv1beta1.AutoVirtualDC{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-avdc",
+					Namespace: testNamespace,
+				},
+				Spec: testcase.spec,
+			}
+			err := k8sClient.Create(ctx, avdc)
+			Expect(err).To(HaveOccurred())
+		}
+	})
+
+	It("should create autoVirtualDC resources when the specified startSchedule and stopSchedule is blank", func() {
 		avdc := &nyamberv1beta1.AutoVirtualDC{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      "test-avdc",
+				Namespace: testNamespace,
+			},
+			Spec: nyamberv1beta1.AutoVirtualDCSpec{
+				StartSchedule:   "",
+				StopSchedule:    "",
+			},
+		}
+		err := k8sClient.Create(ctx, avdc)
+		Expect(err).NotTo(HaveOccurred())
+	})
+
+	It("should deny to update AutoVirtualDC resources", func() {
+		avdc := makeAutoVirtualDC()
+		err := k8sClient.Create(ctx, avdc)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("updating startSchedule")
+		newAvdc := avdc.DeepCopy()
+		newAvdc.Spec.StartSchedule = "0 2 * * *"
+		err = k8sClient.Update(ctx, newAvdc)
+		Expect(err).To(HaveOccurred())
+
+		By("updating stopSchedule")
+		newAvdc = avdc.DeepCopy()
+		newAvdc.Spec.StopSchedule = "0 2 * * *"
+		err = k8sClient.Update(ctx, newAvdc)
+		Expect(err).To(HaveOccurred())
+
+	})
+
+	It("should be allowed to update AutoVirtualDC resources", func() {
+		avdc := makeAutoVirtualDC()
+		err := k8sClient.Create(ctx, avdc)
+		Expect(err).NotTo(HaveOccurred())
+
+		By("updating timeoutDuration")
+		avdc.Spec.TimeoutDuration = "0h"
+		err = k8sClient.Update(ctx, avdc)
+		Expect(err).NotTo(HaveOccurred())
+	})
+
+	It("should be allowed to update AutoVirtualDC resources", func() {
+		avdc := makeAutoVirtualDC()
+		err := k8sClient.Create(ctx, avdc)
+		Expect(err).NotTo(HaveOccurred())
+		By("updating vdc template")
+		avdc.Spec.Template.Spec.NecoBranch = "hoge"
+		err = k8sClient.Update(ctx, avdc)
+		Expect(err).NotTo(HaveOccurred())
+	})
+})
+
+func makeAutoVirtualDC() *nyamberv1beta1.AutoVirtualDC{
+	return &nyamberv1beta1.AutoVirtualDC{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-avdc",
 				Namespace: testNamespace,
@@ -61,7 +178,4 @@ var _ = Describe("AutoVirtualDC validator", func() {
 				},
 			},
 		}
-		err := k8sClient.Create(ctx, avdc)
-		Expect(err).NotTo(HaveOccurred())
-	})
-})
+}

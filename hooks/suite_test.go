@@ -107,7 +107,8 @@ var _ = BeforeSuite(func() {
 		MetricsBindAddress: "0",
 	})
 	Expect(err).NotTo(HaveOccurred())
-
+	err = SetupAutoVirtualDCWebhookWithManager(mgr)
+	Expect(err).NotTo(HaveOccurred())
 	err = SetupVirtualDCWebhookWithManager(mgr)
 	Expect(err).NotTo(HaveOccurred())
 
