@@ -43,8 +43,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 )
 
-// These tests use Ginkgo (BDD-style Go testing framework). Refer to
-// http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
+const (
+	testNamespace        string = "test-ns"
+	testAnotherNamespace string = "another-ns"
+)
 
 var cfg *rest.Config
 var k8sClient client.Client
@@ -131,14 +133,14 @@ var _ = BeforeSuite(func() {
 
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: testVdcNamespace,
+			Name: testNamespace,
 		},
 	}
 	err = k8sClient.Create(ctx, ns)
 	Expect(err).NotTo(HaveOccurred())
 	anotherVdcNs := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: testAnotherVdcNamespace,
+			Name: testAnotherNamespace,
 		},
 	}
 	err = k8sClient.Create(ctx, anotherVdcNs)

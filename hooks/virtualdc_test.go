@@ -14,18 +14,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-const (
-	testVdcNamespace        string = "test-vdc-ns"
-	testAnotherVdcNamespace string = "another-vdc-ns"
-)
-
 var _ = Describe("VirtualDC validator", func() {
 	ctx := context.Background()
 
 	AfterEach(func() {
-		err := k8sClient.DeleteAllOf(ctx, &nyamberv1beta1.VirtualDC{}, client.InNamespace(testVdcNamespace))
+		err := k8sClient.DeleteAllOf(ctx, &nyamberv1beta1.VirtualDC{}, client.InNamespace(testNamespace))
 		Expect(err).NotTo(HaveOccurred())
-		err = k8sClient.DeleteAllOf(ctx, &nyamberv1beta1.VirtualDC{}, client.InNamespace(testAnotherVdcNamespace))
+		err = k8sClient.DeleteAllOf(ctx, &nyamberv1beta1.VirtualDC{}, client.InNamespace(testAnotherNamespace))
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(func() error {
 			vdcs := &nyamberv1beta1.VirtualDCList{}
@@ -44,7 +39,7 @@ var _ = Describe("VirtualDC validator", func() {
 		vdc := &nyamberv1beta1.VirtualDC{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-vdc",
-				Namespace: testVdcNamespace,
+				Namespace: testNamespace,
 			},
 			Spec: nyamberv1beta1.VirtualDCSpec{
 				NecoBranch:     "test",
@@ -69,7 +64,7 @@ var _ = Describe("VirtualDC validator", func() {
 		vdc := &nyamberv1beta1.VirtualDC{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-vdc",
-				Namespace: testVdcNamespace,
+				Namespace: testNamespace,
 			},
 			Spec: nyamberv1beta1.VirtualDCSpec{
 				NecoBranch:     "test",
@@ -95,7 +90,7 @@ var _ = Describe("VirtualDC validator", func() {
 		anotherVdc := &nyamberv1beta1.VirtualDC{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-vdc",
-				Namespace: testAnotherVdcNamespace,
+				Namespace: testAnotherNamespace,
 			},
 			Spec: nyamberv1beta1.VirtualDCSpec{
 				NecoBranch:     "test",
@@ -120,7 +115,7 @@ var _ = Describe("VirtualDC validator", func() {
 		vdc := &nyamberv1beta1.VirtualDC{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-vdc",
-				Namespace: testVdcNamespace,
+				Namespace: testNamespace,
 			},
 			Spec: nyamberv1beta1.VirtualDCSpec{
 				NecoBranch:     "test",
