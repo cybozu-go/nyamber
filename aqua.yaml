@@ -4,6 +4,9 @@
 registries:
 - type: standard
   ref: v2.28.0 # renovate: depName=aquaproj/aqua-registry
+- type: local
+  name: local
+  path: registry.yaml
 packages:
 - name: kubernetes/kubectl@v1.24.0
 - name: kubernetes-sigs/kubebuilder@v3.4.1
@@ -12,3 +15,5 @@ packages:
 - name: tilt-dev/tilt@v0.30.4
 - name: tilt-dev/ctlptl@v0.8.4
 - name: mikefarah/yq@v4.25.2
+- name: clamoriniere/crd-to-markdown@v0.0.3
+  registry: local

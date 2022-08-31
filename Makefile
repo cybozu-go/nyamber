@@ -83,6 +83,10 @@ test: ## Run tests.
 	$(STATICCHECK) ./...
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) --arch=amd64 use $(ENVTEST_K8S_VERSION) -p path)" go test -v ./... -coverprofile cover.out
 
+.PHONY: apidoc
+apidoc: $(wildcard api/*/*_types.go)
+	crd-to-markdown --links docs/links.csv -f api/v1beta1/virtualdc_types.go -n VirtualDC > docs/crd_virtualdc.md
+
 ##@ Build
 
 .PHONY: build
