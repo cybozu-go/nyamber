@@ -14,9 +14,9 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = Describe("Nyamber", func() {
+var _ = Describe("Nyamber vdc e2e test", func() {
 	It("should prepare", func() {
-		vdcs := []string{"vdc_testcase", "vdc_testcase2", "vdc_testcase3", "avdc_testcase"}
+		vdcs := []string{"vdc_testcase", "vdc_testcase2", "vdc_testcase3"}
 		_, err := kubectl(nil, "apply", "-f", "./manifests/namespace.yaml")
 		Expect(err).Should(Succeed())
 		for _, v := range vdcs {
@@ -24,11 +24,6 @@ var _ = Describe("Nyamber", func() {
 			_, err := kubectl(nil, "apply", "-f", fmt.Sprintf("./manifests/%s.yaml", v))
 			Expect(err).Should(Succeed())
 		}
-	})
-
-	It("should deny invalid avdc manifest", func() {
-		_, err := kubectl(nil, "apply", "-f", "./manifests/avdc_testcase2.yaml")
-		Expect(err).ShouldNot(Succeed())
 	})
 
 	It("should create resources", func() {
@@ -116,30 +111,6 @@ var _ = Describe("Nyamber", func() {
 				return nil
 			}).Should(Succeed())
 		}
-	})
-
-	It("should create vdc according to avdc", func() {
-		By("checking vdc is created")
-		Eventually(func() (*nyamberv1beta1.VirtualDC, error) {
-			out, err := kubectl(nil, "get", "virtualdc", "auto-virtual-dc", "-o", "json")
-			if err != nil {
-				return nil, err
-			}
-			vdc := &nyamberv1beta1.VirtualDC{}
-			err = json.Unmarshal(out, vdc)
-			if err != nil {
-				return nil, err
-			}
-			return vdc, nil
-		}, 5).Should(
-			PointTo(MatchFields(IgnoreExtras, Fields{
-				"Spec": MatchFields(IgnoreExtras, Fields{
-					"NecoBranch":     Equal("release"),
-					"NecoAppsBranch": Equal("release"),
-					"Command":        Equal([]string{"env"}),
-				}),
-			})),
-		)
 	})
 
 	It("should execute all commands correctly", func() {
@@ -251,20 +222,5 @@ var _ = Describe("Nyamber", func() {
 				return nil
 			}).Should(HaveOccurred())
 		}
-	})
-
-	It("should delete vdc and avdc", func() {
-		_, err := kubectl(nil, "delete", "-f", "./manifests/avdc_testcase.yaml")
-		Expect(err).Should(Succeed())
-
-		Eventually(func() error {
-			_, err := kubectl(nil, "get", "autovirtualdc", "auto-virtual-dc")
-			return err
-		}).Should(HaveOccurred())
-
-		Eventually(func() error {
-			_, err := kubectl(nil, "get", "virtualdc", "auto-virtual-dc")
-			return err
-		}).Should(HaveOccurred())
 	})
 })
