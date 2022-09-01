@@ -28,16 +28,20 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+
 )
 
 func SetupAutoVirtualDCWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(&nyamberv1beta1.AutoVirtualDC{}).
-		WithValidator(&autoVirtualdcValidator{}).
+		WithValidator(&autoVirtualdcValidator{client: mgr.GetClient()}).
 		Complete()
 }
 
-type autoVirtualdcValidator struct{}
+type autoVirtualdcValidator struct{
+	client client.Client
+}
 
 // TODO(user): change verbs to "verbs=create;update;delete" if you want to enable deletion validation.
 //+kubebuilder:webhook:path=/validate-nyamber-cybozu-io-v1beta1-autovirtualdc,mutating=false,failurePolicy=fail,sideEffects=None,groups=nyamber.cybozu.io,resources=autovirtualdcs,verbs=create;update,versions=v1beta1,name=vautovirtualdc.kb.io,admissionReviewVersions=v1
@@ -50,6 +54,30 @@ func (v autoVirtualdcValidator) ValidateCreate(ctx context.Context, obj runtime.
 
 	errs := v.validateTimeoutDuration(avdc)
 	errs = append(errs, v.validateSchedule(avdc)...)
+
+	vdcs := &nyamberv1beta1.VirtualDCList{}
+	if err := v.client.List(ctx, vdcs); err != nil{
+		return err
+	}
+
+	for _, vdc := range vdcs.Items {
+		if avdc.Name == vdc.Name {
+			errs = append(errs, field.Duplicate(field.NewPath("metadata", "name"), "the name of AutoVirtualDC resource conflicts with one of VirtualDC resources"))
+		}
+	}
+
+	avdcs := &nyamberv1beta1.AutoVirtualDCList{}
+	if err := v.client.List(ctx, avdcs); err != nil{
+		return err
+	}
+
+	for _, otherAvdc := range avdcs.Items {
+		if avdc.Name == otherAvdc.Name {
+			errs = append(errs, field.Duplicate(field.NewPath("metadata", "name"), "the name of AutoVirtualDC resource conflicts with one of AutoVirtualDC resources"))
+		}
+	}
+
+
 
 	if len(errs) > 0 {
 		err := apierrors.NewInvalid(schema.GroupKind{Group: nyamberv1beta1.GroupVersion.Group, Kind: "AutoVirtualDC"}, avdc.Name, errs)

@@ -20,6 +20,10 @@ var _ = Describe("AutoVirtualDC validator", func() {
 	AfterEach(func() {
 		err := k8sClient.DeleteAllOf(ctx, &nyamberv1beta1.AutoVirtualDC{}, client.InNamespace(testNamespace))
 		Expect(err).NotTo(HaveOccurred())
+
+	    err = k8sClient.DeleteAllOf(ctx, &nyamberv1beta1.VirtualDC{}, client.InNamespace(testNamespace))
+		Expect(err).NotTo(HaveOccurred())
+
 		Eventually(func() error {
 			avdcs := &nyamberv1beta1.AutoVirtualDCList{}
 			if err := k8sClient.List(ctx, avdcs); err != nil {
@@ -27,6 +31,13 @@ var _ = Describe("AutoVirtualDC validator", func() {
 			}
 			if len(avdcs.Items) != 0 {
 				return errors.New("avdcs is not deleted")
+			}
+			vdcs := &nyamberv1beta1.VirtualDCList{}
+			if err := k8sClient.List(ctx, vdcs); err != nil {
+				return err
+			}
+			if len(vdcs.Items) != 0 {
+				return errors.New("vdcs is not deleted")
 			}
 			return nil
 		}).Should(Succeed())
@@ -148,6 +159,41 @@ var _ = Describe("AutoVirtualDC validator", func() {
 		err = k8sClient.Update(ctx, avdc)
 		Expect(err).NotTo(HaveOccurred())
 	})
+
+	It("should deny autoVirtualDC resources if the name of the autoVirtualDC conflicts with one of VirtualDC resoureces", func() {
+		vdc := &nyamberv1beta1.VirtualDC{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "test-avdc",
+				Namespace: testNamespace,
+			},
+		}
+		err := k8sClient.Create(ctx, vdc)
+		Expect(err).NotTo(HaveOccurred())
+
+		Eventually(func()error{
+			return k8sClient.Get(ctx,  client.ObjectKeyFromObject(vdc), vdc)
+		}).Should(Succeed())
+
+		avdc := makeAutoVirtualDC()
+		err = k8sClient.Create(ctx, avdc)
+		Expect(err).To(HaveOccurred())
+	})
+
+	It("should deny autoVirtualDC resources if the name of the autoVirtualDC conflicts with one of AutoVirtualDC resoureces", func() {
+		avdc := makeAutoVirtualDC()
+		err := k8sClient.Create(ctx, avdc)
+		Expect(err).NotTo(HaveOccurred())
+
+		Eventually(func()error{
+			return k8sClient.Get(ctx,  client.ObjectKeyFromObject(avdc), avdc)
+		}).Should(Succeed())
+
+		avdc = makeAutoVirtualDC()
+		avdc.Namespace = testAnotherNamespace
+		err = k8sClient.Create(ctx, avdc)
+		Expect(err).To(HaveOccurred())
+	})
+
 })
 
 func makeAutoVirtualDC() *nyamberv1beta1.AutoVirtualDC {
