@@ -27,9 +27,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
+	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
 func SetupAutoVirtualDCWebhookWithManager(mgr ctrl.Manager) error {
@@ -39,7 +38,7 @@ func SetupAutoVirtualDCWebhookWithManager(mgr ctrl.Manager) error {
 		Complete()
 }
 
-type autoVirtualdcValidator struct{
+type autoVirtualdcValidator struct {
 	client client.Client
 }
 
@@ -56,7 +55,7 @@ func (v autoVirtualdcValidator) ValidateCreate(ctx context.Context, obj runtime.
 	errs = append(errs, v.validateSchedule(avdc)...)
 
 	vdcs := &nyamberv1beta1.VirtualDCList{}
-	if err := v.client.List(ctx, vdcs); err != nil{
+	if err := v.client.List(ctx, vdcs); err != nil {
 		return err
 	}
 
@@ -67,7 +66,7 @@ func (v autoVirtualdcValidator) ValidateCreate(ctx context.Context, obj runtime.
 	}
 
 	avdcs := &nyamberv1beta1.AutoVirtualDCList{}
-	if err := v.client.List(ctx, avdcs); err != nil{
+	if err := v.client.List(ctx, avdcs); err != nil {
 		return err
 	}
 
@@ -76,8 +75,6 @@ func (v autoVirtualdcValidator) ValidateCreate(ctx context.Context, obj runtime.
 			errs = append(errs, field.Duplicate(field.NewPath("metadata", "name"), "the name of AutoVirtualDC resource conflicts with one of AutoVirtualDC resources"))
 		}
 	}
-
-
 
 	if len(errs) > 0 {
 		err := apierrors.NewInvalid(schema.GroupKind{Group: nyamberv1beta1.GroupVersion.Group, Kind: "AutoVirtualDC"}, avdc.Name, errs)
