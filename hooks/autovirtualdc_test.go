@@ -3,7 +3,6 @@ package hooks
 import (
 	"context"
 	"errors"
-	"time"
 
 	nyamberv1beta1 "github.com/cybozu-go/nyamber/api/v1beta1"
 	. "github.com/onsi/ginkgo/v2"
@@ -17,11 +16,10 @@ import (
 var _ = Describe("AutoVirtualDC validator", func() {
 	ctx := context.Background()
 
-	AfterEach(func() {
+	BeforeEach(func() {
 		err := k8sClient.DeleteAllOf(ctx, &nyamberv1beta1.AutoVirtualDC{}, client.InNamespace(testNamespace))
 		Expect(err).NotTo(HaveOccurred())
-
-	    err = k8sClient.DeleteAllOf(ctx, &nyamberv1beta1.VirtualDC{}, client.InNamespace(testNamespace))
+		err = k8sClient.DeleteAllOf(ctx, &nyamberv1beta1.VirtualDC{}, client.InNamespace(testNamespace))
 		Expect(err).NotTo(HaveOccurred())
 
 		Eventually(func() error {
@@ -41,7 +39,6 @@ var _ = Describe("AutoVirtualDC validator", func() {
 			}
 			return nil
 		}).Should(Succeed())
-		time.Sleep(100 * time.Millisecond)
 	})
 
 	It("should allow to create autovirtualdc resources if the manifest is valid", func() {
@@ -160,32 +157,38 @@ var _ = Describe("AutoVirtualDC validator", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	It("should deny autoVirtualDC resources if the name of the autoVirtualDC conflicts with one of VirtualDC resoureces", func() {
+	It("should deny autoVirtualDC resources if the name of the autoVirtualDC conflicts with one of VirtualDC resources", func() {
 		vdc := &nyamberv1beta1.VirtualDC{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "test-avdc",
+				Name:      "test-avdc",
 				Namespace: testNamespace,
 			},
 		}
 		err := k8sClient.Create(ctx, vdc)
 		Expect(err).NotTo(HaveOccurred())
 
-		Eventually(func()error{
-			return k8sClient.Get(ctx,  client.ObjectKeyFromObject(vdc), vdc)
+		Eventually(func() error {
+			return k8sClient.Get(ctx, client.ObjectKeyFromObject(vdc), vdc)
 		}).Should(Succeed())
 
+		By("creating avdc in same namespace")
 		avdc := makeAutoVirtualDC()
+		err = k8sClient.Create(ctx, avdc)
+		Expect(err).To(HaveOccurred())
+
+		By("creating avdc in another namespace")
+		avdc.Namespace = testAnotherNamespace
 		err = k8sClient.Create(ctx, avdc)
 		Expect(err).To(HaveOccurred())
 	})
 
-	It("should deny autoVirtualDC resources if the name of the autoVirtualDC conflicts with one of AutoVirtualDC resoureces", func() {
+	It("should deny autoVirtualDC resources if the name of the autoVirtualDC conflicts with one of AutoVirtualDC resources", func() {
 		avdc := makeAutoVirtualDC()
 		err := k8sClient.Create(ctx, avdc)
 		Expect(err).NotTo(HaveOccurred())
 
-		Eventually(func()error{
-			return k8sClient.Get(ctx,  client.ObjectKeyFromObject(avdc), avdc)
+		Eventually(func() error {
+			return k8sClient.Get(ctx, client.ObjectKeyFromObject(avdc), avdc)
 		}).Should(Succeed())
 
 		avdc = makeAutoVirtualDC()
@@ -193,7 +196,6 @@ var _ = Describe("AutoVirtualDC validator", func() {
 		err = k8sClient.Create(ctx, avdc)
 		Expect(err).To(HaveOccurred())
 	})
-
 })
 
 func makeAutoVirtualDC() *nyamberv1beta1.AutoVirtualDC {

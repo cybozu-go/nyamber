@@ -139,6 +139,7 @@ var _ = BeforeSuite(func() {
 	}
 	err = k8sClient.Create(ctx, ns)
 	Expect(err).NotTo(HaveOccurred())
+
 	anotherVdcNs := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: testAnotherNamespace,
@@ -146,7 +147,6 @@ var _ = BeforeSuite(func() {
 	}
 	err = k8sClient.Create(ctx, anotherVdcNs)
 	Expect(err).NotTo(HaveOccurred())
-
 })
 
 var _ = AfterSuite(func() {
