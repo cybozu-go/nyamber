@@ -43,8 +43,10 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 )
 
-// These tests use Ginkgo (BDD-style Go testing framework). Refer to
-// http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
+const (
+	testNamespace        string = "test-ns"
+	testAnotherNamespace string = "another-ns"
+)
 
 var cfg *rest.Config
 var k8sClient client.Client
@@ -105,8 +107,9 @@ var _ = BeforeSuite(func() {
 		MetricsBindAddress: "0",
 	})
 	Expect(err).NotTo(HaveOccurred())
-
-	err = SetupWebhookWithManager(mgr)
+	err = SetupAutoVirtualDCWebhookWithManager(mgr)
+	Expect(err).NotTo(HaveOccurred())
+	err = SetupVirtualDCWebhookWithManager(mgr)
 	Expect(err).NotTo(HaveOccurred())
 
 	//+kubebuilder:scaffold:webhook
@@ -131,19 +134,19 @@ var _ = BeforeSuite(func() {
 
 	ns := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: testVdcNamespace,
+			Name: testNamespace,
 		},
 	}
 	err = k8sClient.Create(ctx, ns)
 	Expect(err).NotTo(HaveOccurred())
+
 	anotherVdcNs := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: testAnotherVdcNamespace,
+			Name: testAnotherNamespace,
 		},
 	}
 	err = k8sClient.Create(ctx, anotherVdcNs)
 	Expect(err).NotTo(HaveOccurred())
-
 })
 
 var _ = AfterSuite(func() {

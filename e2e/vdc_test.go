@@ -14,7 +14,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-var _ = Describe("Nyamber", func() {
+var _ = Describe("Nyamber vdc e2e test", func() {
 	It("should prepare", func() {
 		vdcs := []string{"vdc_testcase", "vdc_testcase2", "vdc_testcase3"}
 		_, err := kubectl(nil, "apply", "-f", "./manifests/namespace.yaml")

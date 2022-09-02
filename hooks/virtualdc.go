@@ -18,7 +18,6 @@ package hooks
 
 import (
 	"context"
-	"errors"
 
 	nyamberv1beta1 "github.com/cybozu-go/nyamber/api/v1beta1"
 	"k8s.io/apimachinery/pkg/api/equality"
@@ -31,7 +30,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
-func SetupWebhookWithManager(mgr ctrl.Manager) error {
+func SetupVirtualDCWebhookWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewWebhookManagedBy(mgr).
 		For(&nyamberv1beta1.VirtualDC{}).
 		WithValidator(&virtualdcValidator{client: mgr.GetClient()}).
@@ -49,15 +48,43 @@ func (v virtualdcValidator) ValidateCreate(ctx context.Context, obj runtime.Obje
 	logger := log.FromContext(ctx)
 	logger.Info("validate create", "name", obj.(*nyamberv1beta1.VirtualDC).Name)
 
+	vdc := obj.(*nyamberv1beta1.VirtualDC)
+	errs := field.ErrorList{}
+
+	isCreatedByAvdc := false
+	for _, value := range vdc.OwnerReferences {
+		// when vdc is created by avdc
+		if value.Kind == "AutoVirtualDC" && value.APIVersion == nyamberv1beta1.GroupVersion.String() {
+			isCreatedByAvdc = true
+			break
+		}
+	}
+	if !isCreatedByAvdc {
+		avdcs := &nyamberv1beta1.AutoVirtualDCList{}
+		if err := v.client.List(ctx, avdcs); err != nil {
+			return err
+		}
+		for _, otherAvdc := range avdcs.Items {
+			if vdc.Name == otherAvdc.Name {
+				errs = append(errs, field.Duplicate(field.NewPath("metadata", "name"), "the name of VirtualDC resource conflicts with one of AutoVirtualDC resources"))
+			}
+		}
+	}
+
 	vdcs := &nyamberv1beta1.VirtualDCList{}
 	if err := v.client.List(ctx, vdcs); err != nil {
 		return err
 	}
-
-	for _, vdc := range vdcs.Items {
-		if vdc.Name == obj.(*nyamberv1beta1.VirtualDC).Name {
-			return errors.New("the name of VirtualDC resource conflicts")
+	for _, otherVdc := range vdcs.Items {
+		if vdc.Name == otherVdc.Name {
+			errs = append(errs, field.Duplicate(field.NewPath("metadata", "name"), "the name of VirtualDC resource conflicts with one of VirtualDC resources"))
 		}
+	}
+
+	if len(errs) > 0 {
+		err := apierrors.NewInvalid(schema.GroupKind{Group: nyamberv1beta1.GroupVersion.Group, Kind: "VirtualDC"}, vdc.Name, errs)
+		logger.Error(err, "validation error", "name", vdc.Name)
+		return err
 	}
 	return nil
 }

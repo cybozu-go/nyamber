@@ -125,11 +125,11 @@ spec:
 			err := k8sClient.Delete(ctx, &svc)
 			Expect(err).NotTo(HaveOccurred())
 		}
-		err = k8sClient.DeleteAllOf(ctx, &nyamberv1beta1.VirtualDC{}, client.InNamespace(testVdcNamespace))
+		err = k8sClient.DeleteAllOf(ctx, &nyamberv1beta1.VirtualDC{}, client.InNamespace(testNamespace))
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(func() error {
 			vdcs := &nyamberv1beta1.VirtualDCList{}
-			if err := k8sClient.List(ctx, vdcs, client.InNamespace(testVdcNamespace)); err != nil {
+			if err := k8sClient.List(ctx, vdcs, client.InNamespace(testNamespace)); err != nil {
 				return err
 			}
 			if len(vdcs.Items) != 0 {
@@ -147,7 +147,7 @@ spec:
 		vdc := &nyamberv1beta1.VirtualDC{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-vdc",
-				Namespace: testVdcNamespace,
+				Namespace: testNamespace,
 			},
 		}
 		err := k8sClient.Create(ctx, vdc)
@@ -155,7 +155,7 @@ spec:
 
 		By("checking to add finalizer")
 		Eventually(func() error {
-			if err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testVdcNamespace}, vdc); err != nil {
+			if err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testNamespace}, vdc); err != nil {
 				return err
 			}
 			for _, elm := range vdc.ObjectMeta.Finalizers {
@@ -172,7 +172,7 @@ spec:
 			return k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testPodNamespace}, pod)
 		}).Should(Succeed())
 		Expect(pod.Labels).To(MatchAllKeys(Keys{
-			constants.LabelKeyOwnerNamespace: Equal(testVdcNamespace),
+			constants.LabelKeyOwnerNamespace: Equal(testNamespace),
 			constants.LabelKeyOwner:          Equal("test-vdc"),
 		}))
 		Expect(pod.Spec.Containers).To(HaveLen(1))
@@ -204,12 +204,12 @@ spec:
 			return nil
 		}).Should(Succeed())
 		Expect(svc.Labels).To(MatchAllKeys(Keys{
-			constants.LabelKeyOwnerNamespace: Equal(testVdcNamespace),
+			constants.LabelKeyOwnerNamespace: Equal(testNamespace),
 			constants.LabelKeyOwner:          Equal("test-vdc"),
 		}))
 		Expect(svc.Spec).To(MatchFields(IgnoreExtras, Fields{
 			"Selector": MatchAllKeys(Keys{
-				constants.LabelKeyOwnerNamespace: Equal(testVdcNamespace),
+				constants.LabelKeyOwnerNamespace: Equal(testNamespace),
 				constants.LabelKeyOwner:          Equal("test-vdc"),
 			}),
 			"Ports": ConsistOf([]corev1.ServicePort{
@@ -257,7 +257,7 @@ spec:
 		vdc := &nyamberv1beta1.VirtualDC{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-vdc",
-				Namespace: testVdcNamespace,
+				Namespace: testNamespace,
 			},
 		}
 		err := k8sClient.Create(ctx, vdc)
@@ -286,7 +286,7 @@ spec:
 		By("checking to change vdc status")
 		Eventually(func() error {
 			vdc := &nyamberv1beta1.VirtualDC{}
-			if err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testVdcNamespace}, vdc); err != nil {
+			if err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testNamespace}, vdc); err != nil {
 				return err
 			}
 			if !meta.IsStatusConditionTrue(vdc.Status.Conditions, nyamberv1beta1.TypePodAvailable) {
@@ -301,7 +301,7 @@ spec:
 		vdc := &nyamberv1beta1.VirtualDC{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-vdc",
-				Namespace: testVdcNamespace,
+				Namespace: testNamespace,
 			},
 			Spec: nyamberv1beta1.VirtualDCSpec{
 				NecoBranch:     "test-neco-branch",
@@ -335,7 +335,7 @@ spec:
 		vdc := &nyamberv1beta1.VirtualDC{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-vdc",
-				Namespace: testVdcNamespace,
+				Namespace: testNamespace,
 			},
 			Spec: nyamberv1beta1.VirtualDCSpec{
 				SkipNecoApps: true,
@@ -367,7 +367,7 @@ spec:
 		vdc := &nyamberv1beta1.VirtualDC{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-vdc",
-				Namespace: testVdcNamespace,
+				Namespace: testNamespace,
 			},
 			Spec: nyamberv1beta1.VirtualDCSpec{
 				Command: []string{"test", "command"},
@@ -411,7 +411,7 @@ spec:
 		vdc := &nyamberv1beta1.VirtualDC{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-vdc",
-				Namespace: testVdcNamespace,
+				Namespace: testNamespace,
 			},
 		}
 		err = k8sClient.Create(ctx, vdc)
@@ -419,7 +419,7 @@ spec:
 
 		By("checking to update vdc status")
 		Eventually(func() error {
-			if err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testVdcNamespace}, vdc); err != nil {
+			if err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testNamespace}, vdc); err != nil {
 				return err
 			}
 			if meta.IsStatusConditionFalse(vdc.Status.Conditions, nyamberv1beta1.TypePodCreated) {
@@ -456,7 +456,7 @@ kind: Pod`
 		vdc := &nyamberv1beta1.VirtualDC{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-vdc",
-				Namespace: testVdcNamespace,
+				Namespace: testNamespace,
 			},
 		}
 		err = k8sClient.Create(ctx, vdc)
@@ -464,7 +464,7 @@ kind: Pod`
 
 		By("checking to update vdc status")
 		Eventually(func() error {
-			if err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testVdcNamespace}, vdc); err != nil {
+			if err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testNamespace}, vdc); err != nil {
 				return err
 			}
 			if meta.IsStatusConditionFalse(vdc.Status.Conditions, nyamberv1beta1.TypePodCreated) {
@@ -489,7 +489,7 @@ kind: Pod`
 		vdc := &nyamberv1beta1.VirtualDC{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-vdc",
-				Namespace: testVdcNamespace,
+				Namespace: testNamespace,
 			},
 		}
 		err := k8sClient.Create(ctx, vdc)
@@ -521,7 +521,7 @@ kind: Pod`
 		vdc := &nyamberv1beta1.VirtualDC{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-vdc",
-				Namespace: testVdcNamespace,
+				Namespace: testNamespace,
 			},
 		}
 		err := k8sClient.Create(ctx, vdc)
@@ -538,7 +538,7 @@ kind: Pod`
 
 		By("checking to update vdc status")
 		Eventually(func() error {
-			if err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testVdcNamespace}, vdc); err != nil {
+			if err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testNamespace}, vdc); err != nil {
 				return err
 			}
 			if !meta.IsStatusConditionTrue(vdc.Status.Conditions, nyamberv1beta1.TypePodCreated) {
@@ -592,7 +592,7 @@ kind: Pod`
 		vdc := &nyamberv1beta1.VirtualDC{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-vdc",
-				Namespace: testVdcNamespace,
+				Namespace: testNamespace,
 			},
 		}
 		err = k8sClient.Create(ctx, vdc)
@@ -600,7 +600,7 @@ kind: Pod`
 
 		By("checking to update vdc status")
 		Eventually(func() error {
-			if err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testVdcNamespace}, vdc); err != nil {
+			if err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testNamespace}, vdc); err != nil {
 				return err
 			}
 			condPodCreated := meta.FindStatusCondition(vdc.Status.Conditions, nyamberv1beta1.TypePodCreated)
@@ -625,7 +625,7 @@ kind: Pod`
 		vdc := &nyamberv1beta1.VirtualDC{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-vdc",
-				Namespace: testVdcNamespace,
+				Namespace: testNamespace,
 			},
 		}
 		err := k8sClient.Create(ctx, vdc)
@@ -657,7 +657,7 @@ kind: Pod`
 		vdc := &nyamberv1beta1.VirtualDC{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-vdc",
-				Namespace: testVdcNamespace,
+				Namespace: testNamespace,
 			},
 		}
 		err := k8sClient.Create(ctx, vdc)
@@ -674,7 +674,7 @@ kind: Pod`
 
 		By("checking to update vdc status")
 		Eventually(func() error {
-			if err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testVdcNamespace}, vdc); err != nil {
+			if err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testNamespace}, vdc); err != nil {
 				return err
 			}
 			if !meta.IsStatusConditionTrue(vdc.Status.Conditions, nyamberv1beta1.TypePodCreated) {
@@ -701,7 +701,7 @@ kind: Pod`
 			},
 			Spec: corev1.ServiceSpec{
 				Selector: map[string]string{
-					constants.LabelKeyOwnerNamespace: testVdcNamespace,
+					constants.LabelKeyOwnerNamespace: testNamespace,
 					constants.LabelKeyOwner:          "test-vdc",
 				},
 				Ports: []corev1.ServicePort{
@@ -721,7 +721,7 @@ kind: Pod`
 		vdc := &nyamberv1beta1.VirtualDC{
 			ObjectMeta: metav1.ObjectMeta{
 				Name:      "test-vdc",
-				Namespace: testVdcNamespace,
+				Namespace: testNamespace,
 			},
 		}
 		err = k8sClient.Create(ctx, vdc)
@@ -729,7 +729,7 @@ kind: Pod`
 
 		By("checking to update vdc status")
 		Eventually(func() error {
-			if err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testVdcNamespace}, vdc); err != nil {
+			if err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testNamespace}, vdc); err != nil {
 				return err
 			}
 			condServiceCreated := meta.FindStatusCondition(vdc.Status.Conditions, nyamberv1beta1.TypeServiceCreated)
@@ -750,10 +750,10 @@ kind: Pod`
 			if err := k8sClient.Get(ctx, client.ObjectKeyFromObject(svc), svc); err != nil {
 				return err
 			}
-			if svc.Labels[constants.LabelKeyOwnerNamespace] == testVdcNamespace {
-				return fmt.Errorf("OwnerNameSpace label is expected to nil, but actual %s", testVdcNamespace)
+			if svc.Labels[constants.LabelKeyOwnerNamespace] == testNamespace {
+				return fmt.Errorf("OwnerNameSpace label is expected to nil, but actual %s", testNamespace)
 			}
-			if svc.Labels[constants.LabelKeyOwner] == testVdcNamespace {
+			if svc.Labels[constants.LabelKeyOwner] == testNamespace {
 				return fmt.Errorf("Owner label is expected to nil, but actual %s", "test-vdc")
 			}
 			return nil

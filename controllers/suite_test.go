@@ -48,7 +48,7 @@ var scheme *runtime.Scheme
 var testEnv *envtest.Environment
 
 const (
-	testVdcNamespace string = "test-vdc-ns"
+	testNamespace    string = "test-ns"
 	testPodNamespace string = "test-pod-ns"
 )
 
@@ -102,7 +102,7 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	vdcNs := &corev1.Namespace{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: testVdcNamespace,
+			Name: testNamespace,
 		},
 	}
 	err = k8sClient.Create(ctx, vdcNs)

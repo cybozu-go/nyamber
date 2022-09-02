@@ -1,0 +1,24 @@
+# permissions for end users to edit autovirtualdcs.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: autovirtualdc-editor-role
+rules:
+- apiGroups:
+  - nyamber.cybozu.io
+  resources:
+  - autovirtualdcs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - nyamber.cybozu.io
+  resources:
+  - autovirtualdcs/status
+  verbs:
+  - get

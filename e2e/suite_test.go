@@ -17,3 +17,11 @@ func TestE2e(t *testing.T) {
 	SetDefaultEventuallyPollingInterval(100 * time.Millisecond)
 	RunSpecs(t, "E2e Suite")
 }
+
+var _ = BeforeSuite(func() {
+	By("deleting all autovirtualDC and virtualDC")
+	_, err := kubectl(nil, "delete", "autovirtualdc", "--all")
+	Expect(err).NotTo(HaveOccurred())
+	_, err = kubectl(nil, "delete", "virtualdc", "--all")
+	Expect(err).NotTo(HaveOccurred())
+})

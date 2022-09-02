@@ -1,0 +1,20 @@
+# permissions for end users to view autovirtualdcs.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: autovirtualdc-viewer-role
+rules:
+- apiGroups:
+  - nyamber.cybozu.io
+  resources:
+  - autovirtualdcs
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - nyamber.cybozu.io
+  resources:
+  - autovirtualdcs/status
+  verbs:
+  - get

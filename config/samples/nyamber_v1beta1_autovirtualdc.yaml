@@ -1,0 +1,11 @@
+apiVersion: nyamber.cybozu.io/v1beta1
+kind: AutoVirtualDC
+metadata:
+  name: autovirtualdc-sample
+spec:
+  template:
+    spec:
+        necoBranch: release
+  startSchedule: "0 7 * * *"
+  stopSchedule: "0 21 * * *"
+  timeoutDuration: "1h"

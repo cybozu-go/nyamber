@@ -11,6 +11,26 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
+      path: /validate-nyamber-cybozu-io-v1beta1-autovirtualdc
+  failurePolicy: Fail
+  name: vautovirtualdc.kb.io
+  rules:
+  - apiGroups:
+    - nyamber.cybozu.io
+    apiVersions:
+    - v1beta1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - autovirtualdcs
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
       path: /validate-nyamber-cybozu-io-v1beta1-virtualdc
   failurePolicy: Fail
   name: vvirtualdc.kb.io
