@@ -199,11 +199,11 @@ spec:
             description: AutoVirtualDCStatus defines the observed state of AutoVirtualDC
             properties:
               nextStartTime:
-                description: next start time of avdc's schedule.
+                description: Next start time of VirtualDC's schedule.
                 format: date-time
                 type: string
               nextStopTime:
-                description: next stop time of avdc's schedule.
+                description: Next stop time of VirtualDC's schedule.
                 format: date-time
                 type: string
             type: object
