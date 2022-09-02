@@ -147,7 +147,7 @@ var _ = Describe("AutoVirtualDC validator", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	It("should be allowed to update AutoVirtualDC resources", func() {
+	It("should be allowed to update template in AutoVirtualDC resources", func() {
 		avdc := makeAutoVirtualDC()
 		err := k8sClient.Create(ctx, avdc)
 		Expect(err).NotTo(HaveOccurred())
