@@ -47,7 +47,7 @@ var _ = Describe("AutoVirtualDC validator", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
-	It("should deny to create autoVirtualDC resources when the specified only startSchedule is blank", func() {
+	It("should deny to create autoVirtualDC resources", func() {
 		testcases := []struct {
 			name string
 			spec nyamberv1beta1.AutoVirtualDCSpec
