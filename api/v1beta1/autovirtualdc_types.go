@@ -31,7 +31,7 @@ type AutoVirtualDCSpec struct {
 	// StopSchedule is time to stop VirtualDC. this format is cron format.
 	StopSchedule string `json:"stopSchedule,omitempty"`
 
-	// TimeoutDuration is the duration of retry.  This format is format used by ParseDuration(https://pkg.go.dev/time#ParseDuration)
+	// TimeoutDuration is the duration of retry. This format is format used by ParseDuration(https://pkg.go.dev/time#ParseDuration)
 	TimeoutDuration string `json:"timeoutDuration,omitempty"`
 }
 
