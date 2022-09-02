@@ -136,7 +136,7 @@ var _ = Describe("AutoVirtualDC validator", func() {
 
 	})
 
-	It("should be allowed to update AutoVirtualDC resources", func() {
+	It("should be allowed to update timeoutDuration in AutoVirtualDC resources", func() {
 		avdc := makeAutoVirtualDC()
 		err := k8sClient.Create(ctx, avdc)
 		Expect(err).NotTo(HaveOccurred())
