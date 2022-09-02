@@ -191,7 +191,7 @@ spec:
                     type: object
                 type: object
               timeoutDuration:
-                description: TimeoutDuration is the duration of retry.  This format
+                description: TimeoutDuration is the duration of retry. This format
                   is format used by ParseDuration(https://pkg.go.dev/time#ParseDuration)
                 type: string
             type: object
