@@ -102,6 +102,8 @@ func (r *AutoVirtualDCReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		return result, nil
 	}
 
+	now := r.Now()
+
 	if avdc.Status.NextStartTime == nil || avdc.Status.NextStopTime == nil {
 		if err := r.updateStatusTime(ctx, avdc); err != nil {
 			logger.Error(err, "failed to update avdc status")
@@ -109,13 +111,12 @@ func (r *AutoVirtualDCReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		}
 		// set NextStartTime to now if now is between start-time and stop-time
 		if avdc.Status.NextStopTime.Before(avdc.Status.NextStartTime) {
-			nextStartTime := metav1.NewTime(r.Now())
+			nextStartTime := metav1.NewTime(now)
 			avdc.Status.NextStartTime = &nextStartTime
 		}
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	now := r.Now()
 	// requeue after next operation if now is before both of NextStartTime and NextStopTime
 	if now.Before(avdc.Status.NextStartTime.Time) && now.Before(avdc.Status.NextStopTime.Time) {
 		if avdc.Status.NextStartTime.Before(avdc.Status.NextStopTime) {
@@ -202,9 +203,10 @@ func (r *AutoVirtualDCReconciler) updateStatusTime(ctx context.Context, avdc *ny
 		return err
 	}
 
-	nextStartTime := metav1.NewTime(startSched.Next(r.Now()))
+	now := r.Now()
+	nextStartTime := metav1.NewTime(startSched.Next(now))
 	avdc.Status.NextStartTime = &nextStartTime
-	nextStopTime := metav1.NewTime(stopSched.Next(r.Now()))
+	nextStopTime := metav1.NewTime(stopSched.Next(now))
 	avdc.Status.NextStopTime = &nextStopTime
 
 	return nil
@@ -253,9 +255,11 @@ func (r *AutoVirtualDCReconciler) reconcileVirtualDC(ctx context.Context, avdc *
 		if err != nil {
 			return ctrl.Result{}, err
 		}
-		if r.Now().After(avdc.Status.NextStartTime.Time.Add(timeoutDuration)) {
+
+		now := r.Now()
+		if now.After(avdc.Status.NextStartTime.Time.Add(timeoutDuration)) {
 			logger.Info("requeue after next stop-time because timeout has passed.")
-			return ctrl.Result{RequeueAfter: r.Sub(avdc.Status.NextStopTime.Time, r.Now())}, nil
+			return ctrl.Result{RequeueAfter: r.Sub(avdc.Status.NextStopTime.Time, now)}, nil
 		}
 	}
 

@@ -37,10 +37,10 @@ type AutoVirtualDCSpec struct {
 
 // AutoVirtualDCStatus defines the observed state of AutoVirtualDC
 type AutoVirtualDCStatus struct {
-	// next start time of avdc's schedule.
+	// Next start time of VirtualDC's schedule.
 	NextStartTime *metav1.Time `json:"nextStartTime,omitempty"`
 
-	// next stop time of avdc's schedule.
+	// Next stop time of VirtualDC's schedule.
 	NextStopTime *metav1.Time `json:"nextStopTime,omitempty"`
 }
 

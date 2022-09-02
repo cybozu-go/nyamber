@@ -22,6 +22,8 @@ import (
 	"testing"
 	"time"
 
+	nyamberv1beta1 "github.com/cybozu-go/nyamber/api/v1beta1"
+	"github.com/cybozu-go/nyamber/pkg/constants"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	"go.uber.org/zap/zapcore"
@@ -34,9 +36,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
-
-	nyamberv1beta1 "github.com/cybozu-go/nyamber/api/v1beta1"
-	"github.com/cybozu-go/nyamber/pkg/constants"
 	//+kubebuilder:scaffold:imports
 )
 
