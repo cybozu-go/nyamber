@@ -85,7 +85,8 @@ test: ## Run tests.
 
 .PHONY: apidoc
 apidoc: $(wildcard api/*/*_types.go)
-	crd-to-markdown --links docs/links.csv -f api/v1beta1/virtualdc_types.go -n VirtualDC > docs/crd_virtualdc.md
+	crd-to-markdown -f api/v1beta1/virtualdc_types.go -n VirtualDC > docs/crd_virtualdc.md
+	crd-to-markdown -f api/v1beta1/autovirtualdc_types.go -n AutoVirtualDC > docs/crd_autovirtualdc.md
 
 ##@ Build
 
