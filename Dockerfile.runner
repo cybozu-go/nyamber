@@ -76,8 +76,6 @@ RUN apt-get update \
     && rm ./placemat2_${PLACEMAT_VERSION}_amd64.deb \
     && echo "nyamber ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers \
     && adduser --disabled-password --gecos "" --uid 10000 nyamber \
-    && mkdir -p /opt/hostedtoolcache \
-    && chown -R nyamber:nyamber /opt/hostedtoolcache \
     && chown -R nyamber:nyamber ${HOME}
 WORKDIR /
 COPY --from=builder /workspace/entrypoint .
