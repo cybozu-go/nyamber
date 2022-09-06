@@ -171,7 +171,7 @@ func (r *VirtualDCReconciler) createPod(ctx context.Context, vdc *nyamberv1beta1
 		Value: vdc.Spec.NecoBranch,
 	})
 
-	container.Args = []string{"neco_bootstrap:/neco-bootstrap"}
+	container.Args = []string{"neco_bootstrap:/scripts/neco-bootstrap"}
 
 	if !vdc.Spec.SkipNecoApps {
 		container.Env = append(container.Env, corev1.EnvVar{
@@ -181,7 +181,7 @@ func (r *VirtualDCReconciler) createPod(ctx context.Context, vdc *nyamberv1beta1
 
 		container.Args = append(
 			container.Args,
-			"neco_apps_bootstrap:/neco-apps-bootstrap",
+			"neco_apps_bootstrap:/scripts/neco-apps-bootstrap",
 		)
 	}
 

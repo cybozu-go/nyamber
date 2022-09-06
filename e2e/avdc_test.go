@@ -11,11 +11,8 @@ import (
 
 var _ = Describe("Nyamber avdc e2e test", func() {
 	It("should prepare", func() {
-		_, err := kubectl(nil, "apply", "-f", "./manifests/namespace.yaml")
-		Expect(err).Should(Succeed())
-
 		By("applying valid avdc manifest")
-		_, err = kubectl(nil, "apply", "-f", "./manifests/avdc_testcase.yaml")
+		_, err := kubectl(nil, "apply", "-f", "./manifests/avdc_testcase.yaml")
 		Expect(err).Should(Succeed())
 	})
 

@@ -24,4 +24,10 @@ var _ = BeforeSuite(func() {
 	Expect(err).NotTo(HaveOccurred())
 	_, err = kubectl(nil, "delete", "virtualdc", "--all")
 	Expect(err).NotTo(HaveOccurred())
+
+	By("deploy namespace and configmap")
+	_, err = kubectl(nil, "apply", "-f", "./manifests/namespace.yaml")
+	Expect(err).Should(Succeed())
+	_, err = kubectl(nil, "apply", "-k", "./manifests/script-config")
+	Expect(err).Should(Succeed())
 })

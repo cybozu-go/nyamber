@@ -1,0 +1,9 @@
+generatorOptions:
+  disableNameSuffixHash: true
+
+configMapGenerator:
+- name: scripts
+  namespace: nyamber-pod
+  files:
+   - scripts/neco-bootstrap
+   - scripts/neco-apps-bootstrap
