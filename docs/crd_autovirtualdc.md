@@ -39,8 +39,8 @@ AutoVirtualDCSpec defines the desired state of AutoVirtualDC
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
 | template | Template is a template for VirtualDC | VirtualDC | false |
-| startSchedule | StartSchedule is time to start VirtualDC. This format is cron format. | string | false |
-| stopSchedule | StopSchedule is time to stop VirtualDC. this format is cron format. | string | false |
+| startSchedule | StartSchedule is time to start VirtualDC. This format is cron format(UTC). | string | false |
+| stopSchedule | StopSchedule is time to stop VirtualDC. this format is cron format(UTC). | string | false |
 | timeoutDuration | TimeoutDuration is the duration of retry. This format is format used by ParseDuration(https://pkg.go.dev/time#ParseDuration) | string | false |
 
 [Back to Custom Resources](#custom-resources)

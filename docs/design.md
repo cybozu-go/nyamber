@@ -34,7 +34,8 @@ It create Runner pod which runs dctest and service to access Runner pod.
 
 #### `autovirtualdc-controller`
 
-A deployment that create and delete VirutualDC resources according to set schedule.
+A deployment that create and delete VirutualDC resources according to set schedules.
+*You can't specify only one schedule. You should specify both schedules or leave both schedules empty*
 - startSchedule and stopSchedule are empty: controller create virtualdc immediately
 - startSchedule and stopSchedule are set: calculate NextTime from those schedule and set time to status
   - nextStartTime < now and nextstopTime < now: do nothing
