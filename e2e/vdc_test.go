@@ -17,10 +17,6 @@ import (
 var _ = Describe("Nyamber vdc e2e test", func() {
 	It("should prepare", func() {
 		vdcs := []string{"vdc_testcase", "vdc_testcase2", "vdc_testcase3"}
-		_, err := kubectl(nil, "apply", "-f", "./manifests/namespace.yaml")
-		Expect(err).Should(Succeed())
-		_, err = kubectl(nil, "apply", "-k", "./manifests/script-config")
-		Expect(err).Should(Succeed())
 		for _, v := range vdcs {
 			By(v)
 			_, err := kubectl(nil, "apply", "-f", fmt.Sprintf("./manifests/vdc-testcase/%s.yaml", v))
