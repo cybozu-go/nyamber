@@ -43,6 +43,8 @@ A deployment that create and delete VirutualDC resources according to set schedu
   - nextStopTime < now and now < nextStartTime: stop virtualdc
   - nextStartTime < now and nextStopTime < now: stop virtualdc
 
+If dctest bootstrap fails, `autovirtualdc-controller` recreated `VirtualDC` resources from startTime until the time specified in `timeoutDuration` has elapsed.
+
 #### Runner pod (nyamber-runner)
 
 A component to run dctest with entrypoint.

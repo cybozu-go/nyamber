@@ -76,6 +76,7 @@ vet: ## Run go vet against code.
 check-generate: ## Generate manifests and code, and check if diff exists.
 	$(MAKE) manifests
 	$(MAKE) generate
+	$(MAKE) apidoc
 	git diff --exit-code --name-only
 
 .PHONY: test
