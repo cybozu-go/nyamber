@@ -3,7 +3,7 @@ generatorOptions:
 
 configMapGenerator:
 - name: scripts
-  namespace: nyamber-pod
+  namespace: nyamber-runner
   files:
    - scripts/neco-bootstrap
    - scripts/neco-apps-bootstrap

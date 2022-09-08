@@ -84,7 +84,7 @@ var _ = Describe("Nyamber vdc e2e test", func() {
 		for _, tt := range testcases {
 			By(tt.name)
 			Eventually(func() (*corev1.Pod, error) {
-				out, err := kubectl(nil, "get", "pod", "-n", "nyamber-pod", tt.name, "-o", "json")
+				out, err := kubectl(nil, "get", "pod", "-n", "nyamber-runner", tt.name, "-o", "json")
 				if err != nil {
 					return nil, err
 				}
@@ -105,7 +105,7 @@ var _ = Describe("Nyamber vdc e2e test", func() {
 				})),
 			)
 			Eventually(func() error {
-				_, err := kubectl(nil, "get", "svc", "-n", "nyamber-pod", tt.name)
+				_, err := kubectl(nil, "get", "svc", "-n", "nyamber-runner", tt.name)
 				if err != nil {
 					return err
 				}
@@ -135,7 +135,7 @@ var _ = Describe("Nyamber vdc e2e test", func() {
 		for _, tt := range testcases {
 			By(tt.name)
 			Eventually(func() ([]string, error) {
-				out, err := kubectl(nil, "logs", "-n", "nyamber-pod", tt.name)
+				out, err := kubectl(nil, "logs", "-n", "nyamber-runner", tt.name)
 				if err != nil {
 					return nil, err
 				}
@@ -209,14 +209,14 @@ var _ = Describe("Nyamber vdc e2e test", func() {
 		for _, v := range vdcs {
 			By(v)
 			Eventually(func() error {
-				_, err := kubectl(nil, "get", "pod", "-n", "nyamber-pod", v)
+				_, err := kubectl(nil, "get", "pod", "-n", "nyamber-runner", v)
 				if err != nil {
 					return err
 				}
 				return nil
 			}).Should(HaveOccurred())
 			Eventually(func() error {
-				_, err := kubectl(nil, "get", "svc", "-n", "nyamber-pod", v)
+				_, err := kubectl(nil, "get", "svc", "-n", "nyamber-runner", v)
 				if err != nil {
 					return err
 				}
