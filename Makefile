@@ -21,6 +21,7 @@ CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
 ENVTEST ?= $(LOCALBIN)/setup-envtest
 KUSTOMIZE ?= $(LOCALBIN)/kustomize
 STATICCHECK = $(LOCALBIN)/staticcheck
+CRD_TO_MARKDOWN ?= $(LOCALBIN)/crd-to-markdown
 
 ## Tool Versions
 CONTROLLER_TOOLS_VERSION ?= v0.9.2
@@ -86,8 +87,8 @@ test: ## Run tests.
 
 .PHONY: apidoc
 apidoc: $(wildcard api/*/*_types.go)
-	crd-to-markdown -f api/v1beta1/virtualdc_types.go -n VirtualDC > docs/crd_virtualdc.md
-	crd-to-markdown -f api/v1beta1/autovirtualdc_types.go -n AutoVirtualDC > docs/crd_autovirtualdc.md
+	$(CRD_TO_MARKDOWN) -f api/v1beta1/virtualdc_types.go -n VirtualDC > docs/crd_virtualdc.md
+	$(CRD_TO_MARKDOWN) -f api/v1beta1/autovirtualdc_types.go -n AutoVirtualDC > docs/crd_autovirtualdc.md
 
 ##@ Build
 
@@ -149,12 +150,17 @@ $(KUSTOMIZE): $(LOCALBIN)
 	curl -s $(KUSTOMIZE_INSTALL_SCRIPT) | bash -s -- $(subst v,,$(KUSTOMIZE_VERSION)) $(LOCALBIN)
 
 .PHONY: setup
-setup: controller-gen envtest staticcheck
+setup: controller-gen envtest staticcheck crd-to-markdown
 
 .PHONY: controller-gen
 controller-gen: $(CONTROLLER_GEN) ## Download controller-gen locally if necessary.
 $(CONTROLLER_GEN): $(LOCALBIN)
 	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_TOOLS_VERSION)
+
+.PHONY: crd-to-markdown
+crd-to-markdown: $(CRD_TO_MARKDOWN) ## Download controller-gen locally if necessary.
+$(CRD_TO_MARKDOWN): $(LOCALBIN)
+	GOBIN=$(LOCALBIN) go install github.com/clamoriniere/crd-to-markdown@latest
 
 .PHONY: envtest
 envtest: $(ENVTEST) ## Download envtest-setup locally if necessary.
