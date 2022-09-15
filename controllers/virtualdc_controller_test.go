@@ -172,6 +172,9 @@ spec:
 			return k8sClient.Get(ctx, client.ObjectKey{Name: "test-vdc", Namespace: testPodNamespace}, pod)
 		}).Should(Succeed())
 		Expect(pod.Labels).To(MatchAllKeys(Keys{
+			constants.AppNameLabelKey:        Equal(constants.AppName),
+			constants.AppComponentLabelKey:   Equal(constants.AppComponentRunner),
+			constants.AppInstanceLabelKey:    Equal(vdc.Name),
 			constants.LabelKeyOwnerNamespace: Equal(testNamespace),
 			constants.LabelKeyOwner:          Equal("test-vdc"),
 		}))

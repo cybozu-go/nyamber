@@ -160,6 +160,9 @@ func (r *VirtualDCReconciler) createPod(ctx context.Context, vdc *nyamberv1beta1
 		Name:      vdc.Name,
 		Namespace: r.PodNamespace,
 		Labels: map[string]string{
+			constants.AppNameLabelKey:        constants.AppName,
+			constants.AppComponentLabelKey:   constants.AppComponentRunner,
+			constants.AppInstanceLabelKey:    vdc.Name,
 			constants.LabelKeyOwnerNamespace: vdc.Namespace,
 			constants.LabelKeyOwner:          vdc.Name,
 		},
