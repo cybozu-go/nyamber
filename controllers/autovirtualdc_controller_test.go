@@ -7,7 +7,6 @@ import (
 	"time"
 
 	nyamberv1beta1 "github.com/cybozu-go/nyamber/api/v1beta1"
-	"github.com/cybozu-go/nyamber/pkg/constants"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -100,19 +99,6 @@ var _ = Describe("AutoVirtualDC controller", func() {
 		}
 		err := k8sClient.Create(ctx, avdc)
 		Expect(err).NotTo(HaveOccurred())
-
-		By("checking to add finalizer")
-		Eventually(func() error {
-			if err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-avdc", Namespace: testNamespace}, avdc); err != nil {
-				return err
-			}
-			for _, elm := range avdc.ObjectMeta.Finalizers {
-				if elm == constants.FinalizerName {
-					return nil
-				}
-			}
-			return errors.New("finalizer is not found")
-		}).Should(Succeed())
 
 		By("checking to create virtualDC")
 		vdc := &nyamberv1beta1.VirtualDC{}

@@ -22,7 +22,6 @@ import (
 	"time"
 
 	nyamberv1beta1 "github.com/cybozu-go/nyamber/api/v1beta1"
-	"github.com/cybozu-go/nyamber/pkg/constants"
 	cron "github.com/robfig/cron/v3"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -31,7 +30,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 )
 
@@ -50,7 +48,6 @@ type Clock interface {
 
 //+kubebuilder:rbac:groups=nyamber.cybozu.io,resources=autovirtualdcs,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=nyamber.cybozu.io,resources=autovirtualdcs/status,verbs=get;update;patch
-//+kubebuilder:rbac:groups=nyamber.cybozu.io,resources=autovirtualdcs/finalizers,verbs=update
 //+kubebuilder:rbac:groups=nyamber.cybozu.io,resources=virtualdcs,verbs=get;list;watch;create;update;patch;delete
 
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
@@ -61,24 +58,6 @@ func (r *AutoVirtualDCReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	avdc := &nyamberv1beta1.AutoVirtualDC{}
 	if err := r.Get(ctx, req.NamespacedName, avdc); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
-	}
-
-	if !avdc.ObjectMeta.DeletionTimestamp.IsZero() {
-		finalizeResult, err := r.finalize(ctx, avdc)
-		if err != nil {
-			logger.Error(err, "finalize error")
-			return ctrl.Result{}, err
-		}
-		return finalizeResult, nil
-	}
-
-	if !controllerutil.ContainsFinalizer(avdc, constants.FinalizerName) {
-		controllerutil.AddFinalizer(avdc, constants.FinalizerName)
-		err := r.Update(ctx, avdc)
-		if err != nil {
-			logger.Error(err, "failed to update AutoVirtualDC")
-			return ctrl.Result{}, err
-		}
 	}
 
 	defer func(before nyamberv1beta1.AutoVirtualDCStatus) {
@@ -172,24 +151,6 @@ func (r *AutoVirtualDCReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&nyamberv1beta1.AutoVirtualDC{}).
 		Owns(&nyamberv1beta1.VirtualDC{}).
 		Complete(r)
-}
-
-func (r *AutoVirtualDCReconciler) finalize(ctx context.Context, avdc *nyamberv1beta1.AutoVirtualDC) (ctrl.Result, error) {
-	logger := log.FromContext(ctx)
-	logger.Info("finalize start")
-
-	if !controllerutil.ContainsFinalizer(avdc, constants.FinalizerName) {
-		return ctrl.Result{}, nil
-	}
-
-	controllerutil.RemoveFinalizer(avdc, constants.FinalizerName)
-	err := r.Update(ctx, avdc)
-	if err != nil {
-		return ctrl.Result{}, err
-	}
-
-	logger.Info("finalize succeeded")
-	return ctrl.Result{}, nil
 }
 
 func (r *AutoVirtualDCReconciler) updateStatusTime(ctx context.Context, avdc *nyamberv1beta1.AutoVirtualDC) error {
