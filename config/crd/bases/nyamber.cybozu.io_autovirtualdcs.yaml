@@ -37,11 +37,11 @@ spec:
             properties:
               startSchedule:
                 description: StartSchedule is time to start VirtualDC. This format
-                  is cron format.
+                  is cron format(UTC).
                 type: string
               stopSchedule:
                 description: StopSchedule is time to stop VirtualDC. this format is
-                  cron format.
+                  cron format(UTC).
                 type: string
               template:
                 description: Template is a template for VirtualDC

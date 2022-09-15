@@ -25,10 +25,10 @@ type AutoVirtualDCSpec struct {
 	// Template is a template for VirtualDC
 	Template VirtualDC `json:"template,omitempty"`
 
-	// StartSchedule is time to start VirtualDC. This format is cron format.
+	// StartSchedule is time to start VirtualDC. This format is cron format(UTC).
 	StartSchedule string `json:"startSchedule,omitempty"`
 
-	// StopSchedule is time to stop VirtualDC. this format is cron format.
+	// StopSchedule is time to stop VirtualDC. this format is cron format(UTC).
 	StopSchedule string `json:"stopSchedule,omitempty"`
 
 	// TimeoutDuration is the duration of retry. This format is format used by ParseDuration(https://pkg.go.dev/time#ParseDuration)
