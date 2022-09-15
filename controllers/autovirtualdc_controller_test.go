@@ -218,6 +218,22 @@ var _ = Describe("AutoVirtualDC controller", func() {
 				err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-avdc", Namespace: testNamespace}, avdc)
 				return apierrors.IsNotFound(err)
 			}).Should(BeTrue())
+
+			By("deleting VirtualDC")
+			if testcase.input.conditions != nil {
+				vdc := &nyamberv1beta1.VirtualDC{}
+				Eventually(func() error {
+					err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-avdc", Namespace: testNamespace}, vdc)
+					return err
+				}).ShouldNot(HaveOccurred())
+				err = k8sClient.Delete(ctx, vdc)
+				Expect(err).NotTo(HaveOccurred())
+
+				Eventually(func() bool {
+					err := k8sClient.Get(ctx, client.ObjectKey{Name: "test-avdc", Namespace: testNamespace}, vdc)
+					return apierrors.IsNotFound(err)
+				}).Should(BeTrue())
+			}
 		}
 	})
 
