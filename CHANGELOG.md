@@ -5,8 +5,11 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
-### Added
-### Changed
-### Removed
+## [0.1.0] - 2022-09-16
 
-[Unreleased]: https://github.com/cybozu-go/nyamber/compare/0b95ddf1810b156fc2bd36edd457b96a18ca0501...HEAD
+### Added
+
+- This is the first public release.
+
+[Unreleased]: https://github.com/cybozu-go/nyamber/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/cybozu-go/nyamber/compare/0b95ddf1810b156fc2bd36edd457b96a18ca0501...v0.1.0
