@@ -56,12 +56,6 @@ rules:
 - apiGroups:
   - nyamber.cybozu.io
   resources:
-  - autovirtualdcs/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - nyamber.cybozu.io
-  resources:
   - autovirtualdcs/status
   verbs:
   - get
