@@ -9,7 +9,7 @@ Follow [semantic versioning 2.0.0][semver] to choose the new version number.
 
 ## Prepare change log entries
 
-Add notable changes since the last release to [CHANGELOG.md](CHANGELOG.md).
+Add notable changes since the last release to [CHANGELOG.md](../CHANGELOG.md).
 It should look like:
 
 ```markdown
