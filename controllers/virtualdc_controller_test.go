@@ -97,10 +97,15 @@ var _ = Describe("VirtualDC controller", func() {
 
 		podTemplate := `apiVersion: v1
 kind: Pod
+metadata:
+  labels:
+    testlabel: test
+  annotations:
+    testannotation: test
 spec:
   containers:
-  - image: nyamber-runner:envtest
-    name: ubuntu`
+    - image: nyamber-runner:envtest
+      name: ubuntu`
 
 		cm := &corev1.ConfigMap{
 			ObjectMeta: metav1.ObjectMeta{
@@ -177,6 +182,10 @@ spec:
 			constants.AppInstanceLabelKey:    Equal(vdc.Name),
 			constants.LabelKeyOwnerNamespace: Equal(testNamespace),
 			constants.LabelKeyOwner:          Equal("test-vdc"),
+			"testlabel":                      Equal("test"),
+		}))
+		Expect(pod.Annotations, MatchAllKeys(Keys{
+			"testannotaion": Equal("test"),
 		}))
 		Expect(pod.Spec.Containers).To(HaveLen(1))
 		Expect(pod.Spec.Containers[0]).To(MatchFields(IgnoreExtras, Fields{

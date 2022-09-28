@@ -156,17 +156,15 @@ func (r *VirtualDCReconciler) createPod(ctx context.Context, vdc *nyamberv1beta1
 		return err
 	}
 
-	pod.ObjectMeta = metav1.ObjectMeta{
-		Name:      vdc.Name,
-		Namespace: r.PodNamespace,
-		Labels: map[string]string{
-			constants.AppNameLabelKey:        constants.AppName,
-			constants.AppComponentLabelKey:   constants.AppComponentRunner,
-			constants.AppInstanceLabelKey:    vdc.Name,
-			constants.LabelKeyOwnerNamespace: vdc.Namespace,
-			constants.LabelKeyOwner:          vdc.Name,
-		},
-	}
+	pod.SetName(vdc.Name)
+	pod.SetNamespace(r.PodNamespace)
+	pod.SetLabels(mergeMap(pod.GetLabels(), map[string]string{
+		constants.AppNameLabelKey:        constants.AppName,
+		constants.AppComponentLabelKey:   constants.AppComponentRunner,
+		constants.AppInstanceLabelKey:    vdc.Name,
+		constants.LabelKeyOwnerNamespace: vdc.Namespace,
+		constants.LabelKeyOwner:          vdc.Name,
+	}))
 
 	container := &pod.Spec.Containers[0]
 	container.Env = append(container.Env, corev1.EnvVar{
@@ -467,4 +465,18 @@ func isStatusConditionTrue(pod *corev1.Pod, condition corev1.PodConditionType) b
 		}
 	}
 	return false
+}
+
+func mergeMap(m1, m2 map[string]string) map[string]string {
+	m := make(map[string]string)
+	for k, v := range m1 {
+		m[k] = v
+	}
+	for k, v := range m2 {
+		m[k] = v
+	}
+	if len(m) == 0 {
+		return nil
+	}
+	return m
 }
