@@ -16,3 +16,7 @@ resources:
 - auth_proxy_role.yaml
 - auth_proxy_role_binding.yaml
 - auth_proxy_client_clusterrole.yaml
+- virtualdc_editor_role.yaml
+- virtualdc_viewer_role.yaml
+- autovirtualdc_editor_role.yaml
+- autovirtualdc_viewer_role.yaml
