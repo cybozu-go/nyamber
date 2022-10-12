@@ -25,12 +25,10 @@ import (
 type VirtualDCSpec struct {
 	// Neco branch is a target branch name for dctest
 	//+kubebuiler:validation:Optional
-	//+kubebuilder:default=main
 	NecoBranch string `json:"necoBranch,omitempty"`
 
 	// Neco apps branch is a target branch name for dctest
 	//+kubebuiler:validation:Optional
-	//+kubebuilder:default=main
 	NecoAppsBranch string `json:"necoAppsBranch,omitempty"`
 
 	// Skip bootstrap of neco apps if this is true

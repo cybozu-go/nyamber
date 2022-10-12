@@ -53,11 +53,9 @@ spec:
                   type: string
                 type: array
               necoAppsBranch:
-                default: main
                 description: Neco apps branch is a target branch name for dctest
                 type: string
               necoBranch:
-                default: main
                 description: Neco branch is a target branch name for dctest
                 type: string
               resources:

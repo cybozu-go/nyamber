@@ -167,6 +167,12 @@ func (r *VirtualDCReconciler) createPod(ctx context.Context, vdc *nyamberv1beta1
 	}))
 
 	container := &pod.Spec.Containers[0]
+	if vdc.Spec.NecoBranch == "" {
+		vdc.Spec.NecoBranch = "main"
+	}
+	if vdc.Spec.NecoAppsBranch == "" {
+		vdc.Spec.NecoAppsBranch = "main"
+	}
 	container.Env = append(container.Env, corev1.EnvVar{
 		Name:  "NECO_BRANCH",
 		Value: vdc.Spec.NecoBranch,
