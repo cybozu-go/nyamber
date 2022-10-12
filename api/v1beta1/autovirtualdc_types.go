@@ -44,6 +44,7 @@ type AutoVirtualDCStatus struct {
 	NextStopTime *metav1.Time `json:"nextStopTime,omitempty"`
 }
 
+//+kubebuilder:resource:shortName=avdc
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 
