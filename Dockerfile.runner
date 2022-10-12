@@ -81,4 +81,4 @@ WORKDIR /
 COPY --from=builder /workspace/entrypoint .
 USER nyamber
 
-CMD ["/entrypoint"]
+ENTRYPOINT ["/entrypoint"]
