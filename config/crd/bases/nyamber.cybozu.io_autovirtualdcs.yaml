@@ -12,6 +12,8 @@ spec:
     kind: AutoVirtualDC
     listKind: AutoVirtualDCList
     plural: autovirtualdcs
+    shortNames:
+    - avdc
     singular: autovirtualdc
   scope: Namespaced
   versions:
