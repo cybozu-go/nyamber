@@ -71,13 +71,14 @@ spec:
                           type: string
                         type: array
                       necoAppsBranch:
-                        default: main
                         description: Neco apps branch is a target branch name for
-                          dctest
+                          dctest If this field is empty, controller runs dctest with
+                          "main" branch
                         type: string
                       necoBranch:
-                        default: main
                         description: Neco branch is a target branch name for dctest
+                          If this field is empty, controller runs dctest with "main"
+                          branch
                         type: string
                       resources:
                         description: ResourceRequirements describes the compute resource

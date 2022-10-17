@@ -24,13 +24,13 @@ import (
 // VirtualDCSpec defines the desired state of VirtualDC
 type VirtualDCSpec struct {
 	// Neco branch is a target branch name for dctest
+	// If this field is empty, controller runs dctest with "main" branch
 	//+kubebuiler:validation:Optional
-	//+kubebuilder:default=main
 	NecoBranch string `json:"necoBranch,omitempty"`
 
 	// Neco apps branch is a target branch name for dctest
+	// If this field is empty, controller runs dctest with "main" branch
 	//+kubebuiler:validation:Optional
-	//+kubebuilder:default=main
 	NecoAppsBranch string `json:"necoAppsBranch,omitempty"`
 
 	// Skip bootstrap of neco apps if this is true
