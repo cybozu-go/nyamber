@@ -218,13 +218,10 @@ func (r *AutoVirtualDCReconciler) reconcileVirtualDC(ctx context.Context, avdc *
 		}
 
 		now := r.Now()
-		var startTime time.Time
-		if avdc.Status.NextStartTime == nil {
-			startTime = avdc.CreationTimestamp.Time
-		} else {
-			startTime = avdc.Status.NextStartTime.Time
-		}
-		if now.After(startTime.Add(timeoutDuration)) {
+		if avdc.Status.NextStartTime == nil && now.After(avdc.CreationTimestamp.Time.Add(timeoutDuration)) {
+			logger.Info("don't requeue because timeout has passed.")
+			return ctrl.Result{}, nil
+		} else if avdc.Status.NextStartTime != nil && now.After(avdc.Status.NextStartTime.Time.Add(timeoutDuration)) {
 			logger.Info("requeue after next stop-time because timeout has passed.")
 			return ctrl.Result{RequeueAfter: r.Sub(avdc.Status.NextStopTime.Time, now)}, nil
 		}
