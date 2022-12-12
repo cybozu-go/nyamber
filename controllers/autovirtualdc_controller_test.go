@@ -656,7 +656,7 @@ var _ = Describe("AutoVirtualDC controller", func() {
 	})
 
 	It("should operate VDC according to TimeoutDuration of AVDC when startSchedule/stopSchedule is not set", func() {
-		By("creating AutoVirtualDC between startTime and stopTime")
+		By("creating AutoVirtualDC")
 		clock.SetTime(time.Date(2000, 1, 1, 1, 0, 0, 0, time.UTC))
 		avdc := &nyamberv1beta1.AutoVirtualDC{
 			ObjectMeta: metav1.ObjectMeta{
