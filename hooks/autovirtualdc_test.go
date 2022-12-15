@@ -157,6 +157,18 @@ var _ = Describe("AutoVirtualDC validator", func() {
 		Expect(err).NotTo(HaveOccurred())
 	})
 
+	It("should not be allowed to update template in AutoVirtualDC resources when Schedule is not set", func() {
+		avdc := makeAutoVirtualDC()
+		avdc.Spec.StartSchedule = ""
+		avdc.Spec.StopSchedule = ""
+		err := k8sClient.Create(ctx, avdc)
+		Expect(err).NotTo(HaveOccurred())
+		By("updating vdc template")
+		avdc.Spec.Template.Spec.NecoBranch = "hoge"
+		err = k8sClient.Update(ctx, avdc)
+		Expect(err).To(HaveOccurred())
+	})
+
 	It("should deny autoVirtualDC resources if the name of the autoVirtualDC conflicts with one of VirtualDC resources", func() {
 		vdc := &nyamberv1beta1.VirtualDC{
 			ObjectMeta: metav1.ObjectMeta{

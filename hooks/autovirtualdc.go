@@ -22,6 +22,7 @@ import (
 
 	nyamberv1beta1 "github.com/cybozu-go/nyamber/api/v1beta1"
 	"github.com/robfig/cron"
+	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -94,6 +95,11 @@ func (v autoVirtualdcValidator) ValidateUpdate(ctx context.Context, oldObj, newO
 
 	oldSpec := oldObj.(*nyamberv1beta1.AutoVirtualDC).Spec
 	newSpec := newObj.(*nyamberv1beta1.AutoVirtualDC).Spec
+
+	// If avdc.Spec.StartSchedule is not set, vdc template is immutable
+	if avdc.Spec.StartSchedule == "" && !equality.Semantic.DeepEqual(oldSpec, newSpec) {
+		errs = append(errs, field.Forbidden(field.NewPath("spec", "template"), "the field is immutable"))
+	}
 
 	if oldSpec.StartSchedule != newSpec.StartSchedule {
 		errs = append(errs, field.Forbidden(field.NewPath("spec", "startSchedule"), "the field is immutable"))
