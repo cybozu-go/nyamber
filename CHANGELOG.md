@@ -5,6 +5,11 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.4] - 2022-12-15
+### Fix
+- Refer avdc creationTimestamp when next start time is nil (#39)
+- Validate avdc template when startSchedule is not set (#40)
+
 ## [0.1.3] - 2022-10-19
 ### Fix
 - Replace CMD to ENTRYPOINT in Dockerfile.Runner (#33)
@@ -27,7 +32,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 - This is the first public release.
 
-[Unreleased]: https://github.com/cybozu-go/nyamber/compare/v0.1.3...HEAD
+[Unreleased]: https://github.com/cybozu-go/nyamber/compare/v0.1.4...HEAD
+[0.1.4]: https://github.com/cybozu-go/nyamber/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/cybozu-go/nyamber/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/cybozu-go/nyamber/compare/v0.1.1...v0.1.2
 [0.1.1]: https://github.com/cybozu-go/nyamber/compare/v0.1.0...v0.1.1
