@@ -5,6 +5,13 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [0.1.5] - 2023-01-27
+
+This release updates the base image and the packages used by rebuilding the image.
+This fixes git vulnerabilities
+- USN-5810-1: Git vulnerabilities
+- USN-5810-2: Git regression
+
 ## [0.1.4] - 2022-12-15
 ### Fix
 - Refer avdc creationTimestamp when next start time is nil (#39)
@@ -32,7 +39,8 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 - This is the first public release.
 
-[Unreleased]: https://github.com/cybozu-go/nyamber/compare/v0.1.4...HEAD
+[Unreleased]: https://github.com/cybozu-go/nyamber/compare/v0.1.5...HEAD
+[0.1.5]: https://github.com/cybozu-go/nyamber/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/cybozu-go/nyamber/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/cybozu-go/nyamber/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/cybozu-go/nyamber/compare/v0.1.1...v0.1.2
