@@ -24,10 +24,10 @@ STATICCHECK = $(LOCALBIN)/staticcheck
 CRD_TO_MARKDOWN ?= $(LOCALBIN)/crd-to-markdown
 
 ## Tool Versions
-CONTROLLER_TOOLS_VERSION ?= v0.9.2
+CONTROLLER_TOOLS_VERSION ?= v0.11.2
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
-ENVTEST_K8S_VERSION = 1.24.2
-KUSTOMIZE_VERSION ?= v4.5.5
+ENVTEST_K8S_VERSION = 1.25.0
+KUSTOMIZE_VERSION ?= v4.5.7
 
 # Setting SHELL to bash allows bash commands to be executed by recipes.
 # This is a requirement for 'setup-envtest.sh' in the test target.

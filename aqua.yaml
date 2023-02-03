@@ -8,12 +8,12 @@ registries:
   name: local
   path: registry.yaml
 packages:
-- name: kubernetes/kubectl@v1.24.0
-- name: kubernetes-sigs/kubebuilder@v3.4.1
-- name: kubernetes-sigs/kustomize@kustomize/v4.5.5
-- name: kubernetes-sigs/kind@v0.14.0
-- name: tilt-dev/tilt@v0.30.4
-- name: tilt-dev/ctlptl@v0.8.4
-- name: mikefarah/yq@v4.25.2
+- name: kubernetes/kubectl@v1.25.6
+- name: kubernetes-sigs/kubebuilder@v3.9.0
+- name: kubernetes-sigs/kustomize@kustomize/v4.5.7
+- name: kubernetes-sigs/kind@v0.17.0
+- name: tilt-dev/tilt@v0.31.1
+- name: tilt-dev/ctlptl@v0.8.16
+- name: mikefarah/yq@v4.30.8
 - name: clamoriniere/crd-to-markdown@v0.0.3
   registry: local
