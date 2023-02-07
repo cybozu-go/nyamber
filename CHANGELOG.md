@@ -5,6 +5,14 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.0] - 2023-02-07
+
+### Changed
+
+- Support Kubernetes 1.25 ([#43](https://github.com/cybozu-go/nyamber/pull/43))
+- Build with go 1.19 ([#44](https://github.com/cybozu-go/nyamber/pull/44))
+- Update Ubuntu base image ([#45](https://github.com/cybozu-go/nyamber/pull/45))
+
 ## [0.1.5] - 2023-01-27
 
 This release updates the base image and the packages used by rebuilding the image.
@@ -39,7 +47,8 @@ This fixes git vulnerabilities
 
 - This is the first public release.
 
-[Unreleased]: https://github.com/cybozu-go/nyamber/compare/v0.1.5...HEAD
+[Unreleased]: https://github.com/cybozu-go/nyamber/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/cybozu-go/nyamber/compare/v0.1.5...v0.2.0
 [0.1.5]: https://github.com/cybozu-go/nyamber/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/cybozu-go/nyamber/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/cybozu-go/nyamber/compare/v0.1.2...v0.1.3
