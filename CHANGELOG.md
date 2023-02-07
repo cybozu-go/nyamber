@@ -47,8 +47,8 @@ This fixes git vulnerabilities
 
 - This is the first public release.
 
-[Unreleased]: https://github.com/cybozu-go/nyamber/compare/v0.1.6...HEAD
-[0.1.6]: https://github.com/cybozu-go/nyamber/compare/v0.1.5...v0.1.6
+[Unreleased]: https://github.com/cybozu-go/nyamber/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/cybozu-go/nyamber/compare/v0.1.5...v0.2.0
 [0.1.5]: https://github.com/cybozu-go/nyamber/compare/v0.1.4...v0.1.5
 [0.1.4]: https://github.com/cybozu-go/nyamber/compare/v0.1.3...v0.1.4
 [0.1.3]: https://github.com/cybozu-go/nyamber/compare/v0.1.2...v0.1.3
