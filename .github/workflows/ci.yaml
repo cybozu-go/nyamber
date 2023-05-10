@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v3
-    - uses: actions/setup-go@v3
+    - uses: actions/setup-go@v4
       with:
         go-version-file: go.mod
     - run: make setup
@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v3
-    - uses: actions/setup-go@v3
+    - uses: actions/setup-go@v4
       with:
         go-version-file: go.mod
     - uses: aquaproj/aqua-installer@61e2563dfe7674cbf74fe6ec212e444198a3bb00 #v2.0.2
