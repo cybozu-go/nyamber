@@ -38,10 +38,10 @@ VirtualDCSpec defines the desired state of VirtualDC
 
 | Field | Description | Scheme | Required |
 | ----- | ----------- | ------ | -------- |
-| necoBranch | Neco branch is a target branch name for dctest If this field is empty, controller runs dctest with \"main\" branch | string | false |
-| necoAppsBranch | Neco apps branch is a target branch name for dctest If this field is empty, controller runs dctest with \"main\" branch | string | false |
-| skipNecoApps | Skip bootstrap of neco apps if this is true | bool | false |
-| command | Command is run after creating dctest pods | []string | false |
+| necoBranch | Neco branch to use for dctest. If this field is empty, controller runs dctest with \"main\" branch | string | false |
+| necoAppsBranch | Neco-apps branch to use for dctest. If this field is empty, controller runs dctest with \"main\" branch | string | false |
+| skipNecoApps | Skip bootstrapping neco-apps if true | bool | false |
+| command | Path to a user-defined script and its arguments to run after bootstrapping dctest | []string | false |
 | resources |  | corev1.ResourceRequirements | false |
 
 [Back to Custom Resources](#custom-resources)
