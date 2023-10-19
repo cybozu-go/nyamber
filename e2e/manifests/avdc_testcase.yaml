@@ -7,6 +7,4 @@ spec:
     spec:
         necoBranch: release
         necoAppsBranch: release
-        command:
-        - env
   timeoutDuration: "20m"
