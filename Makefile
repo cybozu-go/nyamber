@@ -27,7 +27,7 @@ CRD_TO_MARKDOWN ?= $(LOCALBIN)/crd-to-markdown
 CONTROLLER_TOOLS_VERSION ?= v0.13.0
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 ENVTEST_K8S_VERSION = 1.27.3
-KUSTOMIZE_VERSION ?= v5.0.3
+KUSTOMIZE_VERSION ?= v5.1.1
 
 # Setting SHELL to bash allows bash commands to be executed by recipes.
 # This is a requirement for 'setup-envtest.sh' in the test target.
