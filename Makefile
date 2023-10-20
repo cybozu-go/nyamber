@@ -31,7 +31,7 @@ CONTROLLER_TOOLS_VERSION ?= v0.12.1
 ENVTEST_K8S_VERSION = 1.27.1
 
 # KUSTOMIZE_VERSION can be found at https://github.com/kubernetes-sigs/kustomize/releases
-KUSTOMIZE_VERSION ?= v5.2.0
+KUSTOMIZE_VERSION ?= v5.2.1
 
 # Setting SHELL to bash allows bash commands to be executed by recipes.
 # This is a requirement for 'setup-envtest.sh' in the test target.
