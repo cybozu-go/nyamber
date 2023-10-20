@@ -24,6 +24,12 @@ STATICCHECK = $(LOCALBIN)/staticcheck
 CRD_TO_MARKDOWN ?= $(LOCALBIN)/crd-to-markdown
 
 ## Tool Versions
+
+# ここじゃないけど
+# Generate manifests and code, and check if diff exists. When there diffrence stop CI.
+# To avoid CI stopping,  edit anotationthe "controller-gen.kubebuilder.io/version:" in existing nyamber.cybozu.io_virtualdcs.yaml and nyamber.cybozu.io_virtualdcs.yaml.
+# both version must equal CONTROLLER_TOOLS_VERSION in Makefile.
+
 CONTROLLER_TOOLS_VERSION ?= v0.12.1
 
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary. 
