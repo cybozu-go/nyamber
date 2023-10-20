@@ -24,12 +24,6 @@ STATICCHECK = $(LOCALBIN)/staticcheck
 CRD_TO_MARKDOWN ?= $(LOCALBIN)/crd-to-markdown
 
 ## Tool Versions
-
-# ここじゃないけど
-# Generate manifests and code, and check if diff exists. When there diffrence stop CI.
-# To avoid CI stopping,  edit anotationthe "controller-gen.kubebuilder.io/version:" in existing nyamber.cybozu.io_virtualdcs.yaml and nyamber.cybozu.io_virtualdcs.yaml.
-# both version must equal CONTROLLER_TOOLS_VERSION in Makefile.
-
 CONTROLLER_TOOLS_VERSION ?= v0.12.1
 
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary. 
@@ -83,6 +77,10 @@ fmt: ## Run go fmt against code.
 vet: ## Run go vet against code.
 	go vet ./...
 
+# Generate manifests and code, and check if diff exists. When there are diffrences stop CI.
+# To avoid CI stopping, edit anotation "controller-gen.kubebuilder.io/version:" in 
+# existing "nyamber.cybozu.io_virtualdcs.yaml" and "nyamber.cybozu.io_virtualdcs.yaml".
+# both version must equal CONTROLLER_TOOLS_VERSION in Makefile.
 .PHONY: check-generate
 check-generate: ## Generate manifests and code, and check if diff exists.
 	$(MAKE) manifests
@@ -101,7 +99,6 @@ apidoc: $(wildcard api/*/*_types.go)
 	$(CRD_TO_MARKDOWN) -f api/v1beta1/autovirtualdc_types.go -n AutoVirtualDC > docs/crd_autovirtualdc.md
 
 ##@ Build
-
 .PHONY: build
 build: ## Build manager binary.
 	go build -o bin/manager main.go
