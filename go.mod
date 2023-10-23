@@ -1,16 +1,16 @@
 module github.com/cybozu-go/nyamber
 
-go 1.20
+go 1.21
 
 require (
 	github.com/cybozu-go/well v1.11.2
-	github.com/onsi/ginkgo/v2 v2.9.4
-	github.com/onsi/gomega v1.27.6
-	k8s.io/api v0.26.4
-	k8s.io/apimachinery v0.26.4
-	k8s.io/client-go v0.26.4
-	k8s.io/utils v0.0.0-20230505201702-9f6742963106
-	sigs.k8s.io/controller-runtime v0.14.6
+	github.com/onsi/ginkgo/v2 v1.13.0
+	github.com/onsi/gomega v1.28.1
+	k8s.io/api v0.28.3
+	k8s.io/apimachinery v0.28.3
+	k8s.io/client-go v0.28.3
+	k8s.io/utils v0.0.0-20230726121419-3b25d923346b
+	sigs.k8s.io/controller-runtime v0.16.3
 )
 
 require (
