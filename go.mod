@@ -1,6 +1,6 @@
 module github.com/cybozu-go/nyamber
 
-go 1.21
+go 1.21.0
 
 require (
 	github.com/cybozu-go/well v1.11.2
@@ -22,10 +22,7 @@ require (
 //	k8s.io/utils v0.0.0-20230505201702-9f6742963106
 //	sigs.k8s.io/controller-runtime v0.14.6
 
-require (
-	github.com/google/gnostic-models v0.6.8 // indirect
-	golang.org/x/exp v0.0.0-20220722155223-a9213eeb770e // indirect
-)
+require github.com/google/gnostic-models v0.6.8 // indirect
 
 require (
 	github.com/beorn7/perks v1.0.1 // indirect
