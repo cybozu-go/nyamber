@@ -72,7 +72,7 @@ var _ = Describe("VirtualDC controller", func() {
 		mgr, err := ctrl.NewManager(cfg, ctrl.Options{
 			Scheme:         scheme,
 			LeaderElection: false,
-			Metrics:        metricsserver.Options{BindAddress: ":0"},
+			Metrics:        metricsserver.Options{BindAddress: "0.0.0.0:0"},
 		})
 		Expect(err).NotTo(HaveOccurred())
 
@@ -498,6 +498,7 @@ kind: Pod`
 	})
 
 	It("should recreate the service resource when the service resource is deleted", func() {
+
 		By("creating a VirtualDC resource")
 		vdc := &nyamberv1beta1.VirtualDC{
 			ObjectMeta: metav1.ObjectMeta{
@@ -505,12 +506,7 @@ kind: Pod`
 				Namespace: testNamespace,
 			},
 		}
-		// for PD
 		err := k8sClient.Create(ctx, vdc)
-		if err != nil {
-			fmt.Println("***************")
-			return
-		}
 		Expect(err).NotTo(HaveOccurred())
 
 		By("checking to create svc")
@@ -520,7 +516,6 @@ kind: Pod`
 		}).Should(Succeed())
 
 		uid := svc.GetUID()
-
 		err = k8sClient.Delete(ctx, svc)
 		Expect(err).NotTo(HaveOccurred())
 		Eventually(func() error {
