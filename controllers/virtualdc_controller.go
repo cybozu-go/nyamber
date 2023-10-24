@@ -456,7 +456,7 @@ func (r *VirtualDCReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&nyamberv1beta1.VirtualDC{}).
 		Watches(&corev1.Pod{}, handler.EnqueueRequestsFromMapFunc(vdcHandler)).
-		Watches(&corev1.Pod{}, handler.EnqueueRequestsFromMapFunc(vdcHandler)).
+		Watches(&corev1.Service{}, handler.EnqueueRequestsFromMapFunc(vdcHandler)).
 		Complete(r)
 }
 
