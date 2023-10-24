@@ -36,7 +36,7 @@ start:
 	$(KUBECTL) apply -f https://github.com/jetstack/cert-manager/releases/download/v$(CERT_MANAGER_VERSION)/cert-manager.yaml
 	$(KUBECTL) -n cert-manager wait --for=condition=available --timeout=180s --all deployments
 	$(KUBECTL) apply -k ../config/default
-	$(KUBECTL) -n nyamber wait --for=condition=available --timeout=180s --all deployments
+	$(KUBECTL) -n nyamber wait --for=condition=available --timeout=500s --all deployments
 
 .PHONY: test
 test:
