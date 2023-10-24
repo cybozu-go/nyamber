@@ -27,7 +27,7 @@ CRD_TO_MARKDOWN ?= $(LOCALBIN)/crd-to-markdown
 CONTROLLER_TOOLS_VERSION ?= v0.13.0
 
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary. 
-# the kubebuilder version of the ready-to-use can get by ./bin/setup-envtest list command.
+# the kubebuilder version of the ready-to-use can get by "./bin/setup-envtest list" command.
 ENVTEST_K8S_VERSION = 1.27.1
 
 # KUSTOMIZE_VERSION can be found at https://github.com/kubernetes-sigs/kustomize/releases

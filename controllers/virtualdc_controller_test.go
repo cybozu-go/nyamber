@@ -505,7 +505,12 @@ kind: Pod`
 				Namespace: testNamespace,
 			},
 		}
+		// for PD
 		err := k8sClient.Create(ctx, vdc)
+		if err != nil {
+			fmt.Println("***************")
+			return
+		}
 		Expect(err).NotTo(HaveOccurred())
 
 		By("checking to create svc")
