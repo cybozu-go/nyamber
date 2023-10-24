@@ -38,7 +38,7 @@ var _ = Describe("AutoVirtualDC controller", func() {
 		mgr, err := ctrl.NewManager(cfg, ctrl.Options{
 			Scheme:         scheme,
 			LeaderElection: false,
-			Metrics:        metricsserver.Options{BindAddress: "0.0.0.0:0"},
+			Metrics:        metricsserver.Options{BindAddress: "127.0.0.1:8080"},
 		})
 		Expect(err).NotTo(HaveOccurred())
 
