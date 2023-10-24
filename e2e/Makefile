@@ -41,7 +41,7 @@ start:
 	sleep 60
 	$(KUBECTL) -n nyamber get pod
 	sleep 60
-	$(KUBECTL) -n nyamber get pod
+	$(KUBECTL) -n nyamber describe pod 
 	$(KUBECTL) -n nyamber wait --for=condition=available --timeout=100s --all deployments
 
 .PHONY: test
