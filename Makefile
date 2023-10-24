@@ -24,7 +24,7 @@ STATICCHECK = $(LOCALBIN)/staticcheck
 CRD_TO_MARKDOWN ?= $(LOCALBIN)/crd-to-markdown
 
 ## Tool Versions
-CONTROLLER_TOOLS_VERSION ?= v0.12.1
+CONTROLLER_TOOLS_VERSION ?= v0.13.0
 
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary. 
 # the kubebuilder version of the ready-to-use can get by ./bin/setup-envtest list command.

@@ -1,6 +1,6 @@
 module github.com/cybozu-go/nyamber
 
-go 1.21.0
+go 1.21
 
 require (
 	github.com/cybozu-go/well v1.11.2
