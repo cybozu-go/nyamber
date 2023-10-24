@@ -105,7 +105,7 @@ var _ = BeforeSuite(func() {
 		Scheme: scheme,
 		Metrics: metricsserver.Options{
 			BindAddress: bindAddress,
-			CertDir:     webhookInstallOptions.LocalServingCertDir,
+			//CertDir:     webhookInstallOptions.LocalServingCertDir,
 		},
 		LeaderElection: false,
 	})
