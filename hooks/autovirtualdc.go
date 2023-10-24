@@ -30,6 +30,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 )
 
 func SetupAutoVirtualDCWebhookWithManager(mgr ctrl.Manager) error {
@@ -46,7 +47,7 @@ type autoVirtualdcValidator struct {
 //+kubebuilder:webhook:path=/validate-nyamber-cybozu-io-v1beta1-autovirtualdc,mutating=false,failurePolicy=fail,sideEffects=None,groups=nyamber.cybozu.io,resources=autovirtualdcs,verbs=create;update,versions=v1beta1,name=vautovirtualdc.kb.io,admissionReviewVersions=v1
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (v autoVirtualdcValidator) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+func (v autoVirtualdcValidator) ValidateCreate(ctx context.Context, obj runtime.Object) (warnings admission.Warnings, err error) {
 	logger := log.FromContext(ctx)
 	avdc := obj.(*nyamberv1beta1.AutoVirtualDC)
 	logger.Info("validate create", "name", avdc.Name)
@@ -56,7 +57,7 @@ func (v autoVirtualdcValidator) ValidateCreate(ctx context.Context, obj runtime.
 
 	vdcs := &nyamberv1beta1.VirtualDCList{}
 	if err := v.client.List(ctx, vdcs); err != nil {
-		return err
+		return nil, err
 	}
 
 	for _, vdc := range vdcs.Items {
@@ -67,7 +68,7 @@ func (v autoVirtualdcValidator) ValidateCreate(ctx context.Context, obj runtime.
 
 	avdcs := &nyamberv1beta1.AutoVirtualDCList{}
 	if err := v.client.List(ctx, avdcs); err != nil {
-		return err
+		return nil, err
 	}
 
 	for _, otherAvdc := range avdcs.Items {
@@ -79,14 +80,14 @@ func (v autoVirtualdcValidator) ValidateCreate(ctx context.Context, obj runtime.
 	if len(errs) > 0 {
 		err := apierrors.NewInvalid(schema.GroupKind{Group: nyamberv1beta1.GroupVersion.Group, Kind: "AutoVirtualDC"}, avdc.Name, errs)
 		logger.Error(err, "validation error", "name", avdc.Name)
-		return err
+		return nil, err
 	}
 
-	return nil
+	return nil, nil
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (v autoVirtualdcValidator) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) error {
+func (v autoVirtualdcValidator) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (warnings admission.Warnings, err error) {
 	logger := log.FromContext(ctx)
 	avdc := newObj.(*nyamberv1beta1.AutoVirtualDC)
 	logger.Info("validate update", "name", avdc.Name)
@@ -112,15 +113,15 @@ func (v autoVirtualdcValidator) ValidateUpdate(ctx context.Context, oldObj, newO
 	if len(errs) > 0 {
 		err := apierrors.NewInvalid(schema.GroupKind{Group: nyamberv1beta1.GroupVersion.Group, Kind: "AutoVirtualDC"}, avdc.Name, errs)
 		logger.Error(err, "validation error", "name", avdc.Name)
-		return err
+		return nil, err
 	}
 
-	return nil
+	return nil, nil
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (v autoVirtualdcValidator) ValidateDelete(ctx context.Context, obj runtime.Object) error {
-	return nil
+func (v autoVirtualdcValidator) ValidateDelete(ctx context.Context, obj runtime.Object) (warnings admission.Warnings, err error) {
+	return nil, nil
 }
 
 func (v autoVirtualdcValidator) validateTimeoutDuration(avdc *nyamberv1beta1.AutoVirtualDC) field.ErrorList {
