@@ -120,7 +120,7 @@ var _ = Describe("entrypoint status API test", func() {
 					{
 						Name:    "test8",
 						Command: "sleep",
-						Args:    []string{"1"},
+						Args:    []string{"5"},
 					}},
 				expected: []statusResponse{
 					{Jobs: []job{{Name: "test7", Status: "Failed"}, {Name: "test8", Status: "Pending"}}},
