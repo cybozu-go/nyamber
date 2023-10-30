@@ -24,10 +24,14 @@ STATICCHECK = $(LOCALBIN)/staticcheck
 CRD_TO_MARKDOWN ?= $(LOCALBIN)/crd-to-markdown
 
 ## Tool Versions
-CONTROLLER_TOOLS_VERSION ?= v0.12.0
-# ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
-ENVTEST_K8S_VERSION = 1.26.1
-KUSTOMIZE_VERSION ?= v5.0.3
+CONTROLLER_TOOLS_VERSION ?= v0.13.0
+
+# ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary. 
+# the kubebuilder version of the ready-to-use can get by "./bin/setup-envtest list" command.
+ENVTEST_K8S_VERSION = 1.27.1
+
+# KUSTOMIZE_VERSION can be found at https://github.com/kubernetes-sigs/kustomize/releases
+KUSTOMIZE_VERSION ?= v5.2.1
 
 # Setting SHELL to bash allows bash commands to be executed by recipes.
 # This is a requirement for 'setup-envtest.sh' in the test target.
@@ -73,6 +77,10 @@ fmt: ## Run go fmt against code.
 vet: ## Run go vet against code.
 	go vet ./...
 
+# Generate manifests and code, and check if diff exists. When there are diffrences stop CI.
+# To avoid CI stopping, edit anotation "controller-gen.kubebuilder.io/version:" in 
+# existing "nyamber.cybozu.io_virtualdcs.yaml" and "nyamber.cybozu.io_virtualdcs.yaml".
+# both version must equal CONTROLLER_TOOLS_VERSION in Makefile.
 .PHONY: check-generate
 check-generate: ## Generate manifests and code, and check if diff exists.
 	$(MAKE) manifests
@@ -91,7 +99,6 @@ apidoc: $(wildcard api/*/*_types.go)
 	$(CRD_TO_MARKDOWN) -f api/v1beta1/autovirtualdc_types.go -n AutoVirtualDC > docs/crd_autovirtualdc.md
 
 ##@ Build
-
 .PHONY: build
 build: ## Build manager binary.
 	go build -o bin/manager main.go

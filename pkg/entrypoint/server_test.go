@@ -58,72 +58,72 @@ var _ = Describe("entrypoint status API test", func() {
 				name: "one command which execute with exit code(1)",
 				input: []Job{
 					{
-						Name:    "test1",
+						Name:    "test2",
 						Command: "false",
 						Args:    []string{},
 					}},
 				expected: []statusResponse{
-					{Jobs: []job{{Name: "test1", Status: "Failed"}}},
+					{Jobs: []job{{Name: "test2", Status: "Failed"}}},
 				},
 			},
 			{
 				name: "one command which is not existed",
 				input: []Job{
 					{
-						Name:    "test1",
+						Name:    "test3",
 						Command: "unknowncommand",
 						Args:    []string{},
 					}},
 				expected: []statusResponse{
-					{Jobs: []job{{Name: "test1", Status: "Failed"}}},
+					{Jobs: []job{{Name: "test3", Status: "Failed"}}},
 				},
 			},
 			{
 				name: "one command which doesn't have permission",
 				input: []Job{
 					{
-						Name:    "test1",
+						Name:    "test4",
 						Command: "./testresources/script_without_exec_permission.sh",
 						Args:    []string{},
 					}},
 				expected: []statusResponse{
-					{Jobs: []job{{Name: "test1", Status: "Failed"}}},
+					{Jobs: []job{{Name: "test4", Status: "Failed"}}},
 				},
 			},
 			{
 				name: "two successful command",
 				input: []Job{
 					{
-						Name:    "test1",
+						Name:    "test5",
 						Command: "sleep",
 						Args:    []string{"5"},
 					},
 					{
-						Name:    "test2",
+						Name:    "test6",
 						Command: "sleep",
 						Args:    []string{"5"},
 					}},
 				expected: []statusResponse{
-					{Jobs: []job{{Name: "test1", Status: "Running"}, {Name: "test2", Status: "Pending"}}},
-					{Jobs: []job{{Name: "test1", Status: "Completed"}, {Name: "test2", Status: "Running"}}},
-					{Jobs: []job{{Name: "test1", Status: "Completed"}, {Name: "test2", Status: "Completed"}}},
+					{Jobs: []job{{Name: "test5", Status: "Running"}, {Name: "test6", Status: "Pending"}}},
+					{Jobs: []job{{Name: "test5", Status: "Completed"}, {Name: "test6", Status: "Running"}}},
+					{Jobs: []job{{Name: "test5", Status: "Completed"}, {Name: "test6", Status: "Completed"}}},
 				},
 			},
 			{
 				name: "first command is fail and second one is pending",
 				input: []Job{
 					{
-						Name:    "test1",
+						Name:    "test7",
 						Command: "false",
 						Args:    []string{},
 					},
 					{
-						Name:    "test2",
+						Name:    "test8",
 						Command: "sleep",
-						Args:    []string{"1"},
+						Args:    []string{"5"},
 					}},
 				expected: []statusResponse{
-					{Jobs: []job{{Name: "test1", Status: "Failed"}, {Name: "test2", Status: "Pending"}}},
+					{Jobs: []job{{Name: "test7", Status: "Failed"}, {Name: "test8", Status: "Pending"}}},
 				},
 			},
 		}
