@@ -1,5 +1,5 @@
 # Build the manager binary
-FROM quay.io/cybozu/golang:1.20-jammy as builder
+FROM ghcr.io/cybozu/golang:1.20-jammy as builder
 
 WORKDIR /workspace
 # Copy the Go Modules manifests
@@ -18,7 +18,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o entrypoint cmd/entrypoint/main.go
 
-FROM quay.io/cybozu/ubuntu:22.04
+FROM ghcr.io/cybozu/ubuntu:22.04
 LABEL org.opencontainers.image.source https://github.com/cybozu-go/nyamber
 
 ENV GO_VERSION=1.21.3
