@@ -100,12 +100,9 @@ apidoc: $(wildcard api/*/*_types.go)
 
 ##@ Build
 .PHONY: build
-build: ## Build manager binary.
-	go build -o bin/manager main.go
-
-.PHONY: run
-run: manifests generate fmt vet ## Run a controller from your host.
-	go run ./main.go
+build: generate ## Build all binaries.
+	go build -o $(LOCALBIN)/ -trimpath ./cmd/entrypoint
+	go build -o $(LOCALBIN)/ -trimpath ./cmd/nyamber-controller
 
 .PHONY: docker-build
 docker-build: ## Build docker image with the manager.
