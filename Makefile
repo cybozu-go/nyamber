@@ -24,14 +24,14 @@ STATICCHECK = $(LOCALBIN)/staticcheck
 CRD_TO_MARKDOWN ?= $(LOCALBIN)/crd-to-markdown
 
 ## Tool Versions
-CONTROLLER_TOOLS_VERSION ?= v0.13.0
+CONTROLLER_TOOLS_VERSION ?= v0.15.0
 
-# ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary. 
+# ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 # the kubebuilder version of the ready-to-use can get by "./bin/setup-envtest list" command.
-ENVTEST_K8S_VERSION = 1.27.1
+ENVTEST_K8S_VERSION = 1.29.5
 
 # KUSTOMIZE_VERSION can be found at https://github.com/kubernetes-sigs/kustomize/releases
-KUSTOMIZE_VERSION ?= v5.2.1
+KUSTOMIZE_VERSION ?= v5.4.2
 
 # Setting SHELL to bash allows bash commands to be executed by recipes.
 # This is a requirement for 'setup-envtest.sh' in the test target.
@@ -100,12 +100,9 @@ apidoc: $(wildcard api/*/*_types.go)
 
 ##@ Build
 .PHONY: build
-build: ## Build manager binary.
-	go build -o bin/manager main.go
-
-.PHONY: run
-run: manifests generate fmt vet ## Run a controller from your host.
-	go run ./main.go
+build: generate ## Build all binaries.
+	go build -o $(LOCALBIN)/ -trimpath ./cmd/entrypoint
+	go build -o $(LOCALBIN)/ -trimpath ./cmd/nyamber-controller
 
 .PHONY: docker-build
 docker-build: ## Build docker image with the manager.

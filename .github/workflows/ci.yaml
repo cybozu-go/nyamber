@@ -10,14 +10,14 @@ jobs:
   build:
     runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - run: make docker-build
   test:
     name: Small tests
     runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-go@v4
+    - uses: actions/checkout@v4
+    - uses: actions/setup-go@v5
       with:
         go-version-file: go.mod
     - run: make setup
@@ -29,16 +29,16 @@ jobs:
     name: End-to-End Tests
     strategy:
       matrix:
-        k8s-version: ["1.25.8", "1.26.3", "1.27.3"]
+        k8s-version: ["1.27.13", "1.28.9", "1.29.4"]
     runs-on: ubuntu-22.04
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-go@v4
+    - uses: actions/checkout@v4
+    - uses: actions/setup-go@v5
       with:
         go-version-file: go.mod
-    - uses: aquaproj/aqua-installer@61e2563dfe7674cbf74fe6ec212e444198a3bb00 #v2.0.2
+    - uses: aquaproj/aqua-installer@4551ec64e21bf0f557c2525135ff0bd2cba40ec7 # v3.0.0
       with:
-        aqua_version: v1.32.3
+        aqua_version: v2.27.3
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     - run: make setup E2ETEST_K8S_VERSION=${{ matrix.k8s-version }}
@@ -50,7 +50,7 @@ jobs:
     - run: make logs
       working-directory: e2e
       if: always()
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       if: always()
       with:
         name: logs-${{ matrix.k8s-version }}.tar.gz
