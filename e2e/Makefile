@@ -1,6 +1,6 @@
 # NOTE: kind version is specified at aqua.yaml
 E2ETEST_K8S_VERSION  := 1.29.4
-CERT_MANAGER_VERSION := 1.13.1
+CERT_MANAGER_VERSION := 1.15.0
 
 PROJECT_DIR := $(CURDIR)/../
 BIN_DIR := $(PROJECT_DIR)/bin
@@ -51,7 +51,7 @@ logs:
 	rm -rf logs
 
 .PHONY: stop
-stop: 
+stop:
 	kind delete cluster --name=$(KIND_CLUSTER_NAME)
 	-docker image rm nyamber-controller:dev
 	-docker image rm localhost:5151/nyamber-runner:dev
