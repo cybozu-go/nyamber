@@ -15,7 +15,7 @@ Nyamber is a custom controller to create Neco environment
 - Create dctest pods on the specified schedule
 
 ## Supported Software
-- Kubernetes: 1.27, 1.28, 1.29
+- Kubernetes: 1.28, 1.29, 1.30
 
 ## Documentation
 
