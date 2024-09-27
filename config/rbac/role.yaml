@@ -8,29 +8,7 @@ rules:
   - ""
   resources:
   - configmaps
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - ""
-  resources:
   - pods
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - ""
-  resources:
   - services
   verbs:
   - create
@@ -44,25 +22,6 @@ rules:
   - nyamber.cybozu.io
   resources:
   - autovirtualdcs
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - nyamber.cybozu.io
-  resources:
-  - autovirtualdcs/status
-  verbs:
-  - get
-  - patch
-  - update
-- apiGroups:
-  - nyamber.cybozu.io
-  resources:
   - virtualdcs
   verbs:
   - create
@@ -75,14 +34,15 @@ rules:
 - apiGroups:
   - nyamber.cybozu.io
   resources:
-  - virtualdcs/finalizers
-  verbs:
-  - update
-- apiGroups:
-  - nyamber.cybozu.io
-  resources:
+  - autovirtualdcs/status
   - virtualdcs/status
   verbs:
   - get
   - patch
+  - update
+- apiGroups:
+  - nyamber.cybozu.io
+  resources:
+  - virtualdcs/finalizers
+  verbs:
   - update
