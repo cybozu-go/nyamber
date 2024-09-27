@@ -1,6 +1,6 @@
 # NOTE: kind version is specified at aqua.yaml
 E2ETEST_K8S_VERSION  := 1.30.4
-CERT_MANAGER_VERSION := 1.15.0
+CERT_MANAGER_VERSION := 1.15.3
 
 PROJECT_DIR := $(CURDIR)/../
 BIN_DIR := $(PROJECT_DIR)/bin

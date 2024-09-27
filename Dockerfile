@@ -1,5 +1,5 @@
 # Build the manager binary
-FROM ghcr.io/cybozu/golang:1.22-jammy as builder
+FROM ghcr.io/cybozu/golang:1.23-jammy as builder
 
 WORKDIR /workspace
 # Copy the Go Modules manifests
@@ -20,7 +20,7 @@ COPY pkg/ pkg/
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o manager cmd/nyamber-controller/main.go
 
 FROM ghcr.io/cybozu/ubuntu:22.04
-LABEL org.opencontainers.image.source https://github.com/cybozu-go/nyamber
+LABEL org.opencontainers.image.source=https://github.com/cybozu-go/nyamber
 
 WORKDIR /
 COPY --from=builder /workspace/manager .
