@@ -8,7 +8,7 @@ registries:
   name: local
   path: registry.yaml
 packages:
-- name: kubernetes/kubectl@v1.31.1
+- name: kubernetes/kubectl@v1.30.5
 - name: kubernetes-sigs/kubebuilder@v4.2.0
 - name: kubernetes-sigs/kustomize@kustomize/v5.4.3
 - name: kubernetes-sigs/kind@v0.24.0
