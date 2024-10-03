@@ -1,5 +1,5 @@
 # Build the manager binary
-FROM ghcr.io/cybozu/golang:1.22-jammy as builder
+FROM ghcr.io/cybozu/golang:1.23-jammy as builder
 
 WORKDIR /workspace
 # Copy the Go Modules manifests
@@ -19,10 +19,10 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o entrypoint cmd/entrypoint/main.go
 
 FROM ghcr.io/cybozu/ubuntu:22.04
-LABEL org.opencontainers.image.source https://github.com/cybozu-go/nyamber
+LABEL org.opencontainers.image.source=https://github.com/cybozu-go/nyamber
 
-ENV GO_VERSION=1.22.3
-ENV PLACEMAT_VERSION=2.4.5
+ENV GO_VERSION=1.23.1
+ENV PLACEMAT_VERSION=2.4.6
 
 ENV HOME=/home/nyamber
 ENV GOPATH=${HOME}/go
@@ -37,36 +37,36 @@ COPY include-bird /etc/dpkg/dpkg.cfg.d/
 
 RUN apt-get update \
     && apt-get -y install --no-install-recommends \
-            git \
+            bash-completion \
+            bird2 \
             build-essential \
+            cloud-utils \
+            dbus \
+            dnsmasq \
+            fakeroot \
+            freeipmi-tools \
+            git \
+            iproute2 \
+            iptables \
+            jq \
+            kmod \
             less \
-            wget \
-            systemd-container \
+            libgpgme11 \
             lldpd \
+            lsb-release \
             qemu \
             qemu-kvm \
-            socat \
-            picocom \
-            swtpm \
-            cloud-utils \
-            bird2 \
-            squid \
-            dnsmasq \
-            xauth \
-            bash-completion \
-            dbus \
-            jq \
-            libgpgme11 \
-            freeipmi-tools \
-            unzip \
-            fakeroot \
-            time \
-            kmod \
-            iptables \
-            iproute2 \
             openssh-client \
+            picocom \
+            socat \
+            squid \
             sudo \
-            lsb-release \
+            swtpm \
+            systemd-container \
+            time \
+            unzip \
+            wget \
+            xauth \
     && rm -rf /var/lib/apt/lists/* \
     && curl -sSLf https://dl.google.com/go/go${GO_VERSION}.linux-amd64.tar.gz | tar -C /usr/local -xzf - \
     && curl -sfL https://github.com/cybozu-go/placemat/releases/download/v${PLACEMAT_VERSION}/placemat2_${PLACEMAT_VERSION}_amd64.deb -o placemat2_${PLACEMAT_VERSION}_amd64.deb \
