@@ -9,7 +9,6 @@ If a new Kubernetes version is released, please update the followings:
 
 - Kubernetes versions:
   - `k8s-version` in [.github/workflows/ci.yaml](/.github/workflows/ci.yaml): You can check the available versions at <https://hub.docker.com/r/kindest/node/tags>.
-  - `k8s-version` in [.github/workflows/ci.yaml](/.github/workflows/ci.yaml)
   - "Supported software" in [README.md](/README.md)
 - Kubernetes tools versions:
   - Update `KUSTOMIZE_VERSION` in [Makefile](/Makefile) to the latest version from <https://github.com/kubernetes-sigs/kustomize/releases>.
