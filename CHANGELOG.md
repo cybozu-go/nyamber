@@ -48,28 +48,39 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 This release updates the base image and the packages used by rebuilding the image.
 This fixes git vulnerabilities
+
 - USN-5810-1: Git vulnerabilities
 - USN-5810-2: Git regression
 
 ## [0.1.4] - 2022-12-15
+
 ### Fix
+
 - Refer avdc creationTimestamp when next start time is nil (#39)
 - Validate avdc template when startSchedule is not set (#40)
 
 ## [0.1.3] - 2022-10-19
+
 ### Fix
+
 - Replace CMD to ENTRYPOINT in Dockerfile.Runner (#33)
 - Defaulting by controller instead admission webhook (#35)
+
 ### Added
+
 - Add shorthand `avdc` (#34)
 
 ## [0.1.2] - 2022-09-28
+
 ### Fix
+
 - Fix config (#32)
 - Inherit pod metadata of pod_template (#33)
 
 ## [0.1.1] - 2022-09-26
+
 ### Removed
+
 - kube-rbac-proxy is removed (#30)
 
 ## [0.1.0] - 2022-09-16

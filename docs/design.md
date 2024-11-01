@@ -24,7 +24,6 @@ This is custom resource to automate deployment dctest pod.
 Nyamber create `VirtualDC` custom resource from its definition according to the schedule field.
 You can specify the `VirtualDC` startSchedule and stopSchedule with cron format.
 
-
 ### Kubernetes workloads
 
 #### `virtualdc-controller`
@@ -36,6 +35,7 @@ It create Runner pod which runs dctest and service to access Runner pod.
 
 A deployment that create and delete VirutualDC resources according to set schedules.
 *You can't specify only one schedule. You should specify both schedules or leave both schedules empty*
+
 - startSchedule and stopSchedule are empty: controller create virtualdc immediately
 - startSchedule and stopSchedule are set: calculate NextTime from those schedule and set time to status
   - nextStartTime < now and nextstopTime < now: do nothing
