@@ -1,6 +1,6 @@
 # NOTE: kind version is specified at aqua.yaml
-E2ETEST_K8S_VERSION  := 1.30.4
-CERT_MANAGER_VERSION := 1.15.3
+E2ETEST_K8S_VERSION  := 1.31.6
+CERT_MANAGER_VERSION := 1.17.1
 
 PROJECT_DIR := $(CURDIR)/../
 BIN_DIR := $(PROJECT_DIR)/bin
@@ -25,7 +25,7 @@ help:
 .PHONY: setup
 setup:
 	mkdir -p $(BIN_DIR)
-	$(CURL) -o $(BIN_DIR)/kubectl https://storage.googleapis.com/kubernetes-release/release/v$(E2ETEST_K8S_VERSION)/bin/linux/amd64/kubectl && chmod a+x $(BIN_DIR)/kubectl
+	$(CURL) -o $(BIN_DIR)/kubectl https://dl.k8s.io/release/v$(E2ETEST_K8S_VERSION)/bin/linux/amd64/kubectl && chmod a+x $(BIN_DIR)/kubectl
 
 .PHONY: start
 start:
