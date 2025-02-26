@@ -22,7 +22,7 @@ FROM ghcr.io/cybozu/ubuntu:22.04
 LABEL org.opencontainers.image.source=https://github.com/cybozu-go/nyamber
 
 ENV GO_VERSION=1.23.1
-ENV PLACEMAT_VERSION=2.4.6
+ENV PLACEMAT_VERSION=2.4.7
 
 ENV HOME=/home/nyamber
 ENV GOPATH=${HOME}/go
