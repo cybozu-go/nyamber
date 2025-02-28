@@ -5,6 +5,10 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [0.6.0] - 2025-02-28
+
+- Bump supported kubernetes from 1.30 to 1.31 ([#62](https://github.com/cybozu-go/nyamber/pull/59))
+
 ## [0.5.0] - 2024-10-04
 
 - Bump supported kubernetes from 1.29 to 1.30 ([#59](https://github.com/cybozu-go/nyamber/pull/59))
@@ -89,7 +93,8 @@ This fixes git vulnerabilities
 
 - This is the first public release.
 
-[Unreleased]: https://github.com/cybozu-go/nyamber/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/cybozu-go/nyamber/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/cybozu-go/nyamber/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/cybozu-go/nyamber/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/cybozu-go/nyamber/compare/v0.3.2...v0.4.0
 [0.3.2]: https://github.com/cybozu-go/nyamber/compare/v0.3.1...v0.3.2
