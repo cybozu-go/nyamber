@@ -24,11 +24,11 @@ STATICCHECK = $(LOCALBIN)/staticcheck
 CRD_TO_MARKDOWN ?= $(LOCALBIN)/crd-to-markdown
 
 ## Tool Versions
-CONTROLLER_TOOLS_VERSION ?= v0.16.5
+CONTROLLER_TOOLS_VERSION ?= v0.18.0
 
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 # the kubebuilder version of the ready-to-use can get by "./bin/setup-envtest list" command.
-ENVTEST_K8S_VERSION = 1.31.0
+ENVTEST_K8S_VERSION = 1.33.0
 
 # KUSTOMIZE_VERSION can be found at https://github.com/kubernetes-sigs/kustomize/releases
 KUSTOMIZE_VERSION ?= v5.6.0
@@ -77,8 +77,8 @@ fmt: ## Run go fmt against code.
 vet: ## Run go vet against code.
 	go vet ./...
 
-# Generate manifests and code, and check if diff exists. When there are diffrences stop CI.
-# To avoid CI stopping, edit anotation "controller-gen.kubebuilder.io/version:" in 
+# Generate manifests and code, and check if diff exists. When there are differences stop CI.
+# To avoid CI stopping, edit annotation "controller-gen.kubebuilder.io/version:" in
 # existing "nyamber.cybozu.io_virtualdcs.yaml" and "nyamber.cybozu.io_virtualdcs.yaml".
 # both version must equal CONTROLLER_TOOLS_VERSION in Makefile.
 .PHONY: check-generate

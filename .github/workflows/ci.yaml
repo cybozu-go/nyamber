@@ -29,18 +29,17 @@ jobs:
     name: End-to-End Tests
     strategy:
       matrix:
-        k8s-version: ["1.29.14", "1.30.10", "1.31.6"]
+        k8s-version: ["1.31.6", "1.32.5", "1.33.1"]
     runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v4
     - uses: actions/setup-go@v5
       with:
         go-version-file: go.mod
-    - uses: aquaproj/aqua-installer@e2d0136abcf70b7a2f6f505720640750557c4b33  # v3.1.1
+    - uses: aquaproj/aqua-installer@9ebf656952a20c45a5d66606f083ff34f58b8ce0  # v4.0.0
       with:
-        aqua_version: v2.44.1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        aqua_version: v2.53.3
+        github_token: ${{ secrets.GITHUB_TOKEN }}
     - run: make setup E2ETEST_K8S_VERSION=${{ matrix.k8s-version }}
       working-directory: e2e
     - run: make start E2ETEST_K8S_VERSION=${{ matrix.k8s-version }}
