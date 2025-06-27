@@ -1,5 +1,5 @@
 # Build the manager binary
-FROM ghcr.io/cybozu/golang:1.24-jammy as builder
+FROM ghcr.io/cybozu/golang:1.24-jammy AS builder
 
 WORKDIR /workspace
 # Copy the Go Modules manifests
