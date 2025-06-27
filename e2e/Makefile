@@ -30,7 +30,7 @@ setup:
 
 .PHONY: start
 start:
-	kind create cluster --name=$(KIND_CLUSTER_NAME) --config=$(KIND_CONFIG) --image=kindest/node:v$(KIND_IMAGE_REF) --wait 1m
+	kind create cluster --name=$(KIND_CLUSTER_NAME) --config=$(KIND_CONFIG) --image=kindest/node:$(KIND_IMAGE_REF) --wait 1m
 	$(MAKE) -C ../ docker-build
 	kind load docker-image nyamber-controller:dev --name=$(KIND_CLUSTER_NAME)
 	kind load docker-image localhost:5151/nyamber-runner:dev --name=$(KIND_CLUSTER_NAME)
