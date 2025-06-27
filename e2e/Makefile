@@ -1,6 +1,7 @@
 # NOTE: kind version is specified at aqua.yaml
-E2ETEST_K8S_VERSION  := 1.31.6
-CERT_MANAGER_VERSION := 1.17.1
+KIND_IMAGE_REF := "v1.33.1@sha256:050072256b9a903bd914c0b2866828150cb229cea0efe5892e2b644d5dd3b34f"
+E2ETEST_K8S_VERSION := $(shell echo $(KIND_IMAGE_REF) | awk -F '[@v]' '{print $$2}')
+CERT_MANAGER_VERSION := 1.18.1
 
 PROJECT_DIR := $(CURDIR)/../
 BIN_DIR := $(PROJECT_DIR)/bin
@@ -29,7 +30,7 @@ setup:
 
 .PHONY: start
 start:
-	kind create cluster --name=$(KIND_CLUSTER_NAME) --config=$(KIND_CONFIG) --image=kindest/node:v$(E2ETEST_K8S_VERSION) --wait 1m
+	kind create cluster --name=$(KIND_CLUSTER_NAME) --config=$(KIND_CONFIG) --image=kindest/node:$(KIND_IMAGE_REF) --wait 1m
 	$(MAKE) -C ../ docker-build
 	kind load docker-image nyamber-controller:dev --name=$(KIND_CLUSTER_NAME)
 	kind load docker-image localhost:5151/nyamber-runner:dev --name=$(KIND_CLUSTER_NAME)

@@ -12,7 +12,7 @@ If a new Kubernetes version is released, please update the followings:
   - "Supported software" in [README.md](/README.md)
 - Kubernetes tools versions:
   - Update `KUSTOMIZE_VERSION` in [Makefile](/Makefile) to the latest version from <https://github.com/kubernetes-sigs/kustomize/releases>.
-  - Update `E2ETEST_K8S_VERSION` in [e2e/Makefile](/e2e/Makefile) to the latest supported version of kubernetes.
+  - Update `KIND_IMAGE_REF` in [e2e/Makefile](/e2e/Makefile) to the latest supported version of [kindest/node](https://hub.docker.com/r/kindest/node/tags) tag and digest.
 - After saving the changes above, update `ENVTEST_K8S_VERSION` in [Makefile](/Makefile) to the latest patch version among the latest supported kubernetes minor versions listed by running `make setup && bin/setup-envtest list` at the root of this repository. If the latest minor supported version is `1.30.Z`, find `1.30.Z+` from the output but not `1.31.Z`.
 - Run `aqua update` to update tools in [aqua.yaml](/aqua.yaml). Then, manually align the minor versions of kubernetes and kubectl in `aqua.yaml`. If the minor version of `kubernetes/kubectl` in `aqua.yaml` precedes the latest supported minor versions of kubernetes, adjust it to match.  
   _e.g._, If `kubernetes/kubectl` is `1.31.Z` and the latest supported version is `1.30.Z`, modify `kubernetes/kubectl` version to `1.30.Z`.
