@@ -20,6 +20,7 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"time"
 
 	nyamberv1beta1 "github.com/cybozu-go/nyamber/api/v1beta1"
 	"github.com/cybozu-go/nyamber/pkg/constants"
@@ -374,8 +375,8 @@ func (r *VirtualDCReconciler) finalize(ctx context.Context, vdc *nyamberv1beta1.
 		return ctrl.Result{}, err
 	}
 	if requeueService || requeuePod {
-		logger.Info("requeue has occured", "service", requeueService, "pod", requeuePod)
-		return ctrl.Result{Requeue: true}, nil
+		logger.Info("requeue has occurred", "service", requeueService, "pod", requeuePod)
+		return ctrl.Result{RequeueAfter: time.Second}, nil
 	}
 
 	controllerutil.RemoveFinalizer(vdc, constants.FinalizerName)
