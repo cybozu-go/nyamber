@@ -93,7 +93,7 @@ func (r *AutoVirtualDCReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			nextStartTime := metav1.NewTime(now)
 			avdc.Status.NextStartTime = &nextStartTime
 		}
-		return ctrl.Result{Requeue: true}, nil
+		return ctrl.Result{RequeueAfter: time.Second}, nil
 	}
 
 	// requeue after next operation if now is before both of NextStartTime and NextStopTime
@@ -119,7 +119,7 @@ func (r *AutoVirtualDCReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 			logger.Error(err, "failed to update avdc status")
 			return ctrl.Result{}, err
 		}
-		return ctrl.Result{Requeue: true}, nil
+		return ctrl.Result{RequeueAfter: time.Second}, nil
 	}
 
 	// delete VDC if now is after or equal to NextStopTime
@@ -142,7 +142,7 @@ func (r *AutoVirtualDCReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 		logger.Error(err, "failed to update avdc status")
 		return ctrl.Result{}, err
 	}
-	return ctrl.Result{Requeue: true}, nil
+	return ctrl.Result{RequeueAfter: r.RequeueInterval}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -232,7 +232,7 @@ func (r *AutoVirtualDCReconciler) reconcileVirtualDC(ctx context.Context, avdc *
 	}
 	logger.Info("deleted vdc to recreate it. Reason: jobCompletedFailed")
 
-	return ctrl.Result{Requeue: true}, nil
+	return ctrl.Result{RequeueAfter: r.RequeueInterval}, nil
 }
 
 type RealClock struct{}
