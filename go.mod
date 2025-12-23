@@ -2,6 +2,8 @@ module github.com/cybozu-go/nyamber
 
 go 1.24.3
 
+toolchain go1.25.5
+
 require (
 	github.com/cybozu-go/well v1.11.2
 	github.com/onsi/ginkgo/v2 v2.27.3
