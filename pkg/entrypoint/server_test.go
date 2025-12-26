@@ -143,7 +143,7 @@ var _ = Describe("entrypoint status API test", func() {
 
 func startRunner(jobs []Job) context.CancelFunc {
 	ctx, cancel := context.WithCancel(context.Background())
-	runner := NewRunner(fmt.Sprintf("%s:%d", apiAddr, constants.ListenPort), log, jobs)
+	runner := NewRunner(net.JoinHostPort(apiAddr, fmt.Sprintf("%d", constants.ListenPort)), log, jobs)
 	go func() {
 		defer GinkgoRecover()
 		Expect(runner.Run(ctx)).To(Succeed())
@@ -152,7 +152,7 @@ func startRunner(jobs []Job) context.CancelFunc {
 }
 
 func getStatus() (*statusResponse, error) {
-	resp, err := http.Get(fmt.Sprintf("http://%s:%d/%s", apiAddr, constants.ListenPort, constants.StatusEndPoint))
+	resp, err := http.Get(fmt.Sprintf("http://%s/%s", net.JoinHostPort(apiAddr, fmt.Sprintf("%d", constants.ListenPort)), constants.StatusEndPoint))
 	if err != nil {
 		return nil, err
 	}
@@ -170,7 +170,7 @@ func getStatus() (*statusResponse, error) {
 }
 
 func connect() error {
-	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", apiAddr, constants.ListenPort))
+	conn, err := net.Dial("tcp", net.JoinHostPort(apiAddr, fmt.Sprintf("%d", constants.ListenPort)))
 	if err != nil {
 		return err
 	}

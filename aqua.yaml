@@ -3,7 +3,7 @@
 # https://aquaproj.github.io/
 registries:
 - type: standard
-  ref: v4.318.1 # renovate: depName=aquaproj/aqua-registry
+  ref: v4.448.0
 - type: local
   name: local
   path: registry.yaml
@@ -12,8 +12,8 @@ packages:
 - name: kubernetes-sigs/kubebuilder@v4.6.0
 - name: kubernetes-sigs/kustomize@kustomize/v5.6.0
 - name: kubernetes-sigs/kind@v0.29.0
-- name: tilt-dev/tilt@v0.34.5
-- name: tilt-dev/ctlptl@v0.8.42
-- name: mikefarah/yq@v4.45.4
+- name: tilt-dev/tilt@v0.36.0
+- name: tilt-dev/ctlptl@v0.8.44
+- name: mikefarah/yq@v4.50.1
 - name: clamoriniere/crd-to-markdown@v0.0.3
   registry: local
