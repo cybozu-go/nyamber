@@ -1,0 +1,117 @@
+{
+  $schema: 'https://docs.renovatebot.com/renovate-schema.json',
+  gitAuthor: 'cybozu-neco <neco@cybozu.com>',
+  extends: [
+    'config:best-practices',
+    'customManagers:dockerfileVersions',
+    'customManagers:makefileVersions',
+    'github>aquaproj/aqua-renovate-config#2.10.0',
+    ':semanticCommitTypeAll(chore)',
+    ':timezone(Asia/Tokyo)',
+  ],
+  labels: ['dependencies'],
+  minimumReleaseAge: '14 days',
+  prConcurrentLimit: 5,
+  branchConcurrentLimit: 5,
+  prHourlyLimit: 5,
+  dependencyDashboard: true,
+  enabledManagers: [
+    'dockerfile',
+    'gomod',
+    'github-actions',
+    'custom.regex',
+  ],
+  customManagers: [
+    // customMangers:makefileVersions does not support digests, so we use regex manager
+    {
+      customType: 'regex',
+      managerFilePatterns: ['e2e/Makefile'],
+      depNameTemplate: 'kindest/node',
+      datasourceTemplate: 'docker',
+      matchStrings: [
+        '# renovate:\\s+KIND_IMAGE_REF\\s*:?=\\s*["\']?(?<currentValue>[^@"\'\\s]+)@(?<currentDigest>sha256:[a-f0-9]+)["\']?',
+      ],
+      versioningTemplate: 'docker',
+    },
+    {
+      customType: 'regex',
+      managerFilePatterns: ['.github/workflows/ci.yaml'],
+      depNameTemplate: 'kindest/node',
+      datasourceTemplate: 'docker',
+      matchStrings: [
+        '-\\s*["\']?(?<currentValue>v[^@"\'\\s]+)@(?<currentDigest>sha256:[a-f0-9]+)["\']?\\s*#\\s*renovate:',
+      ],
+      versioningTemplate: 'docker',
+    },
+    {
+      customType: 'regex',
+      managerFilePatterns: ['Makefile'],
+      matchStrings: [
+        '# renovate:\\s+ENVTEST_K8S_VERSION\\s*:?=\\s*(?<currentValue>\\S+)',
+      ],
+      depNameTemplate: 'kubernetes-sigs/controller-tools',
+      datasourceTemplate: 'github-releases',
+      versioningTemplate: 'semver',
+      extractVersionTemplate: '^envtest-v(?<version>.+)$',
+    },
+  ],
+  packageRules: [
+    {
+      matchManagers: [
+        'gomod',
+        'github-actions',
+        'dockerfile',
+        'custom.regex',
+      ],
+      groupName: 'scheduled dependency update',
+      groupSlug: 'scheduled-dependency-update',
+      commitMessageTopic: "scheduled dependencies",
+      separateMajorMinor: false,
+    },
+    // We need to keep three Kubernetes minor versions, so minor updates must be handled manually.
+    {
+      matchManagers: ['custom.regex'],
+      matchDatasources: ['docker'],
+      matchPackageNames: ['kindest/node'],
+      allowedVersions: '/^v{{{major}}}\\.{{{minor}}}\\./',
+      groupName: 'kubernetes dependencies',
+      groupSlug: 'kubernetes-dependencies',
+      commitMessageTopic: "kubernetes dependencies",
+      prBodyNotes: [
+        "Renovate will not update the Kubernetes minor version automatically.",
+        "Please check the Kubernetes release notes and update the version manually if needed:",
+      ],
+      separateMajorMinor: false,
+    },
+    {
+      matchManagers: ['gomod'],
+      matchPackageNames: [
+        'k8s.io/api',
+        'k8s.io/apiextensions-apiserver',
+        'k8s.io/apimachinery',
+        'k8s.io/client-go',
+        'sigs.k8s.io/controller-runtime',
+      ],
+      groupName: 'kubernetes dependencies',
+      groupSlug: 'kubernetes-dependencies',
+      commitMessageTopic: "kubernetes dependencies",
+      separateMajorMinor: false,
+    },
+    {
+      matchManagers: ['custom.regex'],
+      matchPackageNames: [
+        '/^kubernetes\\/.*/',
+        '/^kubernetes-sigs\\/.*/',
+        'sigs.k8s.io/controller-tools',
+      ],
+      groupName: 'kubernetes dependencies',
+      groupSlug: 'kubernetes-dependencies',
+      commitMessageTopic: "kubernetes dependencies",
+      separateMajorMinor: false,
+    },
+  ],
+  postUpdateOptions: [
+    'gomodTidy',
+    'gomodUpdateImportPaths',
+  ],
+}

@@ -1,6 +1,8 @@
 # NOTE: kind version is specified at aqua.yaml
+# renovate:
 KIND_IMAGE_REF := "v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a"
 E2ETEST_K8S_VERSION := $(shell echo $(KIND_IMAGE_REF) | awk -F '[@v]' '{print $$2}')
+# renovate: datasource=github-releases depName=jetstack/cert-manager
 CERT_MANAGER_VERSION := 1.19.2
 
 PROJECT_DIR := $(CURDIR)/../
