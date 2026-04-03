@@ -16,22 +16,9 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
-# Test tools
-CONTROLLER_GEN ?= $(LOCALBIN)/controller-gen
-ENVTEST ?= $(LOCALBIN)/setup-envtest
-KUSTOMIZE ?= $(LOCALBIN)/kustomize
-STATICCHECK = $(LOCALBIN)/staticcheck
-CRD_TO_MARKDOWN ?= $(LOCALBIN)/crd-to-markdown
-
-## Tool Versions
-CONTROLLER_TOOLS_VERSION ?= v0.19.0
-
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
 # the kubebuilder version of the ready-to-use can get by "./bin/setup-envtest list" command.
 ENVTEST_K8S_VERSION = 1.34.1
-
-# KUSTOMIZE_VERSION can be found at https://github.com/kubernetes-sigs/kustomize/releases
-KUSTOMIZE_VERSION ?= v5.8.0
 
 # Setting SHELL to bash allows bash commands to be executed by recipes.
 # This is a requirement for 'setup-envtest.sh' in the test target.
@@ -62,12 +49,12 @@ help: ## Display this help.
 ##@ Development
 
 .PHONY: manifests
-manifests: controller-gen ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
-	$(CONTROLLER_GEN) rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
+manifests: ## Generate WebhookConfiguration, ClusterRole and CustomResourceDefinition objects.
+	controller-gen rbac:roleName=manager-role crd webhook paths="./..." output:crd:artifacts:config=config/crd/bases
 
 .PHONY: generate
-generate: controller-gen ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
-	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
+generate: ## Generate code containing DeepCopy, DeepCopyInto, and DeepCopyObject method implementations.
+	controller-gen object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
 .PHONY: fmt
 fmt: ## Run go fmt against code.
@@ -90,13 +77,13 @@ check-generate: ## Generate manifests and code, and check if diff exists.
 
 .PHONY: test
 test: ## Run tests.
-	$(STATICCHECK) ./...
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) --arch=amd64 use $(ENVTEST_K8S_VERSION) -p path)" go test -v ./... -coverprofile cover.out
+	staticcheck ./...
+	KUBEBUILDER_ASSETS="$(shell setup-envtest --arch=amd64 use $(ENVTEST_K8S_VERSION) -p path)" go test -v ./... -coverprofile cover.out
 
 .PHONY: apidoc
 apidoc: $(wildcard api/*/*_types.go)
-	$(CRD_TO_MARKDOWN) -f api/v1beta1/virtualdc_types.go -n VirtualDC > docs/crd_virtualdc.md
-	$(CRD_TO_MARKDOWN) -f api/v1beta1/autovirtualdc_types.go -n AutoVirtualDC > docs/crd_autovirtualdc.md
+	crd-to-markdown -f api/v1beta1/virtualdc_types.go -n VirtualDC > docs/crd_virtualdc.md
+	crd-to-markdown -f api/v1beta1/autovirtualdc_types.go -n AutoVirtualDC > docs/crd_autovirtualdc.md
 
 ##@ Build
 .PHONY: build
@@ -131,48 +118,18 @@ stop:
 	ctlptl delete -f ./cluster.yaml
 
 .PHONY: install
-install: manifests kustomize ## Install CRDs into the K8s cluster specified in ~/.kube/config.
-	$(KUSTOMIZE) build config/crd | kubectl apply -f -
+install: manifests ## Install CRDs into the K8s cluster specified in ~/.kube/config.
+	kustomize build config/crd | kubectl apply -f -
 
 .PHONY: uninstall
-uninstall: manifests kustomize ## Uninstall CRDs from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
-	$(KUSTOMIZE) build config/crd | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
+uninstall: manifests ## Uninstall CRDs from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
+	kustomize build config/crd | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
 
 .PHONY: deploy
-deploy: manifests kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
-	cd config/manager && $(KUSTOMIZE) edit set image controller=${CONTROLLER_IMG}
-	$(KUSTOMIZE) build config/default | kubectl apply -f -
+deploy: manifests ## Deploy controller to the K8s cluster specified in ~/.kube/config.
+	cd config/manager && kustomize edit set image controller=${CONTROLLER_IMG}
+	kustomize build config/default | kubectl apply -f -
 
 .PHONY: undeploy
 undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/config. Call with ignore-not-found=true to ignore resource not found errors during deletion.
-	$(KUSTOMIZE) build config/default | kubectl delete --ignore-not-found=$(ignore-not-found) -f -
-
-KUSTOMIZE_INSTALL_SCRIPT ?= "https://raw.githubusercontent.com/kubernetes-sigs/kustomize/master/hack/install_kustomize.sh"
-.PHONY: kustomize
-kustomize: $(KUSTOMIZE) ## Download kustomize locally if necessary.
-$(KUSTOMIZE): $(LOCALBIN)
-	curl -s $(KUSTOMIZE_INSTALL_SCRIPT) | bash -s -- $(subst v,,$(KUSTOMIZE_VERSION)) $(LOCALBIN)
-
-.PHONY: setup
-setup: controller-gen envtest staticcheck crd-to-markdown
-
-.PHONY: controller-gen
-controller-gen: $(CONTROLLER_GEN) ## Download controller-gen locally if necessary.
-$(CONTROLLER_GEN): $(LOCALBIN)
-	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_TOOLS_VERSION)
-
-.PHONY: crd-to-markdown
-crd-to-markdown: $(CRD_TO_MARKDOWN) ## Download controller-gen locally if necessary.
-$(CRD_TO_MARKDOWN): $(LOCALBIN)
-	GOBIN=$(LOCALBIN) go install github.com/clamoriniere/crd-to-markdown@latest
-
-.PHONY: envtest
-envtest: $(ENVTEST) ## Download envtest-setup locally if necessary.
-$(ENVTEST): $(LOCALBIN)
-	GOBIN=$(LOCALBIN) go install sigs.k8s.io/controller-runtime/tools/setup-envtest@latest
-
-.PHONY: staticcheck
-staticcheck: $(STATICCHECK)
-$(STATICCHECK):
-	mkdir -p $(LOCALBIN)
-	GOBIN=$(LOCALBIN) go install honnef.co/go/tools/cmd/staticcheck@latest
+	kustomize build config/default | kubectl delete --ignore-not-found=$(ignore-not-found) -f -

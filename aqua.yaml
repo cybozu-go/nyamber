@@ -4,16 +4,15 @@
 registries:
 - type: standard
   ref: v4.448.0
-- type: local
-  name: local
-  path: registry.yaml
 packages:
+- name: clamoriniere/crd-to-markdown@v0.0.3
+- name: dominikh/go-tools/staticcheck@2026.1
 - name: kubernetes/kubectl@v1.34.3
+- name: kubernetes-sigs/controller-runtime/setup-envtest@v0.23.2
+- name: kubernetes-sigs/controller-tools/controller-gen@v0.19.0
 - name: kubernetes-sigs/kubebuilder@v4.10.1
 - name: kubernetes-sigs/kustomize@kustomize/v5.8.0
 - name: kubernetes-sigs/kind@v0.30.0
-- name: tilt-dev/tilt@v0.36.0
-- name: tilt-dev/ctlptl@v0.8.44
 - name: mikefarah/yq@v4.50.1
-- name: clamoriniere/crd-to-markdown@v0.0.3
-  registry: local
+- name: tilt-dev/ctlptl@v0.8.44
+- name: tilt-dev/tilt@v0.36.0
