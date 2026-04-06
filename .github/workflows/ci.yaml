@@ -20,7 +20,10 @@ jobs:
     - uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
       with:
         go-version-file: go.mod
-    - run: make setup
+    - uses: aquaproj/aqua-installer@11dd79b4e498d471a9385aa9fb7f62bb5f52a73c  # v4.0.4
+      with:
+        aqua_version: v2.55.3
+        github_token: ${{ secrets.GITHUB_TOKEN }}
     - run: make fmt
     - run: make vet
     - run: make check-generate
