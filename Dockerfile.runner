@@ -21,7 +21,9 @@ RUN --mount=type=cache,target=/go/pkg/mod \
 FROM ghcr.io/cybozu/ubuntu:22.04
 LABEL org.opencontainers.image.source=https://github.com/cybozu-go/nyamber
 
+# renovate: datasource=golang-version depName=go
 ENV GO_VERSION=1.25.5
+# renovate: datasource=github-releases depName=cybozu-go/placemat
 ENV PLACEMAT_VERSION=2.4.10
 
 ENV HOME=/home/nyamber
