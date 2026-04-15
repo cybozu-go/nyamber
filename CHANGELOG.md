@@ -11,7 +11,7 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 - Integrate version management into aqua ([#74](https://github.com/cybozu-go/nyamber/pull/74))
 - Bump dependencies version ([#77](https://github.com/cybozu-go/nyamber/pull/77))
 
-## [0.8.0] - 2026-1-14
+## [0.8.0] - 2026-01-14
 
 - Bump supported kubernetes from 1.33 to 1.34 ([#70](https://github.com/cybozu-go/nyamber/pull/70))
 - Bump dependencies version ([#69](https://github.com/cybozu-go/nyamber/pull/69))
