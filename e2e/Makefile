@@ -1,15 +1,8 @@
 # NOTE: kind version is specified at aqua.yaml
 # renovate:
 KIND_IMAGE_REF := "v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a"
-E2ETEST_K8S_VERSION := $(shell echo $(KIND_IMAGE_REF) | awk -F '[@v]' '{print $$2}')
 # renovate: datasource=github-releases depName=cert-manager/cert-manager
 CERT_MANAGER_VERSION := 1.20.0
-
-PROJECT_DIR := $(CURDIR)/../
-BIN_DIR := $(PROJECT_DIR)/bin
-
-CURL := curl -sSLf
-KUBECTL := $(BIN_DIR)/kubectl
 
 KIND_CLUSTER_NAME := nyamber
 KIND_CONFIG := kind-config.yaml
@@ -27,8 +20,7 @@ help:
 
 .PHONY: setup
 setup:
-	mkdir -p $(BIN_DIR)
-	$(CURL) -o $(BIN_DIR)/kubectl https://dl.k8s.io/release/v$(E2ETEST_K8S_VERSION)/bin/linux/amd64/kubectl && chmod a+x $(BIN_DIR)/kubectl
+	aqua i -l
 
 .PHONY: start
 start:
@@ -36,10 +28,10 @@ start:
 	$(MAKE) -C ../ docker-build
 	kind load docker-image nyamber-controller:dev --name=$(KIND_CLUSTER_NAME)
 	kind load docker-image localhost:5151/nyamber-runner:dev --name=$(KIND_CLUSTER_NAME)
-	$(KUBECTL) apply -f https://github.com/jetstack/cert-manager/releases/download/v$(CERT_MANAGER_VERSION)/cert-manager.yaml
-	$(KUBECTL) -n cert-manager wait --for=condition=available --timeout=180s --all deployments
-	$(KUBECTL) apply -k ../config/default
-	$(KUBECTL) -n nyamber wait --for=condition=available --timeout=180s --all deployments
+	kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v$(CERT_MANAGER_VERSION)/cert-manager.yaml
+	kubectl -n cert-manager wait --for=condition=available --timeout=180s --all deployments
+	kubectl apply -k ../config/default
+	kubectl -n nyamber wait --for=condition=available --timeout=180s --all deployments
 
 .PHONY: test
 test:
