@@ -1,5 +1,5 @@
 # Build the manager binary
-FROM ghcr.io/cybozu/golang:1.25-jammy AS builder
+FROM ghcr.io/cybozu/golang:1.25.9.2_jammy@sha256:ac26b6bb029fdab712304dd008e71a1988a805bedf224e997f4bf1a65025e58a AS builder
 
 WORKDIR /workspace
 # Copy the Go Modules manifests
@@ -18,13 +18,15 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o entrypoint cmd/entrypoint/main.go
 
-FROM ghcr.io/cybozu/ubuntu:22.04
+FROM ghcr.io/cybozu/ubuntu:22.04.20260422@sha256:465d53037c713b03e2d84bdec49903513b50da16eebfd06d3ca9aaa12bff4407
 LABEL org.opencontainers.image.source=https://github.com/cybozu-go/nyamber
 
 # renovate: datasource=golang-version depName=go
 ENV GO_VERSION=1.26.1
+ENV GO_SHA=031f088e5d955bab8657ede27ad4e3bc5b7c1ba281f05f245bcc304f327c987a
 # renovate: datasource=github-releases depName=cybozu-go/placemat
 ENV PLACEMAT_VERSION=2.4.10
+ENV PLACEMAT_SHA=4c2660c1377c7860c31b5f0a6f89a1878e81c665c281a3ebdc4da8ccd60082ff
 
 ENV HOME=/home/nyamber
 ENV GOPATH=${HOME}/go
@@ -74,10 +76,14 @@ RUN curl -sSLf https://cli.github.com/packages/githubcli-archive-keyring.gpg -o 
             wget \
             xauth \
     && rm -rf /var/lib/apt/lists/* \
-    && curl -sSLf https://dl.google.com/go/go${GO_VERSION}.linux-amd64.tar.gz | tar -C /usr/local -xzf - \
-    && curl -sfL https://github.com/cybozu-go/placemat/releases/download/v${PLACEMAT_VERSION}/placemat2_${PLACEMAT_VERSION}_amd64.deb -o placemat2_${PLACEMAT_VERSION}_amd64.deb \
-    && dpkg -i ./placemat2_${PLACEMAT_VERSION}_amd64.deb \
-    && rm ./placemat2_${PLACEMAT_VERSION}_amd64.deb \
+    && curl -sSLf -o go.tar.gz "https://dl.google.com/go/go${GO_VERSION}.linux-amd64.tar.gz" \
+    && echo "${GO_SHA}  go.tar.gz" | sha256sum -c - \
+    && tar -C /usr/local -xzf go.tar.gz \
+    && rm go.tar.gz \
+    && curl -sSLf -o placemat2.deb "https://github.com/cybozu-go/placemat/releases/download/v${PLACEMAT_VERSION}/placemat2_${PLACEMAT_VERSION}_amd64.deb" \
+    && echo "${PLACEMAT_SHA}  placemat2.deb" | sha256sum -c - \
+    && dpkg -i placemat2.deb \
+    && rm placemat2.deb \
     && echo "nyamber ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers \
     && adduser --disabled-password --gecos "" --uid 10000 nyamber \
     && chown -R nyamber:nyamber ${HOME}
