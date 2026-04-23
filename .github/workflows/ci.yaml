@@ -6,6 +6,8 @@ on:
     - 'main'
 env:
   cache-version: 1
+permissions:
+  contents: read
 jobs:
   build:
     runs-on: ubuntu-24.04
