@@ -16,11 +16,6 @@
       "algorithm": "sha256"
     },
     {
-      "id": "github_release/github.com/clamoriniere/crd-to-markdown/v0.0.3/crd-to-markdown_Windows_x86_64.exe",
-      "checksum": "5FA8E47BCAE01572696F6F2D9DC331ADD4A025473216BD3D73F0C732B9DAED96",
-      "algorithm": "sha256"
-    },
-    {
       "id": "github_release/github.com/dominikh/go-tools/2026.1/staticcheck_darwin_amd64.tar.gz",
       "checksum": "4B1483A2B21D555BC04DEDB00823143DCA66D5E53AC98DB8E55AE6DF87BEBFAD",
       "algorithm": "sha256"
@@ -38,11 +33,6 @@
     {
       "id": "github_release/github.com/dominikh/go-tools/2026.1/staticcheck_linux_arm64.tar.gz",
       "checksum": "DDE37C023073AFF5D910A85536A80B92A2AE0DB75F6A89AFCEC1272C4FABD6FD",
-      "algorithm": "sha256"
-    },
-    {
-      "id": "github_release/github.com/dominikh/go-tools/2026.1/staticcheck_windows_amd64.tar.gz",
-      "checksum": "98755D516530D03058AC59CB58AB7FBB9D487D0BC2E16D16E1F700833381E135",
       "algorithm": "sha256"
     },
     {
@@ -66,11 +56,6 @@
       "algorithm": "sha256"
     },
     {
-      "id": "github_release/github.com/kubernetes-sigs/controller-runtime/v0.23.2/setup-envtest-windows-amd64.exe",
-      "checksum": "384B632379424C288CCB40743EC7CA298E27E9CD07E27405ABC3C79391E398C2",
-      "algorithm": "sha256"
-    },
-    {
       "id": "github_release/github.com/kubernetes-sigs/kind/v0.30.0/kind-darwin-amd64",
       "checksum": "4F0B6E3B88BDC66D922C08469F05EF507D4903DD236E6319199BB9C868EED274",
       "algorithm": "sha256"
@@ -88,11 +73,6 @@
     {
       "id": "github_release/github.com/kubernetes-sigs/kind/v0.30.0/kind-linux-arm64",
       "checksum": "7EA2DE9D2D190022ED4A8A4E3AC0636C8A455E460B9A13CCF19F15D07F4F00EB",
-      "algorithm": "sha256"
-    },
-    {
-      "id": "github_release/github.com/kubernetes-sigs/kind/v0.30.0/kind-windows-amd64",
-      "checksum": "A75FED2B6964D877461CC145B37E997AC0F59A63BD02A750134AC25378F78CE7",
       "algorithm": "sha256"
     },
     {
@@ -136,16 +116,6 @@
       "algorithm": "sha256"
     },
     {
-      "id": "github_release/github.com/kubernetes-sigs/kustomize/kustomize/v5.8.0/kustomize_v5.8.0_windows_amd64.zip",
-      "checksum": "7779999C8EB7BDBBAA55C6ECF4FADFDBE7508199EA189F06862835E7E5CB1E41",
-      "algorithm": "sha256"
-    },
-    {
-      "id": "github_release/github.com/kubernetes-sigs/kustomize/kustomize/v5.8.0/kustomize_v5.8.0_windows_arm64.zip",
-      "checksum": "A08ACC2B1191F7BD192F31ED7EE1C0A5A743228A21AC239862248A47F800A016",
-      "algorithm": "sha256"
-    },
-    {
       "id": "github_release/github.com/mikefarah/yq/v4.52.5/yq_darwin_amd64",
       "checksum": "6E399D1EB466860C3202D231727197FDCE055888C5C7BEC6964156983DD1559D",
       "algorithm": "sha256"
@@ -163,11 +133,6 @@
     {
       "id": "github_release/github.com/mikefarah/yq/v4.52.5/yq_linux_arm64",
       "checksum": "90FA510C50EE8CA75544DBFFFED10C88ED59B36834DF35916520CDDC623D9AAA",
-      "algorithm": "sha256"
-    },
-    {
-      "id": "github_release/github.com/mikefarah/yq/v4.52.5/yq_windows_amd64.exe",
-      "checksum": "47594981F3848A4B4447494ADECA9555F908F7CF0A89C4DA3FD0243A4631DA1C",
       "algorithm": "sha256"
     },
     {
@@ -191,11 +156,6 @@
       "algorithm": "sha256"
     },
     {
-      "id": "github_release/github.com/tilt-dev/ctlptl/v0.9.0/ctlptl.0.9.0.windows.x86_64.zip",
-      "checksum": "86FC79EF19B3CB0B1336B84129102A142FC02F6EF359BDB6CEDC67B4E3D4AE13",
-      "algorithm": "sha256"
-    },
-    {
       "id": "github_release/github.com/tilt-dev/tilt/v0.37.0/tilt.0.37.0.linux.arm64.tar.gz",
       "checksum": "84457137539D8E4BE6E90E9AFECF8EF692AD3F8C19E9BF3355F3FBF4F8DCE55F",
       "algorithm": "sha256"
@@ -216,11 +176,6 @@
       "algorithm": "sha256"
     },
     {
-      "id": "github_release/github.com/tilt-dev/tilt/v0.37.0/tilt.0.37.0.windows.x86_64.zip",
-      "checksum": "4DF1A3519E15DBE3514752DA0BB7A1F4F0A7C0189347F8A5DF9EB251222D179A",
-      "algorithm": "sha256"
-    },
-    {
       "id": "http/dl.k8s.io/v1.34.3/bin/darwin/amd64/kubectl",
       "checksum": "657AFBD0E653C4CE3AF1B5A645A4EABA282CF8EB2BCDA7191FF60866E50E4D7F",
       "algorithm": "sha256"
@@ -238,16 +193,6 @@
     {
       "id": "http/dl.k8s.io/v1.34.3/bin/linux/arm64/kubectl",
       "checksum": "46913A7AA0327F6CC2E1CC2775D53C4A2AF5E52F7FD8DACBFBFD098E757F19E9",
-      "algorithm": "sha256"
-    },
-    {
-      "id": "http/dl.k8s.io/v1.34.3/bin/windows/amd64/kubectl.exe",
-      "checksum": "5EF6E0B019CFEA5B0EFF55B576C0118F64C0758A8BCBF52587C7F454F302F7BC",
-      "algorithm": "sha256"
-    },
-    {
-      "id": "http/dl.k8s.io/v1.34.3/bin/windows/arm64/kubectl.exe",
-      "checksum": "E261BDC56BE78CCD9A63CD6D7D49029DB41B9A7064CE3F0C82C41800CC809AA6",
       "algorithm": "sha256"
     },
     {
