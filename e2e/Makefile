@@ -3,6 +3,10 @@
 KIND_IMAGE_REF := "v1.34.0@sha256:7416a61b42b1662ca6ca89f02028ac133a309a2a30ba309614e8ec94d976dc5a"
 # renovate: datasource=github-releases depName=cert-manager/cert-manager
 CERT_MANAGER_VERSION := 1.20.0
+CERT_MANAGER_GPG_KEY_URL := https://cert-manager.io/public-keys/cert-manager-keyring-2021-09-20-1020CF3C033D4F35BAE1C19E1226061C665DF13E.gpg
+
+PROJECT_DIR := $(CURDIR)/../
+CHART_DIR := $(PROJECT_DIR)/tmp-charts
 
 KIND_CLUSTER_NAME := nyamber
 KIND_CONFIG := kind-config.yaml
@@ -20,6 +24,7 @@ help:
 
 .PHONY: setup
 setup:
+	mkdir -p $(CHART_DIR)
 	aqua i -l
 
 .PHONY: start
@@ -28,7 +33,9 @@ start:
 	$(MAKE) -C ../ docker-build
 	kind load docker-image nyamber-controller:dev --name=$(KIND_CLUSTER_NAME)
 	kind load docker-image localhost:5151/nyamber-runner:dev --name=$(KIND_CLUSTER_NAME)
-	kubectl apply -f https://github.com/jetstack/cert-manager/releases/download/v$(CERT_MANAGER_VERSION)/cert-manager.yaml
+	curl -sSLf -o $(CHART_DIR)/cert-manager-keyring.gpg $(CERT_MANAGER_GPG_KEY_URL)
+	helm pull oci://quay.io/jetstack/charts/cert-manager --version v$(CERT_MANAGER_VERSION) --verify --keyring $(CHART_DIR)/cert-manager-keyring.gpg --untar --untardir $(CHART_DIR)
+	helm install cert-manager $(CHART_DIR)/cert-manager/ -n cert-manager --create-namespace --set crds.enabled=true
 	kubectl -n cert-manager wait --for=condition=available --timeout=180s --all deployments
 	kubectl apply -k ../config/default
 	kubectl -n nyamber wait --for=condition=available --timeout=180s --all deployments
