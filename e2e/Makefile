@@ -24,17 +24,23 @@ help:
 
 .PHONY: setup
 setup:
-	mkdir -p $(CHART_DIR)
 	aqua i -l
 
+$(CHART_DIR):
+	mkdir -p $(CHART_DIR)
+
+$(CHART_DIR)/cert-manager-keyring.gpg: | $(CHART_DIR)
+	curl -sSLf -o $@ $(CERT_MANAGER_GPG_KEY_URL)
+
+$(CHART_DIR)/cert-manager/Chart.yaml: $(CHART_DIR)/cert-manager-keyring.gpg
+	helm pull oci://quay.io/jetstack/charts/cert-manager --version v$(CERT_MANAGER_VERSION) --verify --keyring $(CHART_DIR)/cert-manager-keyring.gpg --untar --untardir $(CHART_DIR)
+
 .PHONY: start
-start:
+start: $(CHART_DIR)/cert-manager/Chart.yaml
 	kind create cluster --name=$(KIND_CLUSTER_NAME) --config=$(KIND_CONFIG) --image=kindest/node:$(KIND_IMAGE_REF) --wait 1m
 	$(MAKE) -C ../ docker-build
 	kind load docker-image nyamber-controller:dev --name=$(KIND_CLUSTER_NAME)
 	kind load docker-image localhost:5151/nyamber-runner:dev --name=$(KIND_CLUSTER_NAME)
-	curl -sSLf -o $(CHART_DIR)/cert-manager-keyring.gpg $(CERT_MANAGER_GPG_KEY_URL)
-	helm pull oci://quay.io/jetstack/charts/cert-manager --version v$(CERT_MANAGER_VERSION) --verify --keyring $(CHART_DIR)/cert-manager-keyring.gpg --untar --untardir $(CHART_DIR)
 	helm install cert-manager $(CHART_DIR)/cert-manager/ -n cert-manager --create-namespace --set crds.enabled=true
 	kubectl -n cert-manager wait --for=condition=available --timeout=180s --all deployments
 	kubectl apply -k ../config/default
