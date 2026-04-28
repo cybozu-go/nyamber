@@ -1,12 +1,19 @@
 ---
 # aqua - Declarative CLI Version Manager
 # https://aquaproj.github.io/
+checksum:
+  enabled: true
+  require_checksum: true
+  supported_envs:
+  - darwin
+  - linux
 registries:
 - type: standard
   ref: v4.487.0 # renovate: depName=aquaproj/aqua-registry
 packages:
 - name: clamoriniere/crd-to-markdown@v0.0.3
 - name: dominikh/go-tools/staticcheck@2026.1
+- name: helm/helm@v4.1.4
 - name: kubernetes/kubectl@v1.34.3
 - name: kubernetes-sigs/controller-runtime/setup-envtest@v0.23.2
 - name: kubernetes-sigs/controller-tools/controller-gen@v0.19.0

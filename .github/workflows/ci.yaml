@@ -54,7 +54,7 @@ jobs:
         KIND_IMAGE_REF="${{ matrix.kind-image-ref }}"
         VERSION=$(echo "$KIND_IMAGE_REF" | awk -F '[@v]' '{print $2}')
         echo "version=$VERSION" >> $GITHUB_OUTPUT
-    - run: make setup KIND_IMAGE_REF=${{ matrix.kind-image-ref }}
+    - run: make setup
       working-directory: e2e
     - run: make start KIND_IMAGE_REF=${{ matrix.kind-image-ref }}
       working-directory: e2e
