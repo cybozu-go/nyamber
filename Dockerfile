@@ -1,5 +1,5 @@
 # Build the manager binary
-FROM ghcr.io/cybozu/golang:1.25.9.2_jammy@sha256:ac26b6bb029fdab712304dd008e71a1988a805bedf224e997f4bf1a65025e58a AS builder
+FROM ghcr.io/cybozu/golang:1.26.2.2_jammy@sha256:ce7b7016908ee9bebefd48aa18106cadf3e7d7ac6150b8e789726cda3cc9beae AS builder
 
 WORKDIR /workspace
 # Copy the Go Modules manifests

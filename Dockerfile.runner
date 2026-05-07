@@ -1,5 +1,5 @@
 # Build the manager binary
-FROM ghcr.io/cybozu/golang:1.25.9.2_jammy@sha256:ac26b6bb029fdab712304dd008e71a1988a805bedf224e997f4bf1a65025e58a AS builder
+FROM ghcr.io/cybozu/golang:1.26.2.2_jammy@sha256:ce7b7016908ee9bebefd48aa18106cadf3e7d7ac6150b8e789726cda3cc9beae AS builder
 
 WORKDIR /workspace
 # Copy the Go Modules manifests
@@ -22,8 +22,8 @@ FROM ghcr.io/cybozu/ubuntu:22.04.20260422@sha256:465d53037c713b03e2d84bdec499035
 LABEL org.opencontainers.image.source=https://github.com/cybozu-go/nyamber
 
 # renovate: datasource=golang-version depName=go
-ENV GO_VERSION=1.26.1
-ENV GO_SHA=031f088e5d955bab8657ede27ad4e3bc5b7c1ba281f05f245bcc304f327c987a
+ENV GO_VERSION=1.26.2
+ENV GO_SHA=990e6b4bbba816dc3ee129eaeaf4b42f17c2800b88a2166c265ac1a200262282
 # renovate: datasource=github-releases depName=cybozu-go/placemat
 ENV PLACEMAT_VERSION=2.4.10
 ENV PLACEMAT_SHA=4c2660c1377c7860c31b5f0a6f89a1878e81c665c281a3ebdc4da8ccd60082ff
