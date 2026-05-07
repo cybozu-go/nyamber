@@ -22,7 +22,6 @@ import (
 	nyamberv1beta1 "github.com/cybozu-go/nyamber/api/v1beta1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -32,8 +31,7 @@ import (
 )
 
 func SetupVirtualDCWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).
-		For(&nyamberv1beta1.VirtualDC{}).
+	return ctrl.NewWebhookManagedBy(mgr, &nyamberv1beta1.VirtualDC{}).
 		WithValidator(&virtualdcValidator{client: mgr.GetClient()}).
 		Complete()
 }
@@ -45,11 +43,10 @@ type virtualdcValidator struct {
 }
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (v virtualdcValidator) ValidateCreate(ctx context.Context, obj runtime.Object) (warnings admission.Warnings, err error) {
+func (v virtualdcValidator) ValidateCreate(ctx context.Context, vdc *nyamberv1beta1.VirtualDC) (warnings admission.Warnings, err error) {
 	logger := log.FromContext(ctx)
-	logger.Info("validate create", "name", obj.(*nyamberv1beta1.VirtualDC).Name)
+	logger.Info("validate create", "name", vdc.Name)
 
-	vdc := obj.(*nyamberv1beta1.VirtualDC)
 	errs := field.ErrorList{}
 
 	isCreatedByAvdc := false
@@ -91,14 +88,14 @@ func (v virtualdcValidator) ValidateCreate(ctx context.Context, obj runtime.Obje
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (v virtualdcValidator) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (warnings admission.Warnings, err error) {
+func (v virtualdcValidator) ValidateUpdate(ctx context.Context, oldVdc, newVdc *nyamberv1beta1.VirtualDC) (warnings admission.Warnings, err error) {
 	logger := log.FromContext(ctx)
-	vdcName := oldObj.(*nyamberv1beta1.VirtualDC).Name
+	vdcName := oldVdc.Name
 	logger.Info("validate update", "name", vdcName)
 
 	var errs field.ErrorList
-	oldSpec := oldObj.(*nyamberv1beta1.VirtualDC).Spec
-	newSpec := newObj.(*nyamberv1beta1.VirtualDC).Spec
+	oldSpec := oldVdc.Spec
+	newSpec := newVdc.Spec
 
 	if oldSpec.NecoBranch != newSpec.NecoBranch {
 		errs = append(errs, field.Forbidden(field.NewPath("spec", "necoBranch"), "the field is immutable"))
@@ -130,6 +127,6 @@ func (v virtualdcValidator) ValidateUpdate(ctx context.Context, oldObj, newObj r
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (v virtualdcValidator) ValidateDelete(ctx context.Context, obj runtime.Object) (warnings admission.Warnings, err error) {
+func (v virtualdcValidator) ValidateDelete(ctx context.Context, vdc *nyamberv1beta1.VirtualDC) (warnings admission.Warnings, err error) {
 	return nil, nil
 }
