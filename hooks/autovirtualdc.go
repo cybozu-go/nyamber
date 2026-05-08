@@ -24,7 +24,6 @@ import (
 	"github.com/robfig/cron"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -34,8 +33,7 @@ import (
 )
 
 func SetupAutoVirtualDCWebhookWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewWebhookManagedBy(mgr).
-		For(&nyamberv1beta1.AutoVirtualDC{}).
+	return ctrl.NewWebhookManagedBy(mgr, &nyamberv1beta1.AutoVirtualDC{}).
 		WithValidator(&autoVirtualdcValidator{client: mgr.GetClient()}).
 		Complete()
 }
@@ -47,9 +45,8 @@ type autoVirtualdcValidator struct {
 //+kubebuilder:webhook:path=/validate-nyamber-cybozu-io-v1beta1-autovirtualdc,mutating=false,failurePolicy=fail,sideEffects=None,groups=nyamber.cybozu.io,resources=autovirtualdcs,verbs=create;update,versions=v1beta1,name=vautovirtualdc.kb.io,admissionReviewVersions=v1
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
-func (v autoVirtualdcValidator) ValidateCreate(ctx context.Context, obj runtime.Object) (warnings admission.Warnings, err error) {
+func (v autoVirtualdcValidator) ValidateCreate(ctx context.Context, avdc *nyamberv1beta1.AutoVirtualDC) (warnings admission.Warnings, err error) {
 	logger := log.FromContext(ctx)
-	avdc := obj.(*nyamberv1beta1.AutoVirtualDC)
 	logger.Info("validate create", "name", avdc.Name)
 
 	errs := v.validateTimeoutDuration(avdc)
@@ -87,18 +84,17 @@ func (v autoVirtualdcValidator) ValidateCreate(ctx context.Context, obj runtime.
 }
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
-func (v autoVirtualdcValidator) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (warnings admission.Warnings, err error) {
+func (v autoVirtualdcValidator) ValidateUpdate(ctx context.Context, oldAvdc, newAvdc *nyamberv1beta1.AutoVirtualDC) (warnings admission.Warnings, err error) {
 	logger := log.FromContext(ctx)
-	avdc := newObj.(*nyamberv1beta1.AutoVirtualDC)
-	logger.Info("validate update", "name", avdc.Name)
+	logger.Info("validate update", "name", newAvdc.Name)
 
-	errs := v.validateTimeoutDuration(avdc)
+	errs := v.validateTimeoutDuration(newAvdc)
 
-	oldSpec := oldObj.(*nyamberv1beta1.AutoVirtualDC).Spec
-	newSpec := newObj.(*nyamberv1beta1.AutoVirtualDC).Spec
+	oldSpec := oldAvdc.Spec
+	newSpec := newAvdc.Spec
 
 	// If avdc.Spec.StartSchedule is not set, vdc template is immutable
-	if avdc.Spec.StartSchedule == "" && !equality.Semantic.DeepEqual(oldSpec, newSpec) {
+	if newAvdc.Spec.StartSchedule == "" && !equality.Semantic.DeepEqual(oldSpec, newSpec) {
 		errs = append(errs, field.Forbidden(field.NewPath("spec", "template"), "the field is immutable"))
 	}
 
@@ -111,8 +107,8 @@ func (v autoVirtualdcValidator) ValidateUpdate(ctx context.Context, oldObj, newO
 	}
 
 	if len(errs) > 0 {
-		err := apierrors.NewInvalid(schema.GroupKind{Group: nyamberv1beta1.GroupVersion.Group, Kind: "AutoVirtualDC"}, avdc.Name, errs)
-		logger.Error(err, "validation error", "name", avdc.Name)
+		err := apierrors.NewInvalid(schema.GroupKind{Group: nyamberv1beta1.GroupVersion.Group, Kind: "AutoVirtualDC"}, newAvdc.Name, errs)
+		logger.Error(err, "validation error", "name", newAvdc.Name)
 		return nil, err
 	}
 
@@ -120,7 +116,7 @@ func (v autoVirtualdcValidator) ValidateUpdate(ctx context.Context, oldObj, newO
 }
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
-func (v autoVirtualdcValidator) ValidateDelete(ctx context.Context, obj runtime.Object) (warnings admission.Warnings, err error) {
+func (v autoVirtualdcValidator) ValidateDelete(ctx context.Context, avdc *nyamberv1beta1.AutoVirtualDC) (warnings admission.Warnings, err error) {
 	return nil, nil
 }
 
@@ -141,8 +137,8 @@ func (v autoVirtualdcValidator) validateSchedule(avdc *nyamberv1beta1.AutoVirtua
 	var errs field.ErrorList
 
 	if (avdc.Spec.StartSchedule != "" && avdc.Spec.StopSchedule == "") || (avdc.Spec.StartSchedule == "" && avdc.Spec.StopSchedule != "") {
-		errs = append(errs, field.Forbidden(field.NewPath("spec", "startSchedule"), "specifing only one side is not allowed"))
-		errs = append(errs, field.Forbidden(field.NewPath("spec", "stopSchedule"), "specifing only one side is not allowed"))
+		errs = append(errs, field.Forbidden(field.NewPath("spec", "startSchedule"), "specifying only one side is not allowed"))
+		errs = append(errs, field.Forbidden(field.NewPath("spec", "stopSchedule"), "specifying only one side is not allowed"))
 	}
 
 	if avdc.Spec.StartSchedule != "" && avdc.Spec.StopSchedule != "" {
