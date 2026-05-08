@@ -17,7 +17,7 @@ GOBIN=$(shell go env GOBIN)
 endif
 
 # ENVTEST_K8S_VERSION refers to the version of kubebuilder assets to be downloaded by envtest binary.
-# the kubebuilder version of the ready-to-use can get by "./bin/setup-envtest list" command.
+# the kubebuilder version of the ready-to-use can get by "aqua exec -- setup-envtest list" command.
 # renovate:
 ENVTEST_K8S_VERSION = 1.35.0
 
