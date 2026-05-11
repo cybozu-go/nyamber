@@ -16,5 +16,6 @@
 /.idea
 
 # Generated files
+/bin
 /tmp-charts
 /docs/book
