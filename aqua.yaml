@@ -13,6 +13,7 @@ registries:
 packages:
 - name: clamoriniere/crd-to-markdown@v0.0.3
 - name: dominikh/go-tools/staticcheck@2026.1
+- name: suzuki-shunsuke/pinact@v4.0.0
 - name: helm/helm@v4.2.0
 - name: kubernetes/kubectl@v1.35.4
 - name: kubernetes-sigs/controller-runtime/setup-envtest@v0.23.3

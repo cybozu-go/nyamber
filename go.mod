@@ -1,11 +1,11 @@
 module github.com/cybozu-go/nyamber
 
-go 1.26.2
+go 1.26.4
 
 require (
 	github.com/cybozu-go/well v1.11.2
-	github.com/onsi/ginkgo/v2 v2.28.1
-	github.com/onsi/gomega v1.39.1
+	github.com/onsi/ginkgo/v2 v2.29.0
+	github.com/onsi/gomega v1.41.0
 	k8s.io/api v0.35.4
 	k8s.io/apimachinery v0.35.4
 	k8s.io/client-go v0.35.4
