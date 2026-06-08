@@ -136,6 +136,26 @@
       "algorithm": "sha256"
     },
     {
+      "id": "github_release/github.com/mikefarah/yq/v4.53.3/yq_darwin_amd64",
+      "checksum": "B4BA1ECCE3C47F00803F4F964DE38394326C7A32EB6540616E04FB2935A0F08D",
+      "algorithm": "sha256"
+    },
+    {
+      "id": "github_release/github.com/mikefarah/yq/v4.53.3/yq_darwin_arm64",
+      "checksum": "877DE31753A4DD2401AA048937AA9A7FC4D5F6CE858CF31508C5802954297213",
+      "algorithm": "sha256"
+    },
+    {
+      "id": "github_release/github.com/mikefarah/yq/v4.53.3/yq_linux_amd64",
+      "checksum": "FA52A4E758C63D38299163FBDD1EDFB4C4963247918BF9C1C5D31D84789EDED4",
+      "algorithm": "sha256"
+    },
+    {
+      "id": "github_release/github.com/mikefarah/yq/v4.53.3/yq_linux_arm64",
+      "checksum": "578648E463A11C1B6DB6010CBF41EAFED6BEE79466FCFFA1BB446672CF7945EA",
+      "algorithm": "sha256"
+    },
+    {
       "id": "github_release/github.com/tilt-dev/ctlptl/v0.9.0/ctlptl.0.9.0.linux.arm64.tar.gz",
       "checksum": "77813732235DF15BB1749EB09B128AAD439D43E1998756C62DC159535A3032DA",
       "algorithm": "sha256"
@@ -156,6 +176,26 @@
       "algorithm": "sha256"
     },
     {
+      "id": "github_release/github.com/tilt-dev/ctlptl/v0.9.4/ctlptl.0.9.4.linux.arm64.tar.gz",
+      "checksum": "2F079D3A80FEAC892B83C5FD842445D879DDC6B0E640021CF5FF604E21337050",
+      "algorithm": "sha256"
+    },
+    {
+      "id": "github_release/github.com/tilt-dev/ctlptl/v0.9.4/ctlptl.0.9.4.linux.x86_64.tar.gz",
+      "checksum": "C63A1EC28E60BC3FAF6BECB76F53355C5CF5E0143DAFDD27AD85DB5584FA6B1E",
+      "algorithm": "sha256"
+    },
+    {
+      "id": "github_release/github.com/tilt-dev/ctlptl/v0.9.4/ctlptl.0.9.4.mac.arm64.tar.gz",
+      "checksum": "5DD227ED5E29E110B1A887E3CADBF8DB29514C9447D6E128E9D59F3CFB39490B",
+      "algorithm": "sha256"
+    },
+    {
+      "id": "github_release/github.com/tilt-dev/ctlptl/v0.9.4/ctlptl.0.9.4.mac.x86_64.tar.gz",
+      "checksum": "2596555A136A5FEABD32DD6D1569BDEE3C9A85CDF84904F60CD4C37E97227FAC",
+      "algorithm": "sha256"
+    },
+    {
       "id": "github_release/github.com/tilt-dev/tilt/v0.37.0/tilt.0.37.0.linux.arm64.tar.gz",
       "checksum": "84457137539D8E4BE6E90E9AFECF8EF692AD3F8C19E9BF3355F3FBF4F8DCE55F",
       "algorithm": "sha256"
@@ -173,6 +213,26 @@
     {
       "id": "github_release/github.com/tilt-dev/tilt/v0.37.0/tilt.0.37.0.mac.x86_64.tar.gz",
       "checksum": "01C5E53921345ED4FEB3BA6BC9585F8F5563E40BEA27DAE0384620D5BBC2EBEA",
+      "algorithm": "sha256"
+    },
+    {
+      "id": "github_release/github.com/tilt-dev/tilt/v0.37.3/tilt.0.37.3.linux.arm64.tar.gz",
+      "checksum": "826F48198F368EF5EDB684E9AE4C87FF76ECA84C904F72B2376B29B93BFFC019",
+      "algorithm": "sha256"
+    },
+    {
+      "id": "github_release/github.com/tilt-dev/tilt/v0.37.3/tilt.0.37.3.linux.x86_64.tar.gz",
+      "checksum": "E90BC6CF70882BC7579D8174A27CAB2DE0284612EC7339E4B32F669CD5DE4E5C",
+      "algorithm": "sha256"
+    },
+    {
+      "id": "github_release/github.com/tilt-dev/tilt/v0.37.3/tilt.0.37.3.mac.arm64.tar.gz",
+      "checksum": "4D1F4E604AA5CA65A2DF0D19C9E9B351CF9703BE886F52FA5F3AFD317D968FFD",
+      "algorithm": "sha256"
+    },
+    {
+      "id": "github_release/github.com/tilt-dev/tilt/v0.37.3/tilt.0.37.3.mac.x86_64.tar.gz",
+      "checksum": "C8E2B58FB7EFDEC9AE7E3FC4249B4F662DC6520EABE8EFCAC84B80856F20D31B",
       "algorithm": "sha256"
     },
     {
@@ -216,9 +276,34 @@
       "algorithm": "sha256"
     },
     {
+      "id": "http/get.helm.sh/helm-v4.2.0-darwin-amd64.tar.gz",
+      "checksum": "1376EA697140E4DB316736E760D5A47D12AFC1524DCE704476EF06FD7FDEDDC6",
+      "algorithm": "sha256"
+    },
+    {
+      "id": "http/get.helm.sh/helm-v4.2.0-darwin-arm64.tar.gz",
+      "checksum": "F13F959015447B6BC309F9FD506509926543988A39035C088B52522EC95E2ACB",
+      "algorithm": "sha256"
+    },
+    {
+      "id": "http/get.helm.sh/helm-v4.2.0-linux-amd64.tar.gz",
+      "checksum": "97DBEB971BE4AC4B27E3839976D9564C0FB35C6F3B1DA89DD1E292D236AF4096",
+      "algorithm": "sha256"
+    },
+    {
+      "id": "http/get.helm.sh/helm-v4.2.0-linux-arm64.tar.gz",
+      "checksum": "1F8DE130DFBD04DE64978E7B852A7A547BE1404956A366608276D2520B678670",
+      "algorithm": "sha256"
+    },
+    {
       "id": "registries/github_content/github.com/aquaproj/aqua-registry/v4.487.0/registry.yaml",
       "checksum": "3D55277449CA3E368AB56831B8465827AB1BD110E1EB43A83B0C098B5D291A280703C285CBEC52954D8FF3944BB41F3AE93CE547082718E042590F694120DF1B",
       "algorithm": "sha512"
+    },
+    {
+      "id": "registries/github_content/github.com/aquaproj/aqua-registry/v4.522.0/registry.yaml",
+      "checksum": "4B7CCAEC37D873A69BC72E16901CC684ECF045B5E0F3A4D7AC17E6409D7AB09E",
+      "algorithm": "sha256"
     }
   ]
 }
