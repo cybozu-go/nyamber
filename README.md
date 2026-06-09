@@ -30,5 +30,5 @@ Nyamber is a custom controller to create Neco environment
 This repository uses [pinact](https://github.com/suzuki-shunsuke/pinact) to update and verify pinned GitHub Actions.
 
 ```shell
-$ GITHUB_TOKEN="$(gh auth token)" pinact run --update --min-age 14
+GITHUB_TOKEN="$(gh auth token)" pinact run --update --min-age 14
 ```
