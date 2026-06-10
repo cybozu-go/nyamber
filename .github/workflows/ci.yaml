@@ -24,7 +24,6 @@ jobs:
         go-version-file: go.mod
     - uses: ./.github/actions/aqua
       with:
-        aqua_version: v2.59.1
         github_token: ${{ secrets.GITHUB_TOKEN }}
     - run: make fmt
     - run: make vet
@@ -46,7 +45,6 @@ jobs:
         go-version-file: go.mod
     - uses: ./.github/actions/aqua
       with:
-        aqua_version: v2.59.1
         github_token: ${{ secrets.GITHUB_TOKEN }}
     - name: Extract kubernetes version from kind-image-ref
       id: k8s-version

@@ -12,10 +12,9 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - uses: ./.github/actions/aqua
         with:
-          aqua_version: v2.59.1
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          persist-credentials: false
+      - uses: ./.github/actions/aqua
       - name: Verify SHAs and tag comments are consistent
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
