@@ -6,3 +6,5 @@ runs:
     - uses: aquaproj/aqua-installer@11dd79b4e498d471a9385aa9fb7f62bb5f52a73c # v4.0.4
       with:
         aqua_version: v2.59.1 # renovate: aquaproj/aqua
+      env:  
+        GITHUB_TOKEN: ${{ github.token }}  
