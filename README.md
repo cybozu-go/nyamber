@@ -24,3 +24,11 @@ Nyamber is a custom controller to create Neco environment
 [docs](docs/) directory contains documents about designs and specifications.
 
 [releases]: https://github.com/cybozu-go/nyamber/releases
+
+### Update pinned GitHub Actions
+
+This repository uses [pinact](https://github.com/suzuki-shunsuke/pinact) to update and verify pinned GitHub Actions.
+
+```shell
+GITHUB_TOKEN="$(gh auth token)" pinact run --update --min-age 14
+```
