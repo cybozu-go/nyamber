@@ -5,6 +5,12 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-06-12
+
+- Bump dependencies version ([#86](https://github.com/cybozu-go/nyamber/pull/86))
+- Add pinact to update and verify pinned GitHub Actions ([#86](https://github.com/cybozu-go/nyamber/pull/86))
+- Introduce a reusable aqua setup action for GitHub Actions workflows ([#86](https://github.com/cybozu-go/nyamber/pull/86))
+
 ## [0.10.0] - 2026-05-12
 
 - Verify checksum and digest pinning for external binaries ([#81](https://github.com/cybozu-go/nyamber/pull/81))
@@ -118,7 +124,8 @@ This fixes git vulnerabilities
 
 - This is the first public release.
 
-[Unreleased]: https://github.com/cybozu-go/nyamber/compare/v0.10.0...HEAD
+[Unreleased]: https://github.com/cybozu-go/nyamber/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/cybozu-go/nyamber/compare/v0.9.0...v0.11.0
 [0.10.0]: https://github.com/cybozu-go/nyamber/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/cybozu-go/nyamber/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/cybozu-go/nyamber/compare/v0.7.0...v0.8.0
