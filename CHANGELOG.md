@@ -5,6 +5,10 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [0.11.1] - 2026-07-01
+
+- Add aqua to runner image for Neco environment setup ([#88](https://github.com/cybozu-go/nyamber/pull/88))
+
 ## [0.11.0] - 2026-06-12
 
 - Bump dependencies version ([#86](https://github.com/cybozu-go/nyamber/pull/86))
@@ -124,7 +128,8 @@ This fixes git vulnerabilities
 
 - This is the first public release.
 
-[Unreleased]: https://github.com/cybozu-go/nyamber/compare/v0.11.0...HEAD
+[Unreleased]: https://github.com/cybozu-go/nyamber/compare/v0.11.1...HEAD
+[0.11.1]: https://github.com/cybozu-go/nyamber/compare/v0.11.0...v0.11.1
 [0.11.0]: https://github.com/cybozu-go/nyamber/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/cybozu-go/nyamber/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/cybozu-go/nyamber/compare/v0.8.0...v0.9.0
