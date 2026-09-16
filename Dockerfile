@@ -1,6 +1,6 @@
 # Build the manager binary
 # Nyamber depends on cybozu-go/placemat. Since cybozu-go/placemat does not support Ubuntu 24.04 yet, use a jammy-based image.
-FROM ghcr.io/cybozu/golang:1.26.4.1_jammy@sha256:4273ab54d46bc2018b65785354589f6af6995c42b71c290b702035f2defa088d AS builder
+FROM ghcr.io/cybozu/golang:1.27.1.1_jammy@sha256:cf6a363d2a421e18a4e0038b69f0b44061903a98ab4c58ea46a68c271e81b327 AS builder
 
 WORKDIR /workspace
 # Copy the Go Modules manifests
@@ -21,7 +21,7 @@ COPY pkg/ pkg/
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -o manager cmd/nyamber-controller/main.go
 
 # Nyamber depends on cybozu-go/placemat. Since cybozu-go/placemat does not support Ubuntu 24.04 yet, use a jammy-based image.
-FROM ghcr.io/cybozu/ubuntu:22.04.20260605@sha256:2ec1363fa00398af0f13a5baa6c84d3245615de7ad576c498fe3c739fd06076e
+FROM ghcr.io/cybozu/ubuntu:22.04.20260916@sha256:fb80e128ca6b7fd2a3e165e18df5defb2eb677f207d45b7d6dc35ed1597a4cd4
 LABEL org.opencontainers.image.source=https://github.com/cybozu-go/nyamber
 
 WORKDIR /
