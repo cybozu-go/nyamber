@@ -4,7 +4,7 @@ go 1.27.1
 
 require (
 	github.com/cybozu-go/well v1.11.2
-	github.com/go-logr/logr v1.4.3
+	github.com/go-logr/logr v1.4.4
 	github.com/go-logr/zapr v1.3.0
 	github.com/onsi/ginkgo/v2 v2.32.2
 	github.com/onsi/gomega v1.43.0
