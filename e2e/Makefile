@@ -2,7 +2,7 @@
 # renovate:
 KIND_IMAGE_REF := "v1.35.0@sha256:452d707d4862f52530247495d180205e029056831160e22870e37e3f6c1ac31f"
 # renovate: datasource=github-releases depName=cert-manager/cert-manager
-CERT_MANAGER_VERSION := 1.20.0
+CERT_MANAGER_VERSION := 1.21.2
 CERT_MANAGER_GPG_KEY_URL := https://cert-manager.io/public-keys/cert-manager-keyring-2021-09-20-1020CF3C033D4F35BAE1C19E1226061C665DF13E.gpg
 
 PROJECT_DIR := $(CURDIR)/../
