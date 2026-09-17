@@ -16,23 +16,23 @@
       "algorithm": "sha256"
     },
     {
-      "id": "github_release/github.com/dominikh/go-tools/2026.1/staticcheck_darwin_amd64.tar.gz",
-      "checksum": "4B1483A2B21D555BC04DEDB00823143DCA66D5E53AC98DB8E55AE6DF87BEBFAD",
+      "id": "github_release/github.com/dominikh/go-tools/2026.2.1/staticcheck_darwin_amd64.tar.gz",
+      "checksum": "A581A26261C9554A9A9450E0DE2D0CFD93A7BABD4DE98CC9EA556444015216F4",
       "algorithm": "sha256"
     },
     {
-      "id": "github_release/github.com/dominikh/go-tools/2026.1/staticcheck_darwin_arm64.tar.gz",
-      "checksum": "F71553886FE4BB313DA317D7ABC3E16FE3CAE2DBA54F1E07A94A1AE160BECED2",
+      "id": "github_release/github.com/dominikh/go-tools/2026.2.1/staticcheck_darwin_arm64.tar.gz",
+      "checksum": "06DB0A00E5D44D0D60BC99DAB10E1BD49103531054D560AF658775450A25F72C",
       "algorithm": "sha256"
     },
     {
-      "id": "github_release/github.com/dominikh/go-tools/2026.1/staticcheck_linux_amd64.tar.gz",
-      "checksum": "9242B4BF5B9F5481FD720EC6D1018B38FBFFE0E2730E498923C6E8053E8576BE",
+      "id": "github_release/github.com/dominikh/go-tools/2026.2.1/staticcheck_linux_amd64.tar.gz",
+      "checksum": "91186205A78DB3F2D40EFB3C102749AEF66F85C2204793DE7488D163B655AA7C",
       "algorithm": "sha256"
     },
     {
-      "id": "github_release/github.com/dominikh/go-tools/2026.1/staticcheck_linux_arm64.tar.gz",
-      "checksum": "DDE37C023073AFF5D910A85536A80B92A2AE0DB75F6A89AFCEC1272C4FABD6FD",
+      "id": "github_release/github.com/dominikh/go-tools/2026.2.1/staticcheck_linux_arm64.tar.gz",
+      "checksum": "594421F28BA620EA14B98377CB84A309CF73CC420BA0F52F30C7FA4D92FD2B0E",
       "algorithm": "sha256"
     },
     {
@@ -116,143 +116,83 @@
       "algorithm": "sha256"
     },
     {
-      "id": "github_release/github.com/mikefarah/yq/v4.52.5/yq_darwin_amd64",
-      "checksum": "6E399D1EB466860C3202D231727197FDCE055888C5C7BEC6964156983DD1559D",
+      "id": "github_release/github.com/mikefarah/yq/v4.53.6/yq_darwin_amd64",
+      "checksum": "FEE88439D5BB53467D1A2B6FEF4291AFB805260FD1078D089B036C764BF82114C3469F6BBB620AFA719E6F7D05DB4B948218A8BFC60C3AD866D45607A8B05D23",
+      "algorithm": "sha512"
+    },
+    {
+      "id": "github_release/github.com/mikefarah/yq/v4.53.6/yq_darwin_arm64",
+      "checksum": "A1E235EA619810E2F741F970C26A5139452D509AF0A61B3FAFCFE2ACE5A89304B6EE17CDB3CE3CED7E43B6A744D080E3CB0B83F8022DBB81F590BC6968A8FD9E",
+      "algorithm": "sha512"
+    },
+    {
+      "id": "github_release/github.com/mikefarah/yq/v4.53.6/yq_linux_amd64",
+      "checksum": "508F4EE34C6D093D136FF3C1B36DB4105E686C3D68D435C064448BA16E2616D528EFAFB2CB0A1890B7724890373A226A38B7DA27E6796396EE759BED39A8C671",
+      "algorithm": "sha512"
+    },
+    {
+      "id": "github_release/github.com/mikefarah/yq/v4.53.6/yq_linux_arm64",
+      "checksum": "D7B42B08F3CC2CF115CEB0579C143A7FCCCEEE9E496075004BCBC34E173CFD0A4DACC0BDC6FC502C2869586B9FC949116DB5FE9BEF973C1A14568F4BD625EDFA",
+      "algorithm": "sha512"
+    },
+    {
+      "id": "github_release/github.com/suzuki-shunsuke/pinact/v5.0.0/pinact_darwin_amd64.tar.gz",
+      "checksum": "DA5532BD185A9D3A16A1F93774F835574E0C50BC74C2085B9917B9DF3E9FBBAA",
       "algorithm": "sha256"
     },
     {
-      "id": "github_release/github.com/mikefarah/yq/v4.52.5/yq_darwin_arm64",
-      "checksum": "45A12E64D4BD8A31C72EE1B889E81F1B1110E801BAAD3D6F030C111DB0068DE0",
+      "id": "github_release/github.com/suzuki-shunsuke/pinact/v5.0.0/pinact_darwin_arm64.tar.gz",
+      "checksum": "3437EBFC9DB720E431E86FD03ED19173B88DCB80B0F177D11A892126108661B5",
       "algorithm": "sha256"
     },
     {
-      "id": "github_release/github.com/mikefarah/yq/v4.52.5/yq_linux_amd64",
-      "checksum": "75D893A0D5940D1019CB7CDC60001D9E876623852C31CFC6267047BC31149FA9",
+      "id": "github_release/github.com/suzuki-shunsuke/pinact/v5.0.0/pinact_linux_amd64.tar.gz",
+      "checksum": "D005BBB85DA80DACDC07816F24A5DA723A9F6D1E9F3D3E7E73DF33F9CAA1358F",
       "algorithm": "sha256"
     },
     {
-      "id": "github_release/github.com/mikefarah/yq/v4.52.5/yq_linux_arm64",
-      "checksum": "90FA510C50EE8CA75544DBFFFED10C88ED59B36834DF35916520CDDC623D9AAA",
+      "id": "github_release/github.com/suzuki-shunsuke/pinact/v5.0.0/pinact_linux_arm64.tar.gz",
+      "checksum": "D28CA5E9DDD7950DA4A808288F8A83F84FC3CA40E86BAB970F3ADEEF33578C0B",
       "algorithm": "sha256"
     },
     {
-      "id": "github_release/github.com/mikefarah/yq/v4.53.3/yq_darwin_amd64",
-      "checksum": "B4BA1ECCE3C47F00803F4F964DE38394326C7A32EB6540616E04FB2935A0F08D",
+      "id": "github_release/github.com/tilt-dev/ctlptl/v0.9.6/ctlptl.0.9.6.linux.arm64.tar.gz",
+      "checksum": "6817485BEE0BE90889D5ACF56920DCC890D8FBEC31477F7A97353E08B86DB8AC",
       "algorithm": "sha256"
     },
     {
-      "id": "github_release/github.com/mikefarah/yq/v4.53.3/yq_darwin_arm64",
-      "checksum": "877DE31753A4DD2401AA048937AA9A7FC4D5F6CE858CF31508C5802954297213",
+      "id": "github_release/github.com/tilt-dev/ctlptl/v0.9.6/ctlptl.0.9.6.linux.x86_64.tar.gz",
+      "checksum": "A83AD620D04A526FD4186ADFAB9E757E8D59B9BECF9B1244A9416DFAABEC610F",
       "algorithm": "sha256"
     },
     {
-      "id": "github_release/github.com/mikefarah/yq/v4.53.3/yq_linux_amd64",
-      "checksum": "FA52A4E758C63D38299163FBDD1EDFB4C4963247918BF9C1C5D31D84789EDED4",
+      "id": "github_release/github.com/tilt-dev/ctlptl/v0.9.6/ctlptl.0.9.6.mac.arm64.tar.gz",
+      "checksum": "6EF761E27F68E002279054A4F9536887CCB94B118FAEE7BCF41BC905691ED2A3",
       "algorithm": "sha256"
     },
     {
-      "id": "github_release/github.com/mikefarah/yq/v4.53.3/yq_linux_arm64",
-      "checksum": "578648E463A11C1B6DB6010CBF41EAFED6BEE79466FCFFA1BB446672CF7945EA",
+      "id": "github_release/github.com/tilt-dev/ctlptl/v0.9.6/ctlptl.0.9.6.mac.x86_64.tar.gz",
+      "checksum": "3B0EEE55AB60ADD887E44DCBD241594B61552CFF89EA04CCE7EE40E1FC586515",
       "algorithm": "sha256"
     },
     {
-      "id": "github_release/github.com/tilt-dev/ctlptl/v0.9.0/ctlptl.0.9.0.linux.arm64.tar.gz",
-      "checksum": "77813732235DF15BB1749EB09B128AAD439D43E1998756C62DC159535A3032DA",
+      "id": "github_release/github.com/tilt-dev/tilt/v0.37.7/tilt.0.37.7.linux.arm64.tar.gz",
+      "checksum": "9F381347FA18FFCA3F1D3DCDD3F6745281A6647E6107199832CEAA62A461964A",
       "algorithm": "sha256"
     },
     {
-      "id": "github_release/github.com/tilt-dev/ctlptl/v0.9.0/ctlptl.0.9.0.linux.x86_64.tar.gz",
-      "checksum": "7A61CA793EB09AE573D94B0AAC37FB2D6271516973020B3BEDD6DD936788F6D2",
+      "id": "github_release/github.com/tilt-dev/tilt/v0.37.7/tilt.0.37.7.linux.x86_64.tar.gz",
+      "checksum": "B695193FAB68DEF8310CB971FA60BBE47BA0A782E24F54EBAD287C13316A61B0",
       "algorithm": "sha256"
     },
     {
-      "id": "github_release/github.com/tilt-dev/ctlptl/v0.9.0/ctlptl.0.9.0.mac.arm64.tar.gz",
-      "checksum": "FE63E244A6398A3E34791735EFE15AE0EA3FDD681252CE24590045ED91023543",
+      "id": "github_release/github.com/tilt-dev/tilt/v0.37.7/tilt.0.37.7.mac.arm64.tar.gz",
+      "checksum": "7F54AFFF29CAE67E2751C13DF00A66D56F6FBC4463573089059BA673CF128687",
       "algorithm": "sha256"
     },
     {
-      "id": "github_release/github.com/tilt-dev/ctlptl/v0.9.0/ctlptl.0.9.0.mac.x86_64.tar.gz",
-      "checksum": "0765A2089FEC4B1319ACBB801515A71AC1DE651EF3945AA22FD4947FB8F0A19C",
-      "algorithm": "sha256"
-    },
-    {
-      "id": "github_release/github.com/tilt-dev/ctlptl/v0.9.4/ctlptl.0.9.4.linux.arm64.tar.gz",
-      "checksum": "2F079D3A80FEAC892B83C5FD842445D879DDC6B0E640021CF5FF604E21337050",
-      "algorithm": "sha256"
-    },
-    {
-      "id": "github_release/github.com/tilt-dev/ctlptl/v0.9.4/ctlptl.0.9.4.linux.x86_64.tar.gz",
-      "checksum": "C63A1EC28E60BC3FAF6BECB76F53355C5CF5E0143DAFDD27AD85DB5584FA6B1E",
-      "algorithm": "sha256"
-    },
-    {
-      "id": "github_release/github.com/tilt-dev/ctlptl/v0.9.4/ctlptl.0.9.4.mac.arm64.tar.gz",
-      "checksum": "5DD227ED5E29E110B1A887E3CADBF8DB29514C9447D6E128E9D59F3CFB39490B",
-      "algorithm": "sha256"
-    },
-    {
-      "id": "github_release/github.com/tilt-dev/ctlptl/v0.9.4/ctlptl.0.9.4.mac.x86_64.tar.gz",
-      "checksum": "2596555A136A5FEABD32DD6D1569BDEE3C9A85CDF84904F60CD4C37E97227FAC",
-      "algorithm": "sha256"
-    },
-    {
-      "id": "github_release/github.com/tilt-dev/tilt/v0.37.0/tilt.0.37.0.linux.arm64.tar.gz",
-      "checksum": "84457137539D8E4BE6E90E9AFECF8EF692AD3F8C19E9BF3355F3FBF4F8DCE55F",
-      "algorithm": "sha256"
-    },
-    {
-      "id": "github_release/github.com/tilt-dev/tilt/v0.37.0/tilt.0.37.0.linux.x86_64.tar.gz",
-      "checksum": "C2C7D3649233F01BC5D230B66B8CCD332401F348DC22B863FCF7244DA6970FF1",
-      "algorithm": "sha256"
-    },
-    {
-      "id": "github_release/github.com/tilt-dev/tilt/v0.37.0/tilt.0.37.0.mac.arm64.tar.gz",
-      "checksum": "5AF70D3AB374ADEAFFE3FB8B0D7F1695A880DC2A02A4C2BCCF20223B153929E8",
-      "algorithm": "sha256"
-    },
-    {
-      "id": "github_release/github.com/tilt-dev/tilt/v0.37.0/tilt.0.37.0.mac.x86_64.tar.gz",
-      "checksum": "01C5E53921345ED4FEB3BA6BC9585F8F5563E40BEA27DAE0384620D5BBC2EBEA",
-      "algorithm": "sha256"
-    },
-    {
-      "id": "github_release/github.com/tilt-dev/tilt/v0.37.3/tilt.0.37.3.linux.arm64.tar.gz",
-      "checksum": "826F48198F368EF5EDB684E9AE4C87FF76ECA84C904F72B2376B29B93BFFC019",
-      "algorithm": "sha256"
-    },
-    {
-      "id": "github_release/github.com/tilt-dev/tilt/v0.37.3/tilt.0.37.3.linux.x86_64.tar.gz",
-      "checksum": "E90BC6CF70882BC7579D8174A27CAB2DE0284612EC7339E4B32F669CD5DE4E5C",
-      "algorithm": "sha256"
-    },
-    {
-      "id": "github_release/github.com/tilt-dev/tilt/v0.37.3/tilt.0.37.3.mac.arm64.tar.gz",
-      "checksum": "4D1F4E604AA5CA65A2DF0D19C9E9B351CF9703BE886F52FA5F3AFD317D968FFD",
-      "algorithm": "sha256"
-    },
-    {
-      "id": "github_release/github.com/tilt-dev/tilt/v0.37.3/tilt.0.37.3.mac.x86_64.tar.gz",
-      "checksum": "C8E2B58FB7EFDEC9AE7E3FC4249B4F662DC6520EABE8EFCAC84B80856F20D31B",
-      "algorithm": "sha256"
-    },
-    {
-      "id": "github_release/github.com/suzuki-shunsuke/pinact/v4.0.0/pinact_darwin_amd64.tar.gz",
-      "checksum": "242D0697152D31BF04F3759EC5C55CF8CCBF47B6E2680DD24531E63A6D890468",
-      "algorithm": "sha256"
-    },
-    {
-      "id": "github_release/github.com/suzuki-shunsuke/pinact/v4.0.0/pinact_darwin_arm64.tar.gz",
-      "checksum": "3260E0D6FA7D89E4B9A7CC6C120345DB9217C4E0571742E9A76DB2BA3FF63650",
-      "algorithm": "sha256"
-    },
-    {
-      "id": "github_release/github.com/suzuki-shunsuke/pinact/v4.0.0/pinact_linux_amd64.tar.gz",
-      "checksum": "CC220902615325B10BD3BC52ED3DE27488F79ADAEC52ADCD12BD2194C2D2C592",
-      "algorithm": "sha256"
-    },
-    {
-      "id": "github_release/github.com/suzuki-shunsuke/pinact/v4.0.0/pinact_linux_arm64.tar.gz",
-      "checksum": "C5D8EFB4B253A749B754AD04F484D93C78FADE5470BB549D58DF6A8AECA9B18BF",
+      "id": "github_release/github.com/tilt-dev/tilt/v0.37.7/tilt.0.37.7.mac.x86_64.tar.gz",
+      "checksum": "2022E675F9A32CDC651E8096A12CAA38720BE2D692D7347798607873A107FD61",
       "algorithm": "sha256"
     },
     {
@@ -276,53 +216,28 @@
       "algorithm": "sha256"
     },
     {
-      "id": "http/get.helm.sh/helm-v4.1.4-darwin-amd64.tar.gz",
-      "checksum": "ABF09C8503AD1D8EF76D3737A058C3456A998AAE5F5966FCE4BB3031AEB1654E",
+      "id": "http/get.helm.sh/helm-v4.3.0-darwin-amd64.tar.gz",
+      "checksum": "347A784877E0E20EAC865E8D1C36A80F6BB0861D6F29ABD34DEFB6570EF95D92",
       "algorithm": "sha256"
     },
     {
-      "id": "http/get.helm.sh/helm-v4.1.4-darwin-arm64.tar.gz",
-      "checksum": "7C2ECA678E8001FA863CDF8CBF6AC1B3799F9404A89EB55C08260EF5732E658D",
+      "id": "http/get.helm.sh/helm-v4.3.0-darwin-arm64.tar.gz",
+      "checksum": "D3870437E1E95B67F8EDBDE964156C84A26503F560821D40C542441658934FBA",
       "algorithm": "sha256"
     },
     {
-      "id": "http/get.helm.sh/helm-v4.1.4-linux-amd64.tar.gz",
-      "checksum": "70B2C30A19DA4DB264DFD68C8A3664E05093A361CEFD89572FFB36F8ABFA3D09",
+      "id": "http/get.helm.sh/helm-v4.3.0-linux-amd64.tar.gz",
+      "checksum": "86584A54DEF73570558F66F5111CC53DFED56689637AE32C1201205D494F54FB",
       "algorithm": "sha256"
     },
     {
-      "id": "http/get.helm.sh/helm-v4.1.4-linux-arm64.tar.gz",
-      "checksum": "13D03672BE289045D2FF00E4E345D61DE1C6F21C1257A45955A30E8AE036D8F1",
+      "id": "http/get.helm.sh/helm-v4.3.0-linux-arm64.tar.gz",
+      "checksum": "31C5794DD55C66A51E6B7D2E2AC7A114AE8B1DE41FF1D9BA51748AC973B06A08",
       "algorithm": "sha256"
     },
     {
-      "id": "http/get.helm.sh/helm-v4.2.0-darwin-amd64.tar.gz",
-      "checksum": "1376EA697140E4DB316736E760D5A47D12AFC1524DCE704476EF06FD7FDEDDC6",
-      "algorithm": "sha256"
-    },
-    {
-      "id": "http/get.helm.sh/helm-v4.2.0-darwin-arm64.tar.gz",
-      "checksum": "F13F959015447B6BC309F9FD506509926543988A39035C088B52522EC95E2ACB",
-      "algorithm": "sha256"
-    },
-    {
-      "id": "http/get.helm.sh/helm-v4.2.0-linux-amd64.tar.gz",
-      "checksum": "97DBEB971BE4AC4B27E3839976D9564C0FB35C6F3B1DA89DD1E292D236AF4096",
-      "algorithm": "sha256"
-    },
-    {
-      "id": "http/get.helm.sh/helm-v4.2.0-linux-arm64.tar.gz",
-      "checksum": "1F8DE130DFBD04DE64978E7B852A7A547BE1404956A366608276D2520B678670",
-      "algorithm": "sha256"
-    },
-    {
-      "id": "registries/github_content/github.com/aquaproj/aqua-registry/v4.487.0/registry.yaml",
-      "checksum": "3D55277449CA3E368AB56831B8465827AB1BD110E1EB43A83B0C098B5D291A280703C285CBEC52954D8FF3944BB41F3AE93CE547082718E042590F694120DF1B",
-      "algorithm": "sha512"
-    },
-    {
-      "id": "registries/github_content/github.com/aquaproj/aqua-registry/v4.522.0/registry.yaml",
-      "checksum": "4B7CCAEC37D873A69BC72E16901CC684ECF045B5E0F3A4D7AC17E6409D7AB09E",
+      "id": "registries/github_content/github.com/aquaproj/aqua-registry/v4.563.0/registry.yaml",
+      "checksum": "180F82867167BFB2D7AE40273FFC4CFC613B8A2745BD190BBDE9F817B0B3DEBA",
       "algorithm": "sha256"
     }
   ]

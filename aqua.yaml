@@ -9,18 +9,18 @@ checksum:
   - linux
 registries:
 - type: standard
-  ref: v4.522.0 # renovate: depName=aquaproj/aqua-registry
+  ref: v4.563.0 # renovate: depName=aquaproj/aqua-registry
 packages:
 - name: clamoriniere/crd-to-markdown@v0.0.3
-- name: dominikh/go-tools/staticcheck@2026.1
-- name: suzuki-shunsuke/pinact@v4.0.0
-- name: helm/helm@v4.2.0
+- name: dominikh/go-tools/staticcheck@2026.2.1
+- name: suzuki-shunsuke/pinact@v5.0.0
+- name: helm/helm@v4.3.0
 - name: kubernetes/kubectl@v1.35.4
 - name: kubernetes-sigs/controller-runtime/setup-envtest@v0.23.3
 - name: kubernetes-sigs/controller-tools/controller-gen@v0.20.1
 - name: kubernetes-sigs/kubebuilder@v4.13.1
 - name: kubernetes-sigs/kustomize@kustomize/v5.8.1
 - name: kubernetes-sigs/kind@v0.31.0
-- name: mikefarah/yq@v4.53.3
-- name: tilt-dev/ctlptl@v0.9.4
-- name: tilt-dev/tilt@v0.37.3
+- name: mikefarah/yq@v4.53.6
+- name: tilt-dev/ctlptl@v0.9.6
+- name: tilt-dev/tilt@v0.37.7
