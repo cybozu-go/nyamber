@@ -5,6 +5,10 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-09-17
+
+- Bump dependencies version ([#93](https://github.com/cybozu-go/nyamber/pull/93))
+
 ## [0.11.2] - 2026-07-03
 
 - Change aqua install path ([#90](https://github.com/cybozu-go/nyamber/pull/90))
@@ -132,7 +136,8 @@ This fixes git vulnerabilities
 
 - This is the first public release.
 
-[Unreleased]: https://github.com/cybozu-go/nyamber/compare/v0.11.2...HEAD
+[Unreleased]: https://github.com/cybozu-go/nyamber/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/cybozu-go/nyamber/compare/v0.11.2...v0.12.0
 [0.11.2]: https://github.com/cybozu-go/nyamber/compare/v0.11.1...v0.11.2
 [0.11.1]: https://github.com/cybozu-go/nyamber/compare/v0.11.0...v0.11.1
 [0.11.0]: https://github.com/cybozu-go/nyamber/compare/v0.10.0...v0.11.0
