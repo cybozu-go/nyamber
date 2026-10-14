@@ -6,13 +6,18 @@ on:
     - 'main'
 env:
   cache-version: 1
-permissions:
-  contents: read
+permissions: {}
 jobs:
   build:
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      id-token: write
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+    - uses: ./.github/actions/setup-go
+      with:
+        bot-id: ${{ vars.TAKUMI_GUARD_BOT_ID }}
     - run: make docker-build
   test:
     name: Small tests

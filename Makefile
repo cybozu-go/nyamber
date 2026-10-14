@@ -94,8 +94,15 @@ build: generate ## Build all binaries.
 
 .PHONY: docker-build
 docker-build: ## Build docker image with the manager.
-	DOCKER_BUILDKIT=1 docker build -t ${CONTROLLER_IMG} .
-	DOCKER_BUILDKIT=1 docker build -t ${RUNNER_IMG} -f ./Dockerfile.runner .
+	@TAKUMI_NETRC="$$(grep -sF 'machine golang.flatt.tech ' "$${NETRC:-$$HOME/.netrc}" || true)"; \
+	export TAKUMI_NETRC; \
+	DOCKER_BUILDKIT=1 docker build \
+		$${TAKUMI_NETRC:+--secret id=netrc,env=TAKUMI_NETRC} \
+		-t ${CONTROLLER_IMG} .; \
+	DOCKER_BUILDKIT=1 docker build \
+		$${TAKUMI_NETRC:+--secret id=netrc,env=TAKUMI_NETRC} \
+		-t ${RUNNER_IMG} \
+		-f ./Dockerfile.runner .
 
 .PHONY: docker-push
 docker-push: ## Push docker image with the manager.
