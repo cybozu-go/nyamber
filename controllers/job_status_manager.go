@@ -25,6 +25,9 @@ import (
 
 const interval time.Duration = time.Second * 10 // for development.
 
+// requestTimeout bounds each status request so that a stopped process does not wait for an unresponsive pod.
+const requestTimeout time.Duration = time.Second * 5
+
 type JobProcessManager interface {
 	Start(vdc *nyamberv1beta1.VirtualDC) error
 	Stop(vdc *nyamberv1beta1.VirtualDC) error
@@ -73,16 +76,18 @@ func (j *jobProcessManager) Start(vdc *nyamberv1beta1.VirtualDC) error {
 
 func (j *jobProcessManager) Stop(vdc *nyamberv1beta1.VirtualDC) error {
 	j.mu.Lock()
-	defer j.mu.Unlock()
 
 	vdcNamespacedName := types.NamespacedName{Namespace: vdc.Namespace, Name: vdc.Name}.String()
-	if process, ok := j.processes[vdcNamespacedName]; ok {
-		if err := process.stop(); err != nil {
-			return err
-		}
-		delete(j.processes, vdcNamespacedName)
+	process, ok := j.processes[vdcNamespacedName]
+	if !ok {
+		j.mu.Unlock()
+		return nil
 	}
-	return nil
+	delete(j.processes, vdcNamespacedName)
+	j.mu.Unlock()
+
+	// Wait for the process without holding the lock so that Start for other VirtualDCs is not blocked.
+	return process.stop()
 }
 
 func (j *jobProcessManager) StopAll() {
@@ -103,6 +108,7 @@ type jobWatchProcess struct {
 	vdcNamespace string
 	vdcName      string
 	podNamespace string
+	httpClient   *http.Client
 	cancel       func()
 	env          *well.Environment
 }
@@ -114,6 +120,7 @@ func newJobWatchProcess(log logr.Logger, k8sClient client.Client, vdc *nyamberv1
 		vdcNamespace: vdc.Namespace,
 		vdcName:      vdc.Name,
 		podNamespace: podNamespace,
+		httpClient:   &http.Client{Timeout: requestTimeout},
 	}
 }
 
@@ -141,6 +148,7 @@ func (p *jobWatchProcess) stop() error {
 
 func (p *jobWatchProcess) run(ctx context.Context) {
 	ticker := time.NewTicker(interval)
+	defer ticker.Stop()
 	for {
 		select {
 		case <-ctx.Done():
@@ -152,7 +160,11 @@ func (p *jobWatchProcess) run(ctx context.Context) {
 					p.log.Error(err, "failed to update status")
 				}
 				if retry {
-					time.Sleep(time.Second * 1)
+					select {
+					case <-ctx.Done():
+						return
+					case <-time.After(time.Second * 1):
+					}
 					continue
 				}
 				break
@@ -166,7 +178,7 @@ func (p *jobWatchProcess) updateStatus(ctx context.Context) (bool, error) {
 	if err := p.k8sClient.Get(ctx, client.ObjectKey{Name: p.vdcName, Namespace: p.vdcNamespace}, beforeVdc); err != nil {
 		return false, err
 	}
-	jobStates, err := p.getJobStates()
+	jobStates, err := p.getJobStates(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -186,8 +198,12 @@ func (p *jobWatchProcess) updateStatus(ctx context.Context) (bool, error) {
 	return false, nil
 }
 
-func (p *jobWatchProcess) getJobStates() (*entrypoint.StatusResponse, error) {
-	resp, err := http.Get(fmt.Sprintf("http://%s.%s/%s", p.vdcName, p.podNamespace, constants.StatusEndPoint))
+func (p *jobWatchProcess) getJobStates(ctx context.Context) (*entrypoint.StatusResponse, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, fmt.Sprintf("http://%s.%s/%s", p.vdcName, p.podNamespace, constants.StatusEndPoint), nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := p.httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
