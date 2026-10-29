@@ -15,6 +15,7 @@ import (
 	"github.com/cybozu-go/nyamber/pkg/entrypoint"
 	"github.com/cybozu-go/well"
 	"github.com/go-logr/logr"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -178,16 +179,31 @@ func (p *jobWatchProcess) updateStatus(ctx context.Context) (bool, error) {
 	if err := p.k8sClient.Get(ctx, client.ObjectKey{Name: p.vdcName, Namespace: p.vdcNamespace}, beforeVdc); err != nil {
 		return false, err
 	}
-	jobStates, err := p.getJobStates(ctx)
+	podExists, err := p.podExists(ctx)
 	if err != nil {
 		return false, err
 	}
 	vdc := beforeVdc.DeepCopy()
-	for _, job := range jobStates.Jobs {
-		meta.SetStatusCondition(&vdc.Status.Conditions, getJobCondition(job))
-		if job.Status != entrypoint.JobStatusCompleted {
-			break
+	if podExists {
+		jobStates, err := p.getJobStates(ctx)
+		if err != nil {
+			return false, err
 		}
+		for _, job := range jobStates.Jobs {
+			meta.SetStatusCondition(&vdc.Status.Conditions, getJobCondition(job))
+			if job.Status != entrypoint.JobStatusCompleted {
+				break
+			}
+		}
+	} else if meta.IsStatusConditionTrue(vdc.Status.Conditions, nyamberv1beta1.TypePodCreated) {
+		// The controller does not recreate a pod that has disappeared (e.g. evicted on a node reboot).
+		// Treat it as a job failure so that AutoVirtualDC recreates the VirtualDC.
+		meta.SetStatusCondition(&vdc.Status.Conditions, metav1.Condition{
+			Type:    nyamberv1beta1.TypePodJobCompleted,
+			Status:  metav1.ConditionFalse,
+			Reason:  nyamberv1beta1.ReasonPodJobCompletedFailed,
+			Message: "pod does not exist",
+		})
 	}
 	if !equality.Semantic.DeepEqual(vdc.Status, beforeVdc.Status) {
 		p.log.Info("update status", "status", vdc.Status, "before", beforeVdc.Status)
@@ -196,6 +212,16 @@ func (p *jobWatchProcess) updateStatus(ctx context.Context) (bool, error) {
 		}
 	}
 	return false, nil
+}
+
+func (p *jobWatchProcess) podExists(ctx context.Context) (bool, error) {
+	if err := p.k8sClient.Get(ctx, client.ObjectKey{Namespace: p.podNamespace, Name: p.vdcName}, &corev1.Pod{}); err != nil {
+		if apierrors.IsNotFound(err) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
 }
 
 func (p *jobWatchProcess) getJobStates(ctx context.Context) (*entrypoint.StatusResponse, error) {

@@ -45,6 +45,9 @@ A deployment that create and delete VirutualDC resources according to set schedu
 
 If dctest bootstrap fails, `autovirtualdc-controller` recreated `VirtualDC` resources from startTime until the time specified in `timeoutDuration` has elapsed.
 
+By design, `virtualdc-controller` does not recreate a runner pod that has disappeared (e.g. evicted on a node reboot).
+Instead, it marks the job of the `VirtualDC` as failed, so `autovirtualdc-controller` recreates the `VirtualDC` in the same way as a bootstrap failure.
+
 #### Runner pod (nyamber-runner)
 
 A component to run dctest with entrypoint.
