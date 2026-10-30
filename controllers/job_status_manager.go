@@ -179,12 +179,12 @@ func (p *jobWatchProcess) updateStatus(ctx context.Context) (bool, error) {
 	if err := p.k8sClient.Get(ctx, client.ObjectKey{Name: p.vdcName, Namespace: p.vdcNamespace}, beforeVdc); err != nil {
 		return false, err
 	}
-	podExists, err := p.podExists(ctx)
+	state, err := p.getPodState(ctx)
 	if err != nil {
 		return false, err
 	}
 	vdc := beforeVdc.DeepCopy()
-	if podExists {
+	if state == podStateActive {
 		jobStates, err := p.getJobStates(ctx)
 		if err != nil {
 			return false, err
@@ -196,13 +196,13 @@ func (p *jobWatchProcess) updateStatus(ctx context.Context) (bool, error) {
 			}
 		}
 	} else if meta.IsStatusConditionTrue(vdc.Status.Conditions, nyamberv1beta1.TypePodCreated) {
-		// The controller does not recreate a pod that has disappeared (e.g. evicted on a node reboot).
+		// The controller does not recreate a pod that has disappeared or failed (e.g. evicted on a node reboot).
 		// Treat it as a job failure so that AutoVirtualDC recreates the VirtualDC.
 		meta.SetStatusCondition(&vdc.Status.Conditions, metav1.Condition{
 			Type:    nyamberv1beta1.TypePodJobCompleted,
 			Status:  metav1.ConditionFalse,
 			Reason:  nyamberv1beta1.ReasonPodJobCompletedFailed,
-			Message: "pod does not exist",
+			Message: state.String(),
 		})
 	}
 	if !equality.Semantic.DeepEqual(vdc.Status, beforeVdc.Status) {
@@ -214,14 +214,39 @@ func (p *jobWatchProcess) updateStatus(ctx context.Context) (bool, error) {
 	return false, nil
 }
 
-func (p *jobWatchProcess) podExists(ctx context.Context) (bool, error) {
-	if err := p.k8sClient.Get(ctx, client.ObjectKey{Namespace: p.podNamespace, Name: p.vdcName}, &corev1.Pod{}); err != nil {
-		if apierrors.IsNotFound(err) {
-			return false, nil
-		}
-		return false, err
+// podState represents whether the runner pod can run the jobs.
+type podState int
+
+const (
+	podStateActive podState = iota
+	podStateNotFound
+	podStateFailed
+)
+
+func (s podState) String() string {
+	switch s {
+	case podStateActive:
+		return "pod is active"
+	case podStateNotFound:
+		return "pod does not exist"
+	case podStateFailed:
+		return "pod is in Failed phase"
 	}
-	return true, nil
+	return "unknown pod state"
+}
+
+func (p *jobWatchProcess) getPodState(ctx context.Context) (podState, error) {
+	pod := &corev1.Pod{}
+	if err := p.k8sClient.Get(ctx, client.ObjectKey{Namespace: p.podNamespace, Name: p.vdcName}, pod); err != nil {
+		if apierrors.IsNotFound(err) {
+			return podStateNotFound, nil
+		}
+		return podStateActive, err
+	}
+	if pod.Status.Phase == corev1.PodFailed {
+		return podStateFailed, nil
+	}
+	return podStateActive, nil
 }
 
 func (p *jobWatchProcess) getJobStates(ctx context.Context) (*entrypoint.StatusResponse, error) {
