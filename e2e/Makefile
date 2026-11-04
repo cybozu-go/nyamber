@@ -1,6 +1,6 @@
 # NOTE: kind version is specified at aqua.yaml
 # renovate:
-KIND_IMAGE_REF := "v1.35.0@sha256:452d707d4862f52530247495d180205e029056831160e22870e37e3f6c1ac31f"
+KIND_IMAGE_REF := "v1.36.4@sha256:099e049362a1526b2db71494e1947aae99bd16290d7c895f2b7ea312e3cbfaed"
 # renovate: datasource=github-releases depName=cert-manager/cert-manager
 CERT_MANAGER_VERSION := 1.21.2
 CERT_MANAGER_GPG_KEY_URL := https://cert-manager.io/public-keys/cert-manager-keyring-2021-09-20-1020CF3C033D4F35BAE1C19E1226061C665DF13E.gpg
