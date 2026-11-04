@@ -31,8 +31,8 @@ FROM ghcr.io/cybozu/ubuntu:22.04.20261021@sha256:f52eedc9de1a2b34e0ef71e4a6e1489
 LABEL org.opencontainers.image.source=https://github.com/cybozu-go/nyamber
 
 # renovate: datasource=golang-version depName=go
-ENV GO_VERSION=1.27.1
-ENV GO_SHA=63d339f0da5ab53635a56f2490a7984dfe12dfcff22ad749f63edaf590168445
+ENV GO_VERSION=1.27.3
+ENV GO_SHA=65efbc80fdc1fa2cd2631cad5b481777a68e8725f34e89f50fc6ac714e379b40
 # renovate: datasource=github-releases depName=cybozu-go/placemat
 ENV PLACEMAT_VERSION=2.7.1
 ENV PLACEMAT_SHA=ff1686ae04496c5dacde74cb4acb79a4cd5ed8c53a49b14eaf281f2951896710
