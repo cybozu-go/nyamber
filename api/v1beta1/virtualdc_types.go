@@ -19,6 +19,7 @@ package v1beta1
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 // VirtualDCSpec defines the desired state of VirtualDC
@@ -103,5 +104,8 @@ type VirtualDCList struct {
 }
 
 func init() {
-	SchemeBuilder.Register(&VirtualDC{}, &VirtualDCList{})
+	SchemeBuilder.Register(func(s *runtime.Scheme) error {
+		s.AddKnownTypes(GroupVersion, &VirtualDC{}, &VirtualDCList{})
+		return nil
+	})
 }

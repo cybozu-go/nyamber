@@ -17,7 +17,7 @@ Nyamber is a custom controller to create Neco environment
 
 ## Supported Software
 
-- Kubernetes: 1.33, 1.34, 1.35
+- Kubernetes: 1.34, 1.35, 1.36
 
 ## Documentation
 
