@@ -5,6 +5,14 @@ This project adheres to [Semantic Versioning](http://semver.org/).
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-11-10
+
+- Use Takumi Guard in Dockerfile builds ([#97](https://github.com/cybozu-go/nyamber/pull/97))
+- Update base images ([#98](https://github.com/cybozu-go/nyamber/pull/98))
+- Prevent VirtualDC reconciliation from stalling on job watch shutdown ([#99](https://github.com/cybozu-go/nyamber/pull/99))
+- Treat a disappeared or failed runner pod as a job failure ([#100](https://github.com/cybozu-go/nyamber/pull/100))
+- Bump supported kubernetes from 1.35 to 1.36 ([#102](https://github.com/cybozu-go/nyamber/pull/102))
+
 ## [0.12.0] - 2026-09-17
 
 - Bump dependencies version ([#93](https://github.com/cybozu-go/nyamber/pull/93))
@@ -136,7 +144,8 @@ This fixes git vulnerabilities
 
 - This is the first public release.
 
-[Unreleased]: https://github.com/cybozu-go/nyamber/compare/v0.12.0...HEAD
+[Unreleased]: https://github.com/cybozu-go/nyamber/compare/v0.13.0...HEAD
+[0.13.0]: https://github.com/cybozu-go/nyamber/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/cybozu-go/nyamber/compare/v0.11.2...v0.12.0
 [0.11.2]: https://github.com/cybozu-go/nyamber/compare/v0.11.1...v0.11.2
 [0.11.1]: https://github.com/cybozu-go/nyamber/compare/v0.11.0...v0.11.1
